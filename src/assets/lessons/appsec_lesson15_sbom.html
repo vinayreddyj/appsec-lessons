@@ -1,0 +1,1271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AppSec Engineer — Lesson 15: SBOM</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Libre+Baskerville:ital,wght@0,700;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f4f5f0;--surface:#ffffff;--surface2:#eceee8;--surface3:#e2e4dc;
+  --border:#d0d4c8;--border2:#b8bdb0;--ink:#1a1c14;--ink2:#484d3a;--ink3:#8a9078;
+  --accent:#5c7a2e;--accent-bg:rgba(92,122,46,0.08);
+  --red:#b83232;--red-bg:rgba(184,50,50,0.07);
+  --orange:#b85a1a;--orange-bg:rgba(184,90,26,0.07);
+  --yellow:#8a6a10;--yellow-bg:rgba(138,106,16,0.08);
+  --blue:#1a4a8a;--blue-bg:rgba(26,74,138,0.07);
+  --purple:#6a2a9a;--purple-bg:rgba(106,42,154,0.07);
+  --teal:#1a7a6a;--teal-bg:rgba(26,122,106,0.07);
+  --pink:#9a2a5a;--pink-bg:rgba(154,42,90,0.07);
+  --code-bg:#1a1c14;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--ink);font-family:'Sora',sans-serif;font-size:15px;line-height:1.8;}
+.sidebar{position:fixed;left:0;top:0;bottom:0;width:252px;background:var(--ink);overflow-y:auto;z-index:100;}
+.sb-brand{padding:1.4rem 1.2rem 1rem;border-bottom:1px solid rgba(255,255,255,.07);}
+.sb-badge{font-family:'JetBrains Mono',monospace;font-size:9px;background:var(--accent);color:#fff;padding:2px 8px;border-radius:2px;letter-spacing:.12em;display:inline-block;margin-bottom:7px;text-transform:uppercase;font-weight:700;}
+.sb-brand h2{font-size:13px;font-weight:400;color:rgba(255,255,255,.35);line-height:1.4;}
+.sb-sect{padding:.7rem 1.2rem .2rem;font-size:9px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:rgba(255,255,255,.18);margin-top:.25rem;}
+.nav-item{display:flex;align-items:center;gap:9px;padding:.38rem 1.2rem;cursor:pointer;border-left:2px solid transparent;font-size:12.5px;color:rgba(255,255,255,.22);text-decoration:none;transition:all .15s;}
+.nav-item:hover{color:rgba(255,255,255,.6);background:rgba(255,255,255,.04);}
+.nav-item.done{color:rgba(255,255,255,.28);}
+.nav-item.active{color:#fff;border-left-color:var(--accent);background:var(--accent-bg);}
+.nav-item .num{font-family:'JetBrains Mono',monospace;font-size:10px;min-width:22px;opacity:.28;}
+.nav-item.active .num{opacity:1;color:var(--accent);}
+.main{margin-left:252px;}
+.topbar{position:sticky;top:0;background:rgba(244,245,240,.96);backdrop-filter:blur(14px);border-bottom:1px solid var(--border);padding:.65rem 2.5rem;display:flex;align-items:center;justify-content:space-between;z-index:50;}
+.bc{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink3);}
+.bc span{color:var(--accent);font-weight:700;}
+.top-badge{font-family:'JetBrains Mono',monospace;font-size:10px;padding:3px 10px;background:var(--ink);color:rgba(255,255,255,.6);border-radius:2px;}
+.content{padding:3rem 2.5rem 5rem;max-width:960px;}
+.hero{margin-bottom:3.5rem;padding-bottom:2.5rem;border-bottom:2px solid var(--border);}
+.hero-meta{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1rem;}
+.tag{font-family:'JetBrains Mono',monospace;font-size:10px;padding:3px 10px;border-radius:2px;font-weight:600;letter-spacing:.04em;}
+.t-beg{background:var(--accent-bg);color:var(--accent);border:1px solid rgba(92,122,46,.2);}
+.t-frm{background:var(--blue-bg);color:var(--blue);border:1px solid rgba(26,74,138,.2);}
+.t-time{background:var(--purple-bg);color:var(--purple);border:1px solid rgba(106,42,154,.2);}
+.hero h1{font-family:'Libre Baskerville',serif;font-size:3.2rem;font-weight:700;line-height:1.1;color:var(--ink);margin-bottom:.85rem;}
+.hero h1 .hl{color:var(--accent);}
+.hero h1 .hl2{font-style:italic;}
+.hero-sub{font-size:14.5px;color:var(--ink2);max-width:660px;line-height:1.8;margin-bottom:1.75rem;}
+.level-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:6px;overflow:hidden;}
+.lv-cell{background:var(--surface);padding:.9rem 1rem;}
+.lv-pip{width:8px;height:8px;border-radius:50%;margin-bottom:7px;}
+.lv-label{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink3);margin-bottom:3px;}
+.lv-title{font-size:13px;font-weight:700;color:var(--ink);margin-bottom:2px;}
+.lv-desc{font-size:12px;color:var(--ink3);line-height:1.5;}
+.section{margin-bottom:3.5rem;}
+.eyebrow{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.15em;color:var(--accent);margin-bottom:5px;font-weight:700;}
+.sec-title{font-family:'Libre Baskerville',serif;font-size:1.9rem;color:var(--ink);line-height:1.2;margin-bottom:.35rem;}
+.sec-sub{font-size:14px;color:var(--ink2);max-width:660px;line-height:1.75;margin-bottom:1.5rem;}
+.callout{border-radius:4px;padding:.9rem 1.1rem;margin:1rem 0;display:flex;gap:10px;align-items:flex-start;border-left:3px solid;}
+.cl-warn{background:var(--red-bg);border-color:var(--red);}
+.cl-info{background:var(--blue-bg);border-color:var(--blue);}
+.cl-tip{background:var(--accent-bg);border-color:var(--accent);}
+.cl-note{background:var(--yellow-bg);border-color:var(--yellow);}
+.cl-purple{background:var(--purple-bg);border-color:var(--purple);}
+.cl-teal{background:var(--teal-bg);border-color:var(--teal);}
+.cl-pink{background:var(--pink-bg);border-color:var(--pink);}
+.cl-icon{font-size:15px;flex-shrink:0;margin-top:2px;}
+.cl-text{font-size:13.5px;color:var(--ink2);line-height:1.7;}
+.cl-text strong{color:var(--ink);}
+.cl-text code{font-family:'JetBrains Mono',monospace;font-size:11.5px;background:rgba(0,0,0,.06);padding:1px 5px;border-radius:2px;color:var(--accent);}
+pre{background:var(--code-bg);color:#d4dbc8;border-radius:6px;padding:1.25rem;font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.8;overflow-x:auto;margin:.85rem 0;position:relative;border:1px solid rgba(255,255,255,.05);}
+.ctag{position:absolute;top:10px;right:12px;font-family:'JetBrains Mono',monospace;font-size:9px;color:rgba(255,255,255,.2);text-transform:uppercase;letter-spacing:.1em;}
+.ck{color:#c084fc;}.cf{color:#7dd3fc;}.cs{color:#86efac;}.cm{color:#374151;}.cv{color:#fcd34d;}.ce{color:#fb923c;}.cr{color:#f87171;}.cg{color:#4ade80;}.ct{color:#2dd4bf;}.cw{color:#f9a8d4;}.ca{color:#a3e635;}
+.lb{display:block;background:rgba(248,113,113,.09);border-left:2px solid #ef4444;margin:0 -1.25rem;padding:0 1.25rem;}
+.lg{display:block;background:rgba(74,222,128,.07);border-left:2px solid #22c55e;margin:0 -1.25rem;padding:0 1.25rem;}
+.lw{display:block;background:rgba(252,211,77,.07);border-left:2px solid #f59e0b;margin:0 -1.25rem;padding:0 1.25rem;}
+table{width:100%;border-collapse:collapse;font-size:13px;margin:1rem 0;}
+th{padding:.55rem .9rem;text-align:left;background:var(--ink);color:rgba(255,255,255,.7);font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.08em;}
+th:first-child{border-radius:4px 0 0 0;}th:last-child{border-radius:0 4px 0 0;}
+td{padding:.55rem .9rem;border-bottom:1px solid var(--border);color:var(--ink2);line-height:1.5;vertical-align:top;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:var(--surface2);}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:6px;overflow:hidden;margin-bottom:.75rem;}
+.panel-h{display:flex;align-items:center;gap:10px;padding:.9rem 1.1rem;cursor:pointer;transition:background .15s;user-select:none;}
+.panel-h:hover{background:var(--surface2);}
+.panel-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.panel-title{font-size:13.5px;font-weight:700;flex:1;color:var(--ink);}
+.panel-sub{font-size:12px;color:var(--ink3);}
+.panel-tog{color:var(--ink3);font-size:13px;transition:transform .2s;}
+.panel.open .panel-tog{transform:rotate(180deg);}
+.panel-body{display:none;padding:0 1.1rem 1.1rem;border-top:1px solid var(--border);}
+.panel.open .panel-body{display:block;}
+.panel-body h4{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--ink3);margin:1rem 0 .5rem;font-weight:700;}
+.panel-body p{font-size:13.5px;color:var(--ink2);line-height:1.75;margin-top:.6rem;}
+.tool-tabs{border:1px solid var(--border);border-radius:6px;overflow:hidden;margin:1.25rem 0;}
+.tool-tab-bar{display:flex;background:var(--surface2);border-bottom:1px solid var(--border);flex-wrap:wrap;}
+.ttab{padding:.55rem 1rem;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;cursor:pointer;color:var(--ink3);border-right:1px solid var(--border);transition:all .15s;user-select:none;}
+.ttab:hover{color:var(--ink);}
+.ttab.active{background:var(--surface);color:var(--accent);border-bottom:2px solid var(--accent);}
+.tool-pane{display:none;padding:1.25rem;}
+.tool-pane.active{display:block;}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin:1rem 0;}
+.cb{background:var(--red-bg);border:1px solid rgba(184,50,50,.15);border-radius:6px;padding:1rem;}
+.cg-box{background:var(--accent-bg);border:1px solid rgba(92,122,46,.15);border-radius:6px;padding:1rem;}
+.cmp-l{font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.12em;font-weight:700;margin-bottom:.6rem;}
+.cb .cmp-l{color:var(--red);}
+.cg-box .cmp-l{color:var(--accent);}
+.pill{font-size:11px;padding:3px 9px;border-radius:2px;font-family:'JetBrains Mono',monospace;font-weight:600;}
+.pr{background:var(--red-bg);color:var(--red);border:1px solid rgba(184,50,50,.2);}
+.pg{background:var(--accent-bg);color:var(--accent);border:1px solid rgba(92,122,46,.2);}
+.py{background:var(--yellow-bg);color:var(--yellow);border:1px solid rgba(138,106,16,.2);}
+.pb{background:var(--blue-bg);color:var(--blue);border:1px solid rgba(26,74,138,.2);}
+.pp{background:var(--purple-bg);color:var(--purple);border:1px solid rgba(106,42,154,.2);}
+.pt{background:var(--teal-bg);color:var(--teal);border:1px solid rgba(26,122,106,.2);}
+.pk{background:var(--pink-bg);color:var(--pink);border:1px solid rgba(154,42,90,.2);}
+.pill-row{display:flex;flex-wrap:wrap;gap:6px;margin:.5rem 0;}
+.rw-box{background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:1rem 1.1rem;margin:.85rem 0;}
+.rw-label{font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.12em;color:var(--red);margin-bottom:5px;font-weight:700;}
+.rw-box p{font-size:13px;color:var(--ink2);line-height:1.7;}
+.quiz-block{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:1.25rem;margin-bottom:1rem;}
+.quiz-q{font-size:14.5px;font-weight:700;color:var(--ink);margin-bottom:.85rem;line-height:1.55;}
+.quiz-opts{display:flex;flex-direction:column;gap:7px;}
+.qo{padding:.65rem 1rem;border:1px solid var(--border);border-radius:4px;cursor:pointer;font-size:13.5px;color:var(--ink2);background:var(--surface2);transition:all .15s;}
+.qo:hover{border-color:var(--accent);color:var(--ink);}
+.qo.correct{border-color:var(--accent);color:var(--accent);background:var(--accent-bg);cursor:default;}
+.qo.wrong{border-color:var(--red);color:var(--red);background:var(--red-bg);cursor:default;}
+.quiz-exp{font-size:13px;color:var(--ink2);line-height:1.7;padding:.75rem 1rem;background:var(--surface2);border-radius:4px;border-left:3px solid var(--accent);display:none;margin-top:.5rem;}
+.quiz-exp.show{display:block;}
+.challenge{background:var(--ink);border-radius:10px;padding:2rem;margin:3rem 0;position:relative;overflow:hidden;}
+.challenge::before{content:'';position:absolute;top:-60px;right:-60px;width:220px;height:220px;background:radial-gradient(circle,rgba(92,122,46,.15) 0%,transparent 70%);pointer-events:none;}
+.ch-ey{font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.15em;color:var(--accent);margin-bottom:.5rem;}
+.ch h3{font-family:'Libre Baskerville',serif;font-size:1.55rem;color:#fff;margin-bottom:.7rem;}
+.ch-desc{font-size:13.5px;color:rgba(255,255,255,.45);line-height:1.75;margin-bottom:1.25rem;}
+.scenario{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:5px;padding:1rem 1.1rem;margin-bottom:1.25rem;}
+.scenario p{font-size:13px;color:rgba(255,255,255,.55);line-height:1.75;}
+.scenario strong{color:rgba(255,255,255,.9);}
+.challenge textarea{width:100%;min-height:180px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:4px;padding:1rem;font-family:'JetBrains Mono',monospace;font-size:12px;color:rgba(255,255,255,.85);resize:vertical;outline:none;transition:border-color .2s;margin-bottom:1rem;}
+.challenge textarea:focus{border-color:var(--accent);}
+.challenge textarea::placeholder{color:rgba(255,255,255,.2);}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap;}
+.btn{padding:9px 20px;border-radius:4px;font-size:13px;font-family:'Sora',sans-serif;font-weight:700;cursor:pointer;border:1px solid;transition:all .15s;}
+.btn-p{background:var(--accent);color:#fff;border-color:var(--accent);}
+.btn-p:hover{background:#4a6424;}
+.btn-g{background:transparent;color:rgba(255,255,255,.45);border-color:rgba(255,255,255,.14);}
+.btn-g:hover{color:#fff;border-color:rgba(255,255,255,.35);}
+.ch-fb{margin-top:1rem;padding:1rem 1.1rem;border-radius:5px;font-size:13.5px;line-height:1.7;display:none;}
+.ch-fb.show{display:block;}
+.ch-fb.good{background:rgba(92,122,46,.15);border:1px solid rgba(92,122,46,.3);color:#a3e635;}
+.ch-fb.hint{background:rgba(252,211,77,.1);border:1px solid rgba(252,211,77,.25);color:#fcd34d;}
+.ch-fb.reveal{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.75);}
+.nav-footer{display:flex;justify-content:space-between;margin-top:4rem;padding-top:2rem;border-top:2px solid var(--border);}
+.nf-btn{padding:.85rem 1.5rem;border:1px solid var(--border);border-radius:4px;font-size:13px;cursor:pointer;background:var(--surface);color:var(--ink2);text-align:left;transition:all .15s;text-decoration:none;display:block;}
+.nf-btn:hover{border-color:var(--accent);}
+.nf-btn.next{background:var(--accent);color:#fff;border-color:var(--accent);text-align:right;}
+.nf-btn.next:hover{background:#4a6424;}
+.nf-dir{font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:var(--ink3);display:block;margin-bottom:3px;}
+.nf-btn.next .nf-dir{color:rgba(255,255,255,.4);}
+.nf-title{font-weight:700;display:block;}
+code{font-family:'JetBrains Mono',monospace;font-size:12px;background:rgba(0,0,0,.06);padding:1px 5px;border-radius:2px;color:var(--accent);}
+pre code{background:none;padding:0;color:inherit;font-size:inherit;}
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px;}
+@media(max-width:860px){.sidebar{display:none;}.main{margin-left:0;}.content{padding:1.5rem 1.1rem 3rem;}.level-strip,.two-col{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+<nav class="sidebar">
+  <div class="sb-brand"><div class="sb-badge">AppSec Engineer</div><h2>Application Security<br>Learning Path</h2></div>
+  <div class="sb-sect">Module 1 &mdash; Foundations</div>
+  <a class="nav-item done" href="#"><span class="num">01</span>OWASP Top 10 2021</a>
+  <a class="nav-item done" href="#"><span class="num">02</span>Secure SDLC</a>
+  <a class="nav-item done" href="#"><span class="num">03</span>Threat Modeling</a>
+  <div class="sb-sect">Module 2 &mdash; Testing Tools</div>
+  <a class="nav-item done" href="#"><span class="num">04</span>SAST</a>
+  <a class="nav-item done" href="#"><span class="num">05</span>DAST</a>
+  <a class="nav-item done" href="#"><span class="num">06</span>SCA</a>
+  <a class="nav-item done" href="#"><span class="num">07</span>IAST &amp; RASP</a>
+  <div class="sb-sect">Module 3 &mdash; API Security</div>
+  <a class="nav-item done" href="#"><span class="num">08</span>OWASP API Top 10</a>
+  <a class="nav-item done" href="#"><span class="num">09</span>API Security Testing</a>
+  <a class="nav-item done" href="#"><span class="num">10</span>GraphQL Security</a>
+  <div class="sb-sect">Module 4 &mdash; DevSecOps</div>
+  <a class="nav-item done" href="#"><span class="num">11</span>DevSecOps Pipeline</a>
+  <a class="nav-item done" href="#"><span class="num">12</span>Secrets Management</a>
+  <a class="nav-item done" href="#"><span class="num">13</span>Container Security</a>
+  <a class="nav-item done" href="#"><span class="num">14</span>Dependency Scanning</a>
+  <a class="nav-item active" href="#"><span class="num">15</span>SBOM</a>
+  <div class="sb-sect">Module 5 &mdash; Architecture</div>
+  <a class="nav-item" href="#"><span class="num">16</span>Security Architecture</a>
+  <a class="nav-item" href="#"><span class="num">17</span>Supply Chain Security</a>
+  <a class="nav-item" href="#"><span class="num">18</span>WAF</a>
+  <a class="nav-item" href="#"><span class="num">19</span>Code Review</a>
+  <a class="nav-item" href="#"><span class="num">20</span>RASP</a>
+</nav>
+
+<div class="main">
+<div class="topbar">
+  <div class="bc">appsec-engineer / module-4 / <span>sbom</span></div>
+  <div class="top-badge">Lesson 15 / 20</div>
+</div>
+<div class="content">
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-meta">
+    <span class="tag t-beg">Beginner &rarr; Advanced</span>
+    <span class="tag t-frm">Supply Chain</span>
+    <span class="tag t-time">~60 min</span>
+  </div>
+  <h1>Software Bill<br>of <span class="hl hl2">Materials</span></h1>
+  <p class="hero-sub">An SBOM is a formal, machine-readable inventory of every component in a piece of software &mdash; every library, dependency, version, and licence. When Log4Shell hit in December 2021, organisations that had SBOMs knew within hours which of their systems were exposed. Organisations without them spent days or weeks manually inventorying their software. Executive Order 14028 (US, 2021) mandated SBOMs for federal software procurement, triggering industry-wide adoption. This lesson covers what SBOMs are, the two major formats, every tool for generating and consuming them, VEX attestations, and a complete pipeline that makes SBOMs a living artefact rather than a one-time snapshot.</p>
+  <div class="level-strip">
+    <div class="lv-cell"><div class="lv-pip" style="background:var(--accent)"></div><div class="lv-label">Beginner</div><div class="lv-title">What SBOMs are &amp; why they matter</div><div class="lv-desc">SBOM definition, the Log4Shell case study, EO 14028, SPDX vs CycloneDX formats, when you need one</div></div>
+    <div class="lv-cell"><div class="lv-pip" style="background:var(--yellow)"></div><div class="lv-label">Intermediate</div><div class="lv-title">Generating SBOMs with Syft &amp; others</div><div class="lv-desc">Syft for containers and filesystems, cdxgen for Java/Node/Python, SBOM quality, attestations with cosign</div></div>
+    <div class="lv-cell"><div class="lv-pip" style="background:var(--red)"></div><div class="lv-label">Advanced</div><div class="lv-title">Consuming SBOMs, VEX &amp; pipeline</div><div class="lv-desc">Grype vulnerability scanning from SBOMs, VEX documents, SBOM diff, continuous monitoring, compliance workflows</div></div>
+  </div>
+</div>
+
+<!-- BEGINNER -->
+<div class="section">
+  <div class="eyebrow">&#x1F7E2; Beginner &mdash; What SBOMs Are and Why They Exist</div>
+  <div class="sec-title">The ingredient list for software</div>
+  <div class="sec-sub">A Software Bill of Materials is exactly what its name suggests: a list of every ingredient in your software product. The food industry analogy is deliberate &mdash; you cannot make informed decisions about what you consume if you do not know what is in it.</div>
+
+  <p style="font-size:14.5px;color:var(--ink2);line-height:1.8;margin-bottom:1rem;">Every modern application is composed largely of open source components. Without an SBOM, the question "do we use log4j anywhere?" requires manually inspecting every repository, every container image, and every deployed artefact. With an SBOM, it is a single query: <code>grep "log4j" sbom.json</code> or a structured database lookup across your entire fleet. The SBOM is the inventory that makes all downstream security work tractable at scale.</p>
+
+  <div class="callout cl-warn">
+    <div class="cl-icon">&#x26A0;&#xFE0F;</div>
+    <div class="cl-text"><strong>Log4Shell &mdash; the SBOM case study:</strong> CVE-2021-44228 was disclosed on 9 December 2021. CVSS 10.0. Every organisation running Java anywhere needed to know, immediately, whether they used log4j and in which versions. Organisations with SBOMs queried their inventory and had a definitive answer within hours. Organisations without them spent days manually grepping repositories and asking teams to self-report &mdash; and many missed instances that were buried 4&ndash;5 hops deep in transitive dependencies. CISA and NSA both published guidance explicitly citing this incident as justification for mandatory SBOM generation.</div>
+  </div>
+
+  <div class="panel" id="pan-what">
+    <div class="panel-h" onclick="tp('pan-what')">
+      <div class="panel-dot" style="background:var(--blue)"></div>
+      <div class="panel-title">What an SBOM contains &mdash; the required fields</div>
+      <div class="panel-sub">NTIA minimum elements and what each enables</div>
+      <div class="panel-tog">&#x25BC;</div>
+    </div>
+    <div class="panel-body">
+      <p>The US National Telecommunications and Information Administration (NTIA) defined the minimum elements an SBOM must contain to be useful for security purposes. These are not the only fields an SBOM can contain, but they are the floor every SBOM must meet.</p>
+      <table>
+        <tr><th>NTIA minimum element</th><th>Example value</th><th>Why it matters</th></tr>
+        <tr><td style="font-weight:700;color:var(--accent)">Supplier name</td><td>Apache Software Foundation</td><td>Identifies who is responsible for the component &mdash; enables vendor communication on CVEs</td></tr>
+        <tr><td style="font-weight:700;color:var(--accent)">Component name</td><td>log4j-core</td><td>The package name for vulnerability database lookups</td></tr>
+        <tr><td style="font-weight:700;color:var(--accent)">Component version</td><td>2.14.1</td><td>Determines which CVEs apply. log4j-core 2.15.0 is not vulnerable to Log4Shell; 2.14.1 is.</td></tr>
+        <tr><td style="font-weight:700;color:var(--accent)">Other unique identifiers</td><td>CPE: cpe:/a:apache:log4j:2.14.1 / PURL: pkg:maven/org.apache.logging.log4j/log4j-core@2.14.1</td><td>Machine-readable identifiers for cross-referencing with NVD, OSV, and other vuln databases</td></tr>
+        <tr><td style="font-weight:700;color:var(--accent)">Dependency relationship</td><td>DEPENDS_ON, CONTAINS</td><td>Enables graph traversal to find transitive dependencies and determine which component included a vulnerable one</td></tr>
+        <tr><td style="font-weight:700;color:var(--accent)">Author of SBOM data</td><td>CycloneDX-Go v0.9.0</td><td>Provenance of the SBOM itself &mdash; who generated it and what tool was used</td></tr>
+        <tr><td style="font-weight:700;color:var(--accent)">Timestamp</td><td>2024-01-15T10:30:00Z</td><td>Determines freshness. An SBOM from last year may not reflect current dependencies.</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="panel" id="pan-formats">
+    <div class="panel-h" onclick="tp('pan-formats')">
+      <div class="panel-dot" style="background:var(--purple)"></div>
+      <div class="panel-title">SPDX vs CycloneDX &mdash; the two major SBOM formats</div>
+      <div class="panel-sub">When to use each, what each excels at, and the key structural differences</div>
+      <div class="panel-tog">&#x25BC;</div>
+    </div>
+    <div class="panel-body">
+      <table>
+        <tr><th>Dimension</th><th>SPDX</th><th>CycloneDX</th></tr>
+        <tr><td style="font-weight:600">Full name</td><td>Software Package Data Exchange</td><td>CycloneDX (OWASP project)</td></tr>
+        <tr><td style="font-weight:600">Governance</td><td>Linux Foundation / ISO standard (ISO 5962)</td><td>OWASP project</td></tr>
+        <tr><td style="font-weight:600">Primary focus</td><td>Licence compliance and provenance</td><td>Security &mdash; vulnerabilities, attestations, VEX</td></tr>
+        <tr><td style="font-weight:600">File formats</td><td>JSON, YAML, XML, RDF, tag-value</td><td>JSON, XML, Protobuf</td></tr>
+        <tr><td style="font-weight:600">Tooling support</td><td>Good &mdash; especially for licence analysis</td><td>Excellent &mdash; most modern security tools prefer CDX</td></tr>
+        <tr><td style="font-weight:600">VEX support</td><td>Partial (via SPDX 2.3+)</td><td>Native first-class support</td></tr>
+        <tr><td style="font-weight:600">Best for</td><td>Legal / licence compliance workflows, ISO compliance</td><td>Security workflows, vulnerability tracking, DevSecOps</td></tr>
+        <tr><td style="font-weight:600">EO 14028 mention</td><td>Yes &mdash; named explicitly</td><td>Yes &mdash; named explicitly</td></tr>
+      </table>
+      <h4>Practical guidance</h4>
+      <p>If your primary use case is security (CVE scanning, incident response, supply chain security): use CycloneDX. Its security-oriented design, native VEX support, and better tooling support in the security ecosystem make it the better choice. If your primary use case is licence compliance or you are delivering software to a customer with specific SPDX requirements: use SPDX. In practice many teams generate both. Syft and cdxgen both support both formats.</p>
+    </div>
+  </div>
+
+  <div class="panel" id="pan-eo14028">
+    <div class="panel-h" onclick="tp('pan-eo14028')">
+      <div class="panel-dot" style="background:var(--teal)"></div>
+      <div class="panel-title">EO 14028 &amp; the regulatory landscape &mdash; when SBOMs are mandatory</div>
+      <div class="panel-sub">US federal requirements and the downstream commercial pressure they create</div>
+      <div class="panel-tog">&#x25BC;</div>
+    </div>
+    <div class="panel-body">
+      <table>
+        <tr><th>Regulation / Framework</th><th>Who it applies to</th><th>SBOM requirement</th><th>Since</th></tr>
+        <tr><td style="font-weight:700;color:var(--teal)">US EO 14028</td><td>Software vendors selling to US federal government</td><td>Must provide SBOM with software. SPDX or CycloneDX accepted.</td><td>May 2021</td></tr>
+        <tr><td style="font-weight:700;color:var(--blue)">FDA (medical devices)</td><td>Medical device manufacturers</td><td>SBOM required for all new cybersecurity device submissions</td><td>Oct 2023</td></tr>
+        <tr><td style="font-weight:700;color:var(--accent)">EU Cyber Resilience Act</td><td>Products with digital elements sold in EU</td><td>SBOM required as part of vulnerability handling obligations</td><td>2027 (phased)</td></tr>
+        <tr><td style="font-weight:700;color:var(--purple)">NIST SP 800-204D</td><td>Federal agencies, contractors</td><td>SBOM generation and management guidance for microservices</td><td>2023</td></tr>
+        <tr><td style="font-weight:700;color:var(--yellow)">DoD SCRM</td><td>Department of Defense contractors</td><td>SBOM increasingly required in RFPs as supply chain risk control</td><td>2022&ndash;</td></tr>
+      </table>
+      <div class="callout cl-tip" style="margin-top:.75rem;">
+        <div class="cl-icon">&#x1F4A1;</div>
+        <div class="cl-text"><strong>Commercial momentum:</strong> EO 14028 applies directly to federal vendors, but its practical effect is much wider. Large enterprise customers now routinely request SBOMs as part of vendor security questionnaires. Any software company selling to healthcare, finance, or government is increasingly expected to produce SBOMs on request. Building SBOM generation into your pipeline now means you are ready when a customer asks.</div>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- SBOM FORMAT EXAMPLES -->
+<div class="section">
+  <div class="eyebrow">&#x1F7E2; Beginner &mdash; Format Deep Dive</div>
+  <div class="sec-title">What SBOM files actually look like</div>
+  <div class="sec-sub">Understanding the structure of both formats is essential for consuming and producing SBOMs programmatically.</div>
+
+  <div class="tool-tabs">
+    <div class="tool-tab-bar">
+      <div class="ttab active" onclick="switchTab(this,'t-cdx-json')">CycloneDX JSON</div>
+      <div class="ttab" onclick="switchTab(this,'t-spdx-json')">SPDX JSON</div>
+      <div class="ttab" onclick="switchTab(this,'t-purl')">Package URLs (PURL)</div>
+    </div>
+
+    <div class="tool-pane active" id="t-cdx-json">
+      <p style="font-size:13.5px;color:var(--ink2);line-height:1.75;margin-bottom:1rem;">CycloneDX JSON is the most widely supported format in security tooling. Every component has a PURL for unambiguous identification, a hash for integrity verification, and structured licence information. The <code>vulnerabilities</code> section is native to CycloneDX and absent from SPDX.</p>
+<pre>
+<span class="ctag">CycloneDX 1.5 JSON (abbreviated)</span>
+{
+  <span class="cs">"bomFormat"</span>: <span class="cs">"CycloneDX"</span>,
+  <span class="cs">"specVersion"</span>: <span class="cs">"1.5"</span>,
+  <span class="cs">"serialNumber"</span>: <span class="cs">"urn:uuid:3e671687-395b-41f5-a30f-a58921a69b79"</span>,
+  <span class="cs">"version"</span>: <span class="ce">1</span>,
+  <span class="cs">"metadata"</span>: {
+    <span class="cs">"timestamp"</span>: <span class="cs">"2024-01-15T10:30:00Z"</span>,
+    <span class="cs">"tools"</span>: [{ <span class="cs">"name"</span>: <span class="cs">"syft"</span>, <span class="cs">"version"</span>: <span class="cs">"0.98.0"</span> }],
+    <span class="cs">"component"</span>: {
+      <span class="cs">"type"</span>: <span class="cs">"container"</span>,
+      <span class="cs">"name"</span>: <span class="cs">"myapp"</span>,
+      <span class="cs">"version"</span>: <span class="cs">"1.2.3"</span>
+    }
+  },
+  <span class="cs">"components"</span>: [
+    {
+      <span class="cs">"type"</span>: <span class="cs">"library"</span>,
+      <span class="cs">"name"</span>: <span class="cs">"django"</span>,
+      <span class="cs">"version"</span>: <span class="cs">"4.2.3"</span>,
+      <span class="cs">"purl"</span>: <span class="cs">"pkg:pypi/django@4.2.3"</span>,
+      <span class="cs">"hashes"</span>: [
+        { <span class="cs">"alg"</span>: <span class="cs">"SHA-256"</span>,
+          <span class="cs">"content"</span>: <span class="cs">"e5d9d5b9...abc"</span> }
+      ],
+      <span class="cs">"licenses"</span>: [{ <span class="cs">"license"</span>: { <span class="cs">"id"</span>: <span class="cs">"BSD-3-Clause"</span> } }],
+      <span class="cs">"supplier"</span>: { <span class="cs">"name"</span>: <span class="cs">"Django Software Foundation"</span> }
+    },
+    {
+      <span class="cs">"type"</span>: <span class="cs">"library"</span>,
+      <span class="cs">"name"</span>: <span class="cs">"urllib3"</span>,
+      <span class="cs">"version"</span>: <span class="cs">"2.0.4"</span>,
+      <span class="cs">"purl"</span>: <span class="cs">"pkg:pypi/urllib3@2.0.4"</span>,
+      <span class="cs">"licenses"</span>: [{ <span class="cs">"license"</span>: { <span class="cs">"id"</span>: <span class="cs">"MIT"</span> } }]
+    }
+  ],
+  <span class="cs">"dependencies"</span>: [
+    {
+      <span class="cs">"ref"</span>: <span class="cs">"pkg:pypi/django@4.2.3"</span>,
+      <span class="cs">"dependsOn"</span>: [
+        <span class="cs">"pkg:pypi/sqlparse@0.4.4"</span>,
+        <span class="cs">"pkg:pypi/asgiref@3.7.2"</span>
+      ]
+    }
+  ]
+}
+</pre>
+    </div>
+
+    <div class="tool-pane" id="t-spdx-json">
+      <p style="font-size:13.5px;color:var(--ink2);line-height:1.75;margin-bottom:1rem;">SPDX JSON centres on the concept of <em>packages</em> and <em>relationships</em>. Its licence expression syntax (<code>SPDXID</code> references) is richer than CycloneDX for complex multi-licence situations. SPDX is an ISO standard (ISO/IEC 5962:2021), which matters for formal compliance.</p>
+<pre>
+<span class="ctag">SPDX 2.3 JSON (abbreviated)</span>
+{
+  <span class="cs">"spdxVersion"</span>: <span class="cs">"SPDX-2.3"</span>,
+  <span class="cs">"dataLicense"</span>: <span class="cs">"CC0-1.0"</span>,
+  <span class="cs">"SPDXID"</span>: <span class="cs">"SPDXRef-DOCUMENT"</span>,
+  <span class="cs">"name"</span>: <span class="cs">"myapp-1.2.3"</span>,
+  <span class="cs">"documentNamespace"</span>: <span class="cs">"https://example.com/sbom/myapp-1.2.3"</span>,
+  <span class="cs">"creationInfo"</span>: {
+    <span class="cs">"created"</span>: <span class="cs">"2024-01-15T10:30:00Z"</span>,
+    <span class="cs">"creators"</span>: [<span class="cs">"Tool: syft-0.98.0"</span>]
+  },
+  <span class="cs">"packages"</span>: [
+    {
+      <span class="cs">"SPDXID"</span>: <span class="cs">"SPDXRef-Package-django-4.2.3"</span>,
+      <span class="cs">"name"</span>: <span class="cs">"django"</span>,
+      <span class="cs">"versionInfo"</span>: <span class="cs">"4.2.3"</span>,
+      <span class="cs">"downloadLocation"</span>: <span class="cs">"https://pypi.org/project/Django/4.2.3/"</span>,
+      <span class="cs">"licenseConcluded"</span>: <span class="cs">"BSD-3-Clause"</span>,
+      <span class="cs">"licenseDeclared"</span>: <span class="cs">"BSD-3-Clause"</span>,
+      <span class="cs">"externalRefs"</span>: [
+        {
+          <span class="cs">"referenceCategory"</span>: <span class="cs">"PACKAGE-MANAGER"</span>,
+          <span class="cs">"referenceType"</span>: <span class="cs">"purl"</span>,
+          <span class="cs">"referenceLocator"</span>: <span class="cs">"pkg:pypi/django@4.2.3"</span>
+        }
+      ]
+    }
+  ],
+  <span class="cs">"relationships"</span>: [
+    {
+      <span class="cs">"spdxElementId"</span>: <span class="cs">"SPDXRef-DOCUMENT"</span>,
+      <span class="cs">"relationshipType"</span>: <span class="cs">"DESCRIBES"</span>,
+      <span class="cs">"relatedSpdxElement"</span>: <span class="cs">"SPDXRef-Package-myapp-1.2.3"</span>
+    },
+    {
+      <span class="cs">"spdxElementId"</span>: <span class="cs">"SPDXRef-Package-myapp-1.2.3"</span>,
+      <span class="cs">"relationshipType"</span>: <span class="cs">"DEPENDS_ON"</span>,
+      <span class="cs">"relatedSpdxElement"</span>: <span class="cs">"SPDXRef-Package-django-4.2.3"</span>
+    }
+  ]
+}
+</pre>
+    </div>
+
+    <div class="tool-pane" id="t-purl">
+      <p style="font-size:13.5px;color:var(--ink2);line-height:1.75;margin-bottom:1rem;">Package URLs (PURLs) are the universal identifier used in both SPDX and CycloneDX. They provide an unambiguous, cross-ecosystem way to identify any package. A PURL encodes the package type, namespace, name, version, and optional qualifiers and subpath in a standard URL-like scheme.</p>
+<pre>
+<span class="cm"># PURL syntax:</span>
+<span class="cm"># pkg:type/namespace/name@version?qualifiers#subpath</span>
+
+<span class="cm"># Python (PyPI)</span>
+pkg:pypi/django@4.2.3
+pkg:pypi/requests@2.31.0
+
+<span class="cm"># Node.js (npm) &mdash; scoped package</span>
+pkg:npm/%40babel/core@7.22.0      <span class="cm"># @ encoded as %40</span>
+pkg:npm/lodash@4.17.21
+
+<span class="cm"># Java (Maven) &mdash; namespace is groupId</span>
+pkg:maven/org.apache.logging.log4j/log4j-core@2.14.1
+pkg:maven/org.springframework/spring-core@6.0.11
+
+<span class="cm"># Go (Go modules) &mdash; namespace is module path</span>
+pkg:golang/github.com/gin-gonic/gin@v1.9.1
+
+<span class="cm"># Ruby (RubyGems)</span>
+pkg:gem/rails@7.0.8
+
+<span class="cm"># Docker/container image (with digest)</span>
+pkg:oci/python@sha256:abc123?repository_url=python&tag=3.12-slim
+
+<span class="cm"># Alpine APK (OS package)</span>
+pkg:apk/alpine/musl@1.2.4-r2?distro=alpine-3.18
+
+<span class="cm"># Debian package</span>
+pkg:deb/debian/curl@7.88.1-10+deb12u4?distro=bookworm
+
+<span class="cm"># PURLs enable cross-database lookups:</span>
+<span class="cm"># NVD, OSV, GitHub Advisory, Snyk all accept PURLs as query identifiers</span>
+<span class="cm"># One PURL works across all vulnerability databases</span>
+</pre>
+    </div>
+  </div>
+</div>
+
+<!-- INTERMEDIATE: GENERATION -->
+<div class="section">
+  <div class="eyebrow">&#x1F7E1; Intermediate &mdash; Generating SBOMs</div>
+  <div class="sec-title">Tools for producing SBOMs from every artefact type</div>
+  <div class="sec-sub">An SBOM is only useful if it is accurate and comprehensive. Different tools have different coverage across ecosystems. Here is when to use each.</div>
+
+  <div class="panel" id="pan-syft">
+    <div class="panel-h" onclick="tp('pan-syft')">
+      <div class="panel-dot" style="background:var(--accent)"></div>
+      <div class="panel-title">Syft &mdash; the Swiss Army knife of SBOM generation</div>
+      <div class="panel-sub">Anchore's Syft generates SBOMs from container images, directories, and tarballs across 50+ ecosystems</div>
+      <div class="panel-tog">&#x25BC;</div>
+    </div>
+    <div class="panel-body">
+      <p>Syft is the most widely used open-source SBOM generator. It understands container image layers, filesystem layouts, language-specific package manifests (pip, npm, go.sum, Cargo.lock, Gemfile.lock, pom.xml), and OS package databases (dpkg, rpm, apk). It outputs CycloneDX, SPDX, and its own native format, in JSON, XML, or table form.</p>
+<pre>
+<span class="ctag">Syft &mdash; SBOM generation</span>
+<span class="cm"># Install</span>
+$ curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh \
+    | sh -s -- -b /usr/local/bin
+
+<span class="cm"># Generate from a container image (most comprehensive)</span>
+$ syft myapp:1.2.3 -o cyclonedx-json=sbom.cdx.json
+<span class="cm"># Scans: OS packages (apt/dpkg), Python (pip), Node.js (npm),
+#  Go modules, Ruby gems, Java jars, Rust crates, .NET assemblies</span>
+
+<span class="cm"># Generate from a container image &mdash; multiple output formats at once</span>
+$ syft myapp:1.2.3 \
+    -o cyclonedx-json=sbom.cdx.json \
+    -o spdx-json=sbom.spdx.json \
+    -o table                          <span class="cm"># human-readable to stdout</span>
+
+<span class="cm"># Generate from a local directory (source code, not built image)</span>
+$ syft dir:./myapp -o cyclonedx-json=sbom-source.cdx.json
+
+<span class="cm"># Generate from a Docker image tarball (offline, no Docker daemon)</span>
+$ docker save myapp:1.2.3 -o myapp.tar
+$ syft myapp.tar -o cyclonedx-json=sbom.cdx.json
+
+<span class="cm"># Scope: only application packages, not OS packages</span>
+$ syft myapp:1.2.3 --scope all-layers -o cyclonedx-json=sbom.cdx.json
+<span class="cm"># vs</span>
+$ syft myapp:1.2.3 --scope squashed -o cyclonedx-json=sbom.cdx.json
+
+<span class="cm"># GitHub Actions &mdash; generate SBOM as part of build pipeline</span>
+- name: Generate SBOM with Syft
+  uses: anchore/sbom-action@v0
+  with:
+    image: myapp:${{ github.sha }}
+    artifact-name: sbom-${{ github.sha }}.cdx.json
+    format: cyclonedx-json
+    output-file: sbom.cdx.json
+
+<span class="cm"># Attach SBOM as GitHub release asset</span>
+- name: Attach SBOM to release
+  uses: softprops/action-gh-release@v1
+  with:
+    files: sbom.cdx.json
+</pre>
+      <h4>What Syft finds vs what it misses</h4>
+      <table>
+        <tr><th>Source</th><th>Syft finds</th><th>Syft may miss</th></tr>
+        <tr><td>Container image</td><td>All OS packages (dpkg/rpm/apk), all language packages in standard locations</td><td>Packages installed via curl | sh, vendored code without manifests</td></tr>
+        <tr><td>Source directory</td><td>All lock files and manifests in standard locations</td><td>Dynamically downloaded deps at build time, generated code</td></tr>
+        <tr><td>Java fat JAR</td><td>Nested JARs with their own POM files</td><td>Shaded/relocated classes that lost their MANIFEST.MF</td></tr>
+        <tr><td>Go binary</td><td>Go module info embedded in binary (Go 1.18+)</td><td>C dependencies via CGO</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="panel" id="pan-cdxgen">
+    <div class="panel-h" onclick="tp('pan-cdxgen')">
+      <div class="panel-dot" style="background:var(--blue)"></div>
+      <div class="panel-title">cdxgen &mdash; build-system-aware SBOM generation</div>
+      <div class="panel-sub">OWASP's cdxgen understands build tools and produces more accurate SBOMs for complex Java, Node.js, and Python projects</div>
+      <div class="panel-tog">&#x25BC;</div>
+    </div>
+    <div class="panel-body">
+      <p>cdxgen (by OWASP) differs from Syft in a key way: it can invoke the actual build system to resolve dependencies, rather than just reading manifest files. For Java projects with Maven or Gradle, this means it resolves the full dependency graph as the build tool would, catching BOMs (Bill of Materials imports), dependency management sections, and optional dependencies. It also supports SBOM generation for Kubernetes manifests, Terraform, and GitHub Actions workflows.</p>
+<pre>
+<span class="ctag">cdxgen</span>
+<span class="cm"># Install</span>
+$ npm install -g @cyclonedx/cdxgen
+
+<span class="cm"># Auto-detect project type and generate SBOM</span>
+$ cdxgen -o sbom.cdx.json
+
+<span class="cm"># Specify project type explicitly</span>
+$ cdxgen -t java -o sbom.cdx.json     <span class="cm"># Maven/Gradle</span>
+$ cdxgen -t python -o sbom.cdx.json   <span class="cm"># pip/Poetry/pipenv</span>
+$ cdxgen -t nodejs -o sbom.cdx.json   <span class="cm"># npm/yarn/pnpm</span>
+
+<span class="cm"># Generate with evidence (shows WHERE each dep was found)</span>
+$ cdxgen --evidence -o sbom.cdx.json
+
+<span class="cm"># Generate SBOM for a container image</span>
+$ cdxgen -t docker --image myapp:1.2.3 -o sbom.cdx.json
+
+<span class="cm"># Java with Maven &mdash; resolves via mvn dependency:tree</span>
+$ cdxgen -t maven -o sbom.cdx.json
+<span class="cm"># Much more accurate than reading pom.xml alone:
+# handles BOMs, optional deps, version management sections</span>
+
+<span class="cm"># Generate SBOM for Kubernetes YAML</span>
+$ cdxgen -t k8s -o k8s-sbom.cdx.json ./k8s/
+<span class="cm"># Finds all container images referenced in manifests</span>
+
+<span class="cm"># Multi-language monorepo</span>
+$ cdxgen --multi-project -o sbom.cdx.json
+</pre>
+    </div>
+  </div>
+
+  <div class="panel" id="pan-quality">
+    <div class="panel-h" onclick="tp('pan-quality')">
+      <div class="panel-dot" style="background:var(--yellow)"></div>
+      <div class="panel-title">SBOM quality &mdash; validating that your SBOM is actually useful</div>
+      <div class="panel-sub">A low-quality SBOM gives false confidence. These are the quality signals to check.</div>
+      <div class="panel-tog">&#x25BC;</div>
+    </div>
+    <div class="panel-body">
+      <table>
+        <tr><th>Quality dimension</th><th>How to check</th><th>Why it matters</th></tr>
+        <tr><td style="font-weight:700;color:var(--accent)">PURL completeness</td><td><code>jq '[.components[] | select(.purl == null)] | length' sbom.cdx.json</code> should be 0</td><td>Components without PURLs cannot be matched against vulnerability databases</td></tr>
+        <tr><td style="font-weight:700;color:var(--accent)">Version completeness</td><td><code>jq '[.components[] | select(.version == null or .version == "")] | length' sbom.cdx.json</code> should be 0</td><td>Unknown versions mean the CVE scanner must assume worst-case or skip the component</td></tr>
+        <tr><td style="font-weight:700;color:var(--yellow)">Dependency relationships</td><td><code>jq '.dependencies | length' sbom.cdx.json</code> should be &gt; 0</td><td>Without relationships, you cannot trace which direct dep introduced a transitive vulnerable component</td></tr>
+        <tr><td style="font-weight:700;color:var(--yellow)">Hash presence</td><td><code>jq '[.components[] | select(.hashes == null or (.hashes | length) == 0)] | length' sbom.cdx.json</code></td><td>Hashes verify component integrity &mdash; ensures the component is exactly what it claims to be</td></tr>
+        <tr><td style="font-weight:700;color:var(--blue)">Metadata completeness</td><td>Check <code>.metadata.timestamp</code>, <code>.metadata.tools</code>, <code>.metadata.component</code> are all present</td><td>Timestamp shows freshness; tools show provenance; component identifies what the SBOM describes</td></tr>
+        <tr><td style="font-weight:700;color:var(--blue)">Licence data</td><td><code>jq '[.components[] | select(.licenses == null or (.licenses | length) == 0)] | length' sbom.cdx.json</code></td><td>Missing licence data means licence compliance checks are incomplete</td></tr>
+      </table>
+<pre>
+<span class="ctag">SBOM quality validation script</span>
+<span class="cf">import</span> json, sys
+
+sbom = json.load(open(<span class="cs">'sbom.cdx.json'</span>))
+components = sbom.get(<span class="cs">'components'</span>, [])
+issues = []
+
+missing_purl    = [c[<span class="cs">'name'</span>] <span class="cf">for</span> c <span class="cf">in</span> components <span class="cf">if not</span> c.get(<span class="cs">'purl'</span>)]
+missing_version = [c[<span class="cs">'name'</span>] <span class="cf">for</span> c <span class="cf">in</span> components <span class="cf">if not</span> c.get(<span class="cs">'version'</span>)]
+missing_license = [c[<span class="cs">'name'</span>] <span class="cf">for</span> c <span class="cf">in</span> components <span class="cf">if not</span> c.get(<span class="cs">'licenses'</span>)]
+
+<span class="cf">if</span> missing_purl:
+    issues.append(<span class="cs">f"  {len(missing_purl)} components missing PURL: {missing_purl[:3]}"</span>)
+<span class="cf">if</span> missing_version:
+    issues.append(<span class="cs">f"  {len(missing_version)} components missing version"</span>)
+<span class="cf">if not</span> sbom.get(<span class="cs">'metadata'</span>, {}).get(<span class="cs">'timestamp'</span>):
+    issues.append(<span class="cs">"  Missing metadata.timestamp"</span>)
+<span class="cf">if not</span> sbom.get(<span class="cs">'dependencies'</span>):
+    issues.append(<span class="cs">"  No dependency relationships recorded"</span>)
+
+<span class="cf">if</span> issues:
+    print(<span class="cs">"SBOM quality issues:"</span>)
+    <span class="cf">for</span> i <span class="cf">in</span> issues: print(i)
+    sys.exit(<span class="ce">1</span>)
+<span class="cf">else</span>:
+    print(<span class="cs">f"SBOM quality: PASS ({len(components)} components, all with PURL and version)"</span>)
+</pre>
+    </div>
+  </div>
+
+  <div class="panel" id="pan-attest">
+    <div class="panel-h" onclick="tp('pan-attest')">
+      <div class="panel-dot" style="background:var(--teal)"></div>
+      <div class="panel-title">SBOM attestation with cosign &mdash; proving the SBOM came from your pipeline</div>
+      <div class="panel-sub">Attaching a signed SBOM to a container image so consumers can verify its authenticity</div>
+      <div class="panel-tog">&#x25BC;</div>
+    </div>
+    <div class="panel-body">
+      <p>Generating an SBOM and publishing it alongside your image is useful. But how does a consumer know the SBOM wasn't tampered with or fabricated by an attacker? Cosign attestations cryptographically bind the SBOM to the container image digest, signed with your pipeline's private key. The consumer verifies the signature with your public key before trusting the SBOM.</p>
+<pre>
+<span class="ctag">cosign &mdash; SBOM attestation</span>
+<span class="cm"># 1. Generate SBOM after building the image</span>
+$ syft myapp:$SHA -o cyclonedx-json=sbom.cdx.json
+
+<span class="cm"># 2. Attach SBOM as a signed attestation on the image</span>
+$ cosign attest \
+    --predicate sbom.cdx.json \
+    --type cyclonedx \
+    --key cosign.key \
+    registry.io/myapp@$DIGEST
+<span class="cm"># Signs the SBOM and stores it in the OCI registry alongside the image
+# The attestation is linked to the specific image digest (immutable)</span>
+
+<span class="cm"># 3. Verify the attestation (consumer side)</span>
+$ cosign verify-attestation \
+    --key cosign.pub \
+    --type cyclonedx \
+    registry.io/myapp@$DIGEST \
+    | jq '.payload | @base64d | fromjson | .predicate.components | length'
+<span class="cm"># If signature verifies: prints component count
+# If tampered or missing: cosign exits non-zero</span>
+
+<span class="cm"># 4. Extract and use the SBOM (verified)</span>
+$ cosign verify-attestation \
+    --key cosign.pub \
+    --type cyclonedx \
+    registry.io/myapp@$DIGEST \
+    | jq -r '.payload | @base64d | fromjson | .predicate' \
+    > verified-sbom.cdx.json
+
+<span class="cm"># Full GitHub Actions workflow:</span>
+- name: Generate SBOM
+  run: syft myapp:${{ github.sha }} -o cyclonedx-json=sbom.cdx.json
+
+- name: Attest SBOM to image
+  run: |
+    DIGEST=$(docker inspect --format='{{index .RepoDigests 0}}' \
+             registry.io/myapp:${{ github.sha }} | cut -d@ -f2)
+    cosign attest \
+      --predicate sbom.cdx.json \
+      --type cyclonedx \
+      --key cosign.key \
+      registry.io/myapp@$DIGEST
+  env:
+    COSIGN_PASSWORD: ${{ secrets.COSIGN_KEY_PASSWORD }}
+</pre>
+    </div>
+  </div>
+</div>
+<!-- ADVANCED: CONSUMING SBOMs -->
+<div class="section">
+  <div class="eyebrow">&#x1F534; Advanced &mdash; Consuming SBOMs</div>
+  <div class="sec-title">Scanning SBOMs for vulnerabilities and tracking drift</div>
+  <div class="sec-sub">An SBOM by itself is an inventory. Its security value comes from feeding it into vulnerability scanners, diffing it between releases to detect unexpected changes, and querying it during incident response.</div>
+
+  <div class="panel" id="pan-grype">
+    <div class="panel-h" onclick="tp('pan-grype')">
+      <div class="panel-dot" style="background:var(--accent)"></div>
+      <div class="panel-title">Grype &mdash; scanning an SBOM for vulnerabilities</div>
+      <div class="panel-sub">Generate once, scan many times without re-pulling the image</div>
+      <div class="panel-tog">&#x25BC;</div>
+    </div>
+    <div class="panel-body">
+      <p>The generate-once, scan-many pattern is one of the most valuable SBOM use cases. You generate the SBOM once during CI as part of the build. You can then scan it with Grype at any future time &mdash; without re-pulling or re-building the image &mdash; to check whether newly published CVEs affect that particular version of your software. This is how you detect that a production image from 6 months ago is now vulnerable, without needing to rebuild it.</p>
+<pre>
+<span class="ctag">Grype &mdash; SBOM-based vulnerability scanning</span>
+<span class="cm"># Install Grype</span>
+$ curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh \
+    | sh -s -- -b /usr/local/bin
+
+<span class="cm"># Scan an SBOM directly (no image pull needed)</span>
+$ grype sbom:./sbom.cdx.json
+
+<span class="cm"># Generate SBOM with Syft, then scan &mdash; this is the CI pattern</span>
+$ syft myapp:1.2.3 -o cyclonedx-json=sbom.cdx.json
+$ grype sbom:./sbom.cdx.json --fail-on high --only-fixed
+
+<span class="cm"># JSON output for parsing and dashboarding</span>
+$ grype sbom:./sbom.cdx.json --output json > grype-report.json
+
+<span class="cm"># Parse: count HIGH and CRITICAL with available fix</span>
+<span class="cf">import</span> json, sys
+data = json.load(open(<span class="cs">'grype-report.json'</span>))
+actionable = [
+    m <span class="cf">for</span> m <span class="cf">in</span> data.get(<span class="cs">'matches'</span>, [])
+    <span class="cf">if</span> m[<span class="cs">'vulnerability'</span>][<span class="cs">'severity'</span>] <span class="cf">in</span> (<span class="cs">'High'</span>, <span class="cs">'Critical'</span>)
+    <span class="cf">and</span> m[<span class="cs">'vulnerability'</span>].get(<span class="cs">'fix'</span>, {}).get(<span class="cs">'state'</span>) == <span class="cs">'fixed'</span>
+]
+<span class="cf">if</span> actionable:
+    <span class="cf">for</span> m <span class="cf">in</span> actionable:
+        v = m[<span class="cs">'vulnerability'</span>]
+        a = m[<span class="cs">'artifact'</span>]
+        print(<span class="cs">f"  {v['id']} ({v['severity']}) in {a['name']}@{a['version']}"</span>)
+        print(<span class="cs">f"    Fix: {v['fix'].get('versions', [])}"</span>)
+    sys.exit(<span class="ce">1</span>)
+
+<span class="cm"># .grype.yaml: persistent ignore rules</span>
+ignore:
+  - vulnerability: CVE-2023-12345
+    package:
+      name: libssl
+      version: 1.1.1n
+    reason: <span class="cs">"Not reachable in our build. Ticket SEC-234."</span>
+</pre>
+    </div>
+  </div>
+
+  <div class="panel" id="pan-vex">
+    <div class="panel-h" onclick="tp('pan-vex')">
+      <div class="panel-dot" style="background:var(--purple)"></div>
+      <div class="panel-title">VEX &mdash; Vulnerability Exploitability eXchange</div>
+      <div class="panel-sub">Communicating to downstream consumers whether a CVE in your SBOM actually affects them</div>
+      <div class="panel-tog">&#x25BC;</div>
+    </div>
+    <div class="panel-body">
+      <p>A VEX document is a statement from a software supplier about whether a specific CVE is exploitable in a specific version of their product. When you ship an SBOM and a consumer's scanner finds CVE-2023-XXXXX in a library you include, they cannot tell from the SBOM alone whether it affects them. Your VEX document says: "CVE-2023-XXXXX is in libX which we include, but the vulnerable function is never called in our product, so you are <strong>not affected</strong>." This stops the consumer from spending time chasing a phantom vulnerability.</p>
+<pre>
+<span class="ctag">CycloneDX VEX document (JSON)</span>
+{
+  <span class="cs">"bomFormat"</span>: <span class="cs">"CycloneDX"</span>,
+  <span class="cs">"specVersion"</span>: <span class="cs">"1.5"</span>,
+  <span class="cs">"version"</span>: <span class="ce">1</span>,
+  <span class="cs">"metadata"</span>: {
+    <span class="cs">"timestamp"</span>: <span class="cs">"2024-01-15T10:30:00Z"</span>,
+    <span class="cs">"component"</span>: {
+      <span class="cs">"name"</span>: <span class="cs">"myapp"</span>, <span class="cs">"version"</span>: <span class="cs">"1.2.3"</span>
+    }
+  },
+  <span class="cs">"vulnerabilities"</span>: [
+    {
+      <span class="cs">"id"</span>: <span class="cs">"CVE-2023-44271"</span>,
+      <span class="cs">"source"</span>: { <span class="cs">"name"</span>: <span class="cs">"NVD"</span>, <span class="cs">"url"</span>: <span class="cs">"https://nvd.nist.gov/vuln/detail/CVE-2023-44271"</span> },
+      <span class="cs">"ratings"</span>: [{ <span class="cs">"source"</span>: { <span class="cs">"name"</span>: <span class="cs">"NVD"</span> }, <span class="cs">"score"</span>: <span class="ce">7.5</span>, <span class="cs">"severity"</span>: <span class="cs">"high"</span> }],
+      <span class="cs">"affects"</span>: [
+        { <span class="cs">"ref"</span>: <span class="cs">"pkg:pypi/Pillow@9.2.0"</span> }
+      ],
+      <span class="cs">"analysis"</span>: {
+        <span class="cs">"state"</span>: <span class="cs">"not_affected"</span>,
+        <span class="cs">"justification"</span>: <span class="cs">"protected_by_mitigating_control"</span>,
+        <span class="cs">"detail"</span>: <span class="cs">"The vulnerability is in PIL.JpegImagePlugin._getmp(). Our application only processes PNG files via PIL.PngImagePlugin and never calls the JPEG plugin. Confirmed by static analysis. Ticket: SEC-456."</span>,
+        <span class="cs">"responses"</span>: [<span class="cs">"will_not_fix"</span>]
+      }
+    },
+    {
+      <span class="cs">"id"</span>: <span class="cs">"CVE-2022-1471"</span>,
+      <span class="cs">"affects"</span>: [{ <span class="cs">"ref"</span>: <span class="cs">"pkg:pypi/PyYAML@5.4.1"</span> }],
+      <span class="cs">"analysis"</span>: {
+        <span class="cs">"state"</span>: <span class="cs">"not_affected"</span>,
+        <span class="cs">"justification"</span>: <span class="cs">"code_not_reachable"</span>,
+        <span class="cs">"detail"</span>: <span class="cs">"Application uses yaml.safe_load() exclusively. CVE-2022-1471 requires yaml.load() with FullLoader. The vulnerable code path is not reachable."</span>,
+        <span class="cs">"responses"</span>: [<span class="cs">"will_not_fix"</span>]
+      }
+    }
+  ]
+}
+
+<span class="cm"># VEX analysis states:</span>
+<span class="cm"># not_affected:  CVE exists in the package but does not affect this product</span>
+<span class="cm"># affected:      Product IS affected and action should be taken</span>
+<span class="cm"># fixed:         The CVE has been fixed in this version</span>
+<span class="cm"># under_investigation: Still determining exploitability</span>
+
+<span class="cm"># VEX justifications for not_affected:</span>
+<span class="cm"># component_not_present:         Package is not in the deployed image</span>
+<span class="cm"># vulnerable_code_not_present:   Vulnerable function excluded at build time</span>
+<span class="cm"># vulnerable_code_not_in_execute_path: Code exists but is never called</span>
+<span class="cm"># vulnerable_code_cannot_be_controlled_by_adversary: No user-controlled input</span>
+<span class="cm"># inline_mitigations_already_exist: Compensating control in place</span>
+</pre>
+    </div>
+  </div>
+
+  <div class="panel" id="pan-diff">
+    <div class="panel-h" onclick="tp('pan-diff')">
+      <div class="panel-dot" style="background:var(--teal)"></div>
+      <div class="panel-title">SBOM diffing &mdash; detecting unexpected dependency changes between releases</div>
+      <div class="panel-sub">Comparing SBOMs between versions to surface supply chain surprises</div>
+      <div class="panel-tog">&#x25BC;</div>
+    </div>
+    <div class="panel-body">
+      <p>Diffing two SBOMs from consecutive releases tells you exactly what changed in your dependency tree: new packages added, packages removed, versions bumped, and packages whose version changed without an explicit update. This catches accidental transitive dependency upgrades, removed packages that may have been depended on, and unexpected new packages that might indicate a supply chain compromise.</p>
+<pre>
+<span class="ctag">SBOM diff with Syft</span>
+<span class="cm"># Generate SBOMs for two versions</span>
+$ syft myapp:1.2.2 -o cyclonedx-json=sbom-old.cdx.json
+$ syft myapp:1.2.3 -o cyclonedx-json=sbom-new.cdx.json
+
+<span class="cm"># Diff using syft</span>
+$ syft diff sbom-old.cdx.json sbom-new.cdx.json
+  Added:
+    pkg:pypi/opentelemetry-api@1.20.0       (new telemetry dependency)
+    pkg:pypi/opentelemetry-sdk@1.20.0
+  Removed:
+    pkg:pypi/deprecated@1.2.14              (removed)
+  Changed:
+    pkg:pypi/requests@2.30.0 -&gt; 2.31.0     (explicitly updated)
+    pkg:pypi/urllib3@1.26.16 -&gt; 2.0.4      (transitive upgrade via requests)
+    pkg:deb/debian/libssl3@3.0.8 -&gt; 3.0.9  (OS package update in base image)
+
+<span class="cm"># Python script: diff two CycloneDX SBOMs and flag unexpected additions</span>
+<span class="cf">import</span> json
+
+<span class="cf">def</span> <span class="cg">purl_set</span>(sbom_path):
+    data = json.load(open(sbom_path))
+    <span class="cf">return</span> {c[<span class="cs">'purl'</span>]: c.get(<span class="cs">'version'</span>) <span class="cf">for</span> c <span class="cf">in</span> data.get(<span class="cs">'components'</span>, []) <span class="cf">if</span> c.get(<span class="cs">'purl'</span>)}
+
+old = purl_set(<span class="cs">'sbom-old.cdx.json'</span>)
+new = purl_set(<span class="cs">'sbom-new.cdx.json'</span>)
+
+added   = {p: new[p] <span class="cf">for</span> p <span class="cf">in</span> new <span class="cf">if</span> p <span class="cf">not in</span> old}
+removed = {p: old[p] <span class="cf">for</span> p <span class="cf">in</span> old <span class="cf">if</span> p <span class="cf">not in</span> new}
+changed = {p: (old[p], new[p]) <span class="cf">for</span> p <span class="cf">in</span> new <span class="cf">if</span> p <span class="cf">in</span> old <span class="cf">and</span> new[p] != old[p]}
+
+print(<span class="cs">f"Added: {len(added)}, Removed: {len(removed)}, Changed: {len(changed)}"</span>)
+<span class="cf">if</span> added:
+    print(<span class="cs">"NEW DEPENDENCIES (review these):"</span>)
+    <span class="cf">for</span> p, v <span class="cf">in</span> added.items():
+        print(<span class="cs">f"  + {p}@{v}"</span>)
+</pre>
+    </div>
+  </div>
+</div>
+
+<!-- ADVANCED: FULL PIPELINE -->
+<div class="section">
+  <div class="eyebrow">&#x1F534; Advanced &mdash; Complete SBOM Pipeline</div>
+  <div class="sec-title">SBOM as a living artefact in your CI/CD pipeline</div>
+  <div class="sec-sub">An SBOM generated once and never updated is a snapshot that drifts from reality. A living SBOM is generated on every build, stored, signed, versioned, and continuously rescanned against new CVEs.</div>
+
+  <div class="panel" id="pan-pipeline">
+    <div class="panel-h" onclick="tp('pan-pipeline')">
+      <div class="panel-dot" style="background:var(--accent)"></div>
+      <div class="panel-title">Complete GitHub Actions SBOM pipeline</div>
+      <div class="panel-sub">Generate, sign, store, scan, diff, and continuously monitor &mdash; end-to-end</div>
+      <div class="panel-tog">&#x25BC;</div>
+    </div>
+    <div class="panel-body">
+<pre>
+<span class="ctag">.github/workflows/sbom.yml</span>
+name: SBOM Pipeline
+
+on:
+  push: { branches: [main] }
+  schedule:
+    - cron: <span class="cs">'0 3 * * *'</span>    <span class="cm"># daily rescan: new CVEs against existing SBOMs</span>
+
+jobs:
+  sbom-generate-and-scan:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      security-events: write
+      id-token: write          <span class="cm"># required for keyless cosign signing</span>
+
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }  <span class="cm"># need history for diff</span>
+
+      - name: Build image
+        run: docker build -t myapp:${{ github.sha }} .
+
+      <span class="cm"># ── Generate SBOM ────────────────────────────────────────────</span>
+      - name: Generate SBOM with Syft
+        uses: anchore/sbom-action@v0
+        with:
+          image: myapp:${{ github.sha }}
+          artifact-name: sbom.cdx.json
+          format: cyclonedx-json
+          output-file: sbom.cdx.json
+
+      <span class="cm"># ── Validate SBOM quality ────────────────────────────────────</span>
+      - name: Validate SBOM quality
+        run: |
+          python3 -c "
+          import json, sys
+          sbom = json.load(open('sbom.cdx.json'))
+          comps = sbom.get('components', [])
+          no_purl = [c['name'] for c in comps if not c.get('purl')]
+          no_ver  = [c['name'] for c in comps if not c.get('version')]
+          if no_purl: print(f'Missing PURL: {no_purl[:5]}'); sys.exit(1)
+          if no_ver:  print(f'Missing version: {no_ver[:5]}'); sys.exit(1)
+          print(f'Quality OK: {len(comps)} components, all with PURL+version')
+          "
+
+      <span class="cm"># ── Scan SBOM for vulnerabilities (Grype) ────────────────────</span>
+      - name: Grype vulnerability scan
+        id: grype
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh \
+              | sh -s -- -b /usr/local/bin
+          grype sbom:./sbom.cdx.json \
+              --output sarif > grype.sarif
+          grype sbom:./sbom.cdx.json \
+              --output json \
+              --only-fixed \
+              --fail-on high > grype.json || echo "FINDINGS=true" >> $GITHUB_ENV
+
+      - name: Upload SARIF to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with: { sarif_file: grype.sarif }
+
+      <span class="cm"># ── Sign SBOM with cosign (keyless via OIDC) ─────────────────</span>
+      - name: Install cosign
+        uses: sigstore/cosign-installer@v3
+
+      - name: Push image and attest SBOM
+        run: |
+          docker push registry.io/myapp:${{ github.sha }}
+          DIGEST=$(docker inspect --format='{{index .RepoDigests 0}}' \
+                   registry.io/myapp:${{ github.sha }} | cut -d@ -f2)
+          cosign attest \
+            --predicate sbom.cdx.json \
+            --type cyclonedx \
+            registry.io/myapp@$DIGEST
+          <span class="cm"># Keyless signing: uses GitHub OIDC token, no key management needed</span>
+          <span class="cm"># Signature stored in public Sigstore transparency log (Rekor)</span>
+
+      <span class="cm"># ── Store SBOM for future rescanning ─────────────────────────</span>
+      - name: Store SBOM as release asset
+        if: github.event_name == 'push'
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: sbom-${{ github.sha }}
+          files: sbom.cdx.json
+          name: SBOM for ${{ github.sha }}
+
+      <span class="cm"># ── Diff against previous SBOM ───────────────────────────────</span>
+      - name: Fetch previous SBOM for diff
+        run: |
+          PREV_TAG=$(git tag --sort=-creatordate | grep "^sbom-" | sed -n '2p')
+          if [ -n "$PREV_TAG" ]; then
+            gh release download "$PREV_TAG" --pattern "sbom.cdx.json" \
+               --output sbom-prev.cdx.json
+            python3 -c "
+          import json
+          def purls(f):
+              d = json.load(open(f))
+              return {c['purl']: c.get('version') for c in d.get('components',[]) if c.get('purl')}
+          old = purls('sbom-prev.cdx.json')
+          new = purls('sbom.cdx.json')
+          added = [p for p in new if p not in old]
+          if added:
+              print(f'NEW DEPS ({len(added)}):')
+              for p in added[:10]: print(f'  + {p}')
+          print(f'Changed: {sum(1 for p in new if p in old and new[p]!=old[p])}')
+            "
+          fi
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Fail if HIGH/CRITICAL fixable vulnerabilities
+        if: env.FINDINGS == 'true'
+        run: |
+          echo "Grype found HIGH/CRITICAL fixable vulnerabilities. See Security tab."
+          exit 1
+</pre>
+    </div>
+  </div>
+
+  <div class="panel" id="pan-storage">
+    <div class="panel-h" onclick="tp('pan-storage')">
+      <div class="panel-dot" style="background:var(--blue)"></div>
+      <div class="panel-title">SBOM storage strategies &mdash; where to keep your SBOMs</div>
+      <div class="panel-sub">OCI registry attachment, GitHub releases, and dedicated SBOM databases</div>
+      <div class="panel-tog">&#x25BC;</div>
+    </div>
+    <div class="panel-body">
+      <table>
+        <tr><th>Storage approach</th><th>How it works</th><th>Pros</th><th>Cons</th><th>Best for</th></tr>
+        <tr><td style="font-weight:700;color:var(--accent)">OCI registry (cosign attestation)</td><td>SBOM signed and stored as OCI artefact alongside the container image in the same registry</td><td>SBOM travels with the image, tamper-evident, discoverable via ORAS/cosign</td><td>Requires OCI-compatible registry (not ECR Classic)</td><td>Container-centric teams</td></tr>
+        <tr><td style="font-weight:700;color:var(--blue)">GitHub Releases</td><td>SBOM attached as a release asset, tagged with the image SHA</td><td>Simple, version-controlled, free, accessible via API</td><td>No signing built-in, requires cosign separately</td><td>Open source projects, simple pipelines</td></tr>
+        <tr><td style="font-weight:700;color:var(--yellow)">S3 / Blob storage</td><td>SBOM stored at path keyed by image digest, e.g. s3://sboms/{digest}.cdx.json</td><td>Cheap, simple, query-able at scale</td><td>No signing built-in, requires access management</td><td>Large fleets, multi-cloud</td></tr>
+        <tr><td style="font-weight:700;color:var(--purple)">Dedicated SBOM platform</td><td>DependencyTrack, Dependency-Check Server, or commercial (Anchore Enterprise)</td><td>Full management UI, policy enforcement, continuous monitoring dashboard</td><td>Operational overhead to run</td><td>Enterprises needing compliance reporting</td></tr>
+      </table>
+    </div>
+  </div>
+</div>
+<!-- DEPENDENCY TRACK -->
+<div class="section">
+  <div class="eyebrow">&#x1F534; Advanced &mdash; SBOM Management at Scale</div>
+  <div class="sec-title">OWASP Dependency-Track &mdash; continuous SBOM monitoring</div>
+  <div class="sec-sub">When you have dozens of services each producing SBOMs, you need a central system that continuously rescans them as new CVEs are published, tracks policy compliance, and surfaces which services are affected when a new vulnerability drops.</div>
+
+  <div class="panel" id="pan-dtrack">
+    <div class="panel-h" onclick="tp('pan-dtrack')">
+      <div class="panel-dot" style="background:var(--teal)"></div>
+      <div class="panel-title">OWASP Dependency-Track &mdash; from SBOM upload to continuous monitoring</div>
+      <div class="panel-sub">The open-source platform for SBOM lifecycle management, vulnerability tracking, and policy enforcement</div>
+      <div class="panel-tog">&#x25BC;</div>
+    </div>
+    <div class="panel-body">
+      <p>Dependency-Track (DT) is an OWASP project that ingests SBOMs and continuously monitors them. When a new CVE is published for a package, DT automatically rescans all ingested SBOMs and alerts on newly affected services. This is the operational platform that makes "query your entire fleet for Log4Shell exposure" a single dashboard view rather than a manual exercise.</p>
+<pre>
+<span class="ctag">Dependency-Track via Docker Compose</span>
+<span class="cm"># docker-compose.yml for Dependency-Track</span>
+version: <span class="cs">'3'</span>
+services:
+  dtrack-apiserver:
+    image: dependencytrack/apiserver:latest
+    environment:
+      - ALPINE_DATABASE_MODE=external
+      - ALPINE_DATABASE_URL=jdbc:postgresql://postgres:5432/dtrack
+      - ALPINE_DATABASE_DRIVER=org.postgresql.Driver
+      - ALPINE_DATABASE_USERNAME=dtrack
+      - ALPINE_DATABASE_PASSWORD=<span class="cs">${DB_PASSWORD}</span>
+    volumes:
+      - dtrack-data:/data
+    ports: [<span class="cs">'8081:8080'</span>]
+
+  dtrack-frontend:
+    image: dependencytrack/frontend:latest
+    environment:
+      - API_BASE_URL=http://localhost:8081
+    ports: [<span class="cs">'8080:8080'</span>]
+
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: dtrack
+      POSTGRES_USER: dtrack
+      POSTGRES_PASSWORD: <span class="cs">${DB_PASSWORD}</span>
+    volumes: [postgres-data:/var/lib/postgresql/data]
+</pre>
+<pre>
+<span class="ctag">GitHub Actions &mdash; upload SBOM to Dependency-Track</span>
+<span class="cm"># After generating sbom.cdx.json in the same workflow:</span>
+
+- name: Upload SBOM to Dependency-Track
+  run: |
+    <span class="cm"># Get or create project in DT</span>
+    PROJECT_UUID=$(curl -s \
+      -H "X-Api-Key: ${{ secrets.DT_API_KEY }}" \
+      -H "Content-Type: application/json" \
+      "${{ vars.DT_URL }}/api/v1/project/lookup?name=myapp&version=${{ github.sha }}" \
+      | jq -r '.uuid // empty')
+
+    <span class="cf">if</span> [ -z "$PROJECT_UUID" ]; then
+      PROJECT_UUID=$(curl -s -X PUT \
+        -H "X-Api-Key: ${{ secrets.DT_API_KEY }}" \
+        -H "Content-Type: application/json" \
+        -d "{\"name\":\"myapp\",\"version\":\"${{ github.sha }}\"}" \
+        "${{ vars.DT_URL }}/api/v1/project" | jq -r '.uuid')
+    fi
+
+    <span class="cm"># Upload SBOM</span>
+    ENCODED_BOM=$(base64 -w0 sbom.cdx.json)
+    curl -s -X PUT \
+      -H "X-Api-Key: ${{ secrets.DT_API_KEY }}" \
+      -H "Content-Type: application/json" \
+      -d "{\"project\":\"$PROJECT_UUID\",\"bom\":\"$ENCODED_BOM\"}" \
+      "${{ vars.DT_URL }}/api/v1/bom"
+
+    echo "SBOM uploaded to Dependency-Track project: $PROJECT_UUID"
+  env:
+    DT_URL: ${{ vars.DEPENDENCY_TRACK_URL }}
+
+<span class="cm"># Dependency-Track then:</span>
+<span class="cm"># 1. Parses the SBOM and extracts all components</span>
+<span class="cm"># 2. Queries NVD, GitHub Advisory, OSV, Sonatype OSS Index</span>
+<span class="cm"># 3. Populates the vulnerability dashboard for the project</span>
+<span class="cm"># 4. Rescans automatically when new CVEs are published</span>
+<span class="cm"># 5. Sends alerts via webhook, email, or Slack</span>
+<span class="cm"># 6. Enforces policies (fail if CRITICAL unresolved for > 7 days)</span>
+</pre>
+    </div>
+  </div>
+</div>
+
+<!-- QUIZ -->
+<div class="section">
+  <div class="eyebrow">Knowledge Check</div>
+  <div class="sec-title">SBOM interview questions</div>
+  <div class="sec-sub">Questions that appear in AppSec, DevSecOps, and supply chain security interviews.</div>
+
+  <div class="quiz-block">
+    <div class="quiz-q">Q1. A customer asks you to provide an SBOM for your product. They are evaluating whether to use CycloneDX or SPDX format. What are the key differences, and which would you recommend for a security-focused use case?</div>
+    <div class="quiz-opts" id="q1">
+      <div class="qo" onclick="doQ('q1',this,'wrong')">They are identical formats &mdash; just different serialisations of the same data model</div>
+      <div class="qo" onclick="doQ('q1',this,'correct')">SPDX is the older standard (ISO 5962), focused primarily on licence compliance and provenance, governed by the Linux Foundation. CycloneDX is an OWASP project designed specifically for security use cases: it has native VEX support, better tooling support in security scanners (Grype, Trivy, Snyk all prefer CycloneDX), and a security-oriented data model. For a security-focused use case, recommend CycloneDX. If the customer needs ISO compliance or has specific SPDX tooling, generate both &mdash; Syft and cdxgen support both formats from a single scan.</div>
+      <div class="qo" onclick="doQ('q1',this,'wrong')">SPDX is better for all use cases because it is an ISO standard</div>
+      <div class="qo" onclick="doQ('q1',this,'wrong')">CycloneDX is only for container images, SPDX is for source code</div>
+    </div>
+    <div class="quiz-exp" id="q1-exp">The key differentiator is design philosophy. SPDX was originally designed for the open source licence compliance community and evolved to include security features. CycloneDX was designed from the start for security use cases: vulnerability tracking, VEX, attestation, and software supply chain integrity. The practical difference in 2024: if your customer is feeding SBOMs into a security scanner (Grype, Trivy, Dependency-Track), CycloneDX will work better. If they are doing formal licence review or have legal/compliance processes built around SPDX, use SPDX. Since generating both adds negligible overhead (one extra flag in Syft), many teams provide both.</div>
+  </div>
+
+  <div class="quiz-block">
+    <div class="quiz-q">Q2. Your SBOM scanner reports a CRITICAL CVE in a library included in your SBOM. You have determined the vulnerable function is never called in your product. What is the correct way to communicate this to your customers and downstream users of your SBOM?</div>
+    <div class="quiz-opts" id="q2">
+      <div class="qo" onclick="doQ('q2',this,'wrong')">Remove the library from the SBOM to prevent false alarms</div>
+      <div class="qo" onclick="doQ('q2',this,'wrong')">Update the SBOM to change the library version to a patched version you are not actually using</div>
+      <div class="qo" onclick="doQ('q2',this,'correct')">Publish a VEX (Vulnerability Exploitability eXchange) document stating the CVE analysis state as "not_affected" with the justification "vulnerable_code_not_in_execute_path" and a detailed explanation. The SBOM remains accurate (the library is still included), but the VEX document tells consuming tools and human reviewers that exploitability has been assessed and the product is not affected. This avoids false alarms for customers while maintaining SBOM honesty.</div>
+      <div class="qo" onclick="doQ('q2',this,'wrong')">Add a note field to the SBOM component entry explaining the vulnerability is not exploitable</div>
+    </div>
+    <div class="quiz-exp" id="q2-exp">This is exactly the problem VEX was designed to solve. Removing a component from an SBOM because it has a CVE is dishonest and breaks the fundamental trust guarantee of an SBOM: it should accurately represent what is in the software. Changing versions is straightforwardly falsifying the record. A VEX document is the correct mechanism: it is a separate, structured, machine-readable attestation from the supplier stating their analysis of exploitability. The SBOM stays accurate; the VEX adds context. Scanning tools like Grype and Dependency-Track understand VEX and will suppress the finding for consumers when a "not_affected" VEX is present. This is the industry-standard pattern for communicating exploitability analysis.</div>
+  </div>
+
+  <div class="quiz-block">
+    <div class="quiz-q">Q3. What is the difference between generating an SBOM from source code versus from a container image, and which is more comprehensive for security purposes?</div>
+    <div class="quiz-opts" id="q3">
+      <div class="qo" onclick="doQ('q3',this,'wrong')">Source code SBOM is always more comprehensive because it has access to all dependency files</div>
+      <div class="qo" onclick="doQ('q3',this,'wrong')">They are equivalent &mdash; both capture the same dependency information</div>
+      <div class="qo" onclick="doQ('q3',this,'correct')">A container image SBOM is more comprehensive for production security. Source code scanning captures language-level dependencies (pip packages, npm packages) but misses OS-level packages, base image components, and anything installed at image build time outside of the package manager. The container image contains the final deployed artefact including the OS layer (libssl, openssl, libc), the language runtime (Python itself, Node.js itself), and all build artefacts. For incident response and CVE triage, you need to know about the full stack including OS CVEs. Generate both: source SBOM early in the pipeline for developer feedback, image SBOM at build time for production tracking.</div>
+      <div class="qo" onclick="doQ('q3',this,'wrong')">Container image SBOMs cannot capture language-level dependencies, only OS packages</div>
+    </div>
+    <div class="quiz-exp" id="q3-exp">The container image is the unit of deployment, so its SBOM represents what actually runs in production. It includes everything the source SBOM has, plus the OS base image packages (openssl, glibc, curl, libssl etc.), the language runtime itself (Python 3.12 is a component with its own CVE history), and any packages installed via apt/apk during the Dockerfile build. Log4Shell is a perfect example: a source SBOM of a Java project would find log4j in pom.xml. But a container image SBOM would also find any vulnerable OS libraries that might be affected by other CVEs. The best practice is to generate both: source SBOM gives early feedback in the developer's PR; image SBOM is the production ground truth.</div>
+  </div>
+</div>
+
+<!-- CHALLENGE -->
+<div class="challenge">
+  <div class="ch-ey">Capstone Challenge &mdash; Design an SBOM Programme</div>
+  <div class="ch">
+    <h3>Build an SBOM programme for a 30-service organisation</h3>
+    <p class="ch-desc">You are the first AppSec hire at a fintech company. They have 30 microservices (Python, Java, Node.js), all running as containers on Kubernetes, with CI/CD on GitHub Actions. They have just received a request from a major bank customer requiring SBOMs for all software components as part of their vendor security assessment. They also want to be prepared for the EU Cyber Resilience Act requirements. Design the complete programme.</p>
+    <div class="scenario">
+      <p><strong>Constraints:</strong> The engineering team has limited bandwidth &mdash; you have half a sprint to implement automated generation across all 30 repos. Budget is available for one commercial tool if justified. The CTO wants to know within one hour of a new critical CVE being published whether any of their 30 services are affected.<br><br>
+      <strong>Your deliverable:</strong> (1) Which SBOM format and why. (2) Which generation tool(s) and why. (3) How you automate generation across 30 repos with minimal per-repo effort. (4) Where you store and sign SBOMs. (5) How you achieve the "1-hour CVE query" requirement. (6) What you send to the bank customer and how you maintain it going forward.</p>
+    </div>
+    <textarea id="ch-ans" placeholder="1. Format choice and rationale: ...
+
+2. Generation tools: ...
+
+3. Automation strategy for 30 repos: ...
+
+4. Storage and signing: ...
+
+5. 1-hour CVE query solution: ...
+
+6. Customer delivery and maintenance: ..."></textarea>
+    <div class="btn-row">
+      <button class="btn btn-p" onclick="checkCh()">Submit</button>
+      <button class="btn btn-g" onclick="revealCh()">Reveal model answer</button>
+    </div>
+    <div class="ch-fb" id="ch-fb"></div>
+  </div>
+</div>
+
+<!-- SUMMARY -->
+<div class="section">
+  <div class="eyebrow">Quick Reference</div>
+  <div class="sec-title">SBOM cheat sheet</div>
+  <table>
+    <tr><th>Topic</th><th>Key facts</th></tr>
+    <tr><td style="font-weight:700;color:var(--accent)">CycloneDX vs SPDX</td><td>CycloneDX for security; SPDX for licence compliance. Both named in EO 14028. Generate both with one Syft command.</td></tr>
+    <tr><td style="font-weight:700;color:var(--accent)">PURL</td><td>Universal package identifier used in both formats. Enables cross-database CVE lookup. Format: pkg:type/namespace/name@version</td></tr>
+    <tr><td style="font-weight:700;color:var(--blue)">Syft</td><td>Best for container images. Scans all layers: OS packages, Python, Node.js, Java, Go, Ruby, Rust. Output: CycloneDX, SPDX, table.</td></tr>
+    <tr><td style="font-weight:700;color:var(--blue)">cdxgen</td><td>Best for source-level generation, especially Java (Maven/Gradle resolution). Also handles K8s manifests and Terraform.</td></tr>
+    <tr><td style="font-weight:700;color:var(--teal)">SBOM quality</td><td>Every component must have PURL + version + licence. Check with jq. Missing PURLs = CVE scanner cannot match. Missing versions = worst-case assumed.</td></tr>
+    <tr><td style="font-weight:700;color:var(--purple)">cosign attestation</td><td>Binds SBOM cryptographically to image digest. Proves SBOM came from your pipeline. Stored in OCI registry alongside image.</td></tr>
+    <tr><td style="font-weight:700;color:var(--purple)">VEX</td><td>Supplier statement on CVE exploitability. States: not_affected / affected / fixed / under_investigation. Prevents false alarms for customers. Do NOT remove components from SBOM; use VEX instead.</td></tr>
+    <tr><td style="font-weight:700;color:var(--red)">Grype</td><td>Scans SBOMs for CVEs without re-pulling images. Generate-once, scan-many. Integrates with .grype.yaml ignore rules. SARIF output for GitHub Security.</td></tr>
+    <tr><td style="font-weight:700;color:var(--teal)">Dependency-Track</td><td>OWASP platform for continuous SBOM monitoring at scale. Ingests SBOMs, rescans on new CVE publication, alerts on affected services.</td></tr>
+    <tr><td style="font-weight:700;color:var(--yellow)">SBOM diff</td><td>Compare SBOMs between releases to detect unexpected new dependencies, version changes, and potential supply chain tampering.</td></tr>
+    <tr><td style="font-weight:700;color:var(--orange)">Regulations</td><td>EO 14028 (US federal suppliers), FDA (medical devices, 2023), EU CRA (2027), DoD SCRM. Commercial pressure extends beyond direct scope.</td></tr>
+  </table>
+</div>
+
+<!-- NAV FOOTER -->
+<div class="nav-footer">
+  <a class="nf-btn" href="#"><span class="nf-dir">&larr; Previous</span><span class="nf-title">14 &mdash; Dependency Scanning</span></a>
+  <a class="nf-btn next" href="#"><span class="nf-dir">Next Lesson &rarr;</span><span class="nf-title">16 &mdash; Security Architecture</span></a>
+</div>
+
+</div>
+</div>
+
+<!-- REVEAL HTML in hidden DOM - no HTML in JS strings -->
+<div id="reveal-html" style="display:none">
+<strong>Model Answer &mdash; SBOM Programme for 30-Service Fintech</strong><br><br>
+<strong>1. Format choice: CycloneDX JSON</strong><br>
+CycloneDX is the right choice for this scenario for three reasons: (1) The primary use case is security monitoring and CVE triage, not licence compliance &mdash; CycloneDX's security-first design and native VEX support are directly relevant. (2) Dependency-Track (the tool that solves the 1-hour CVE query requirement) has first-class CycloneDX support. (3) The security tooling ecosystem (Grype, Trivy, Snyk) all prefer CycloneDX. However: provide both CycloneDX and SPDX to the bank customer. Adding SPDX output costs one extra flag in Syft and ensures compatibility with whatever tooling the customer uses internally. SPDX is also an ISO standard, which matters for formal compliance assessments.<br><br>
+<strong>2. Generation tools: Syft for containers, cdxgen for Java services</strong><br>
+Syft for all containerised services: it scans every image layer (OS packages, Python packages, Node.js packages, Java JARs) and produces accurate CycloneDX output. For Java services specifically, supplement with cdxgen: cdxgen invokes Maven/Gradle to resolve the full dependency tree including BOMs and version management sections that Syft may miss when reading pom.xml statically. Run both on Java services and merge or prefer cdxgen's output for the language-level components. The combined approach costs little extra in CI time and gives significantly better coverage for Java.<br><br>
+<strong>3. Automation across 30 repos with minimal per-repo effort</strong><br>
+The key is centralisation, not per-repo configuration. Use a reusable GitHub Actions workflow stored in a central .github repository (the organisation's shared workflows repo). Each of the 30 repositories adds a single jobs: section that calls this shared workflow: uses: mycompany/.github/.github/workflows/sbom-generation.yml@main. The shared workflow handles: Syft generation, quality validation, Grype scan, cosign attestation, and Dependency-Track upload. Per-repo configuration is zero or near-zero. New repos automatically get SBOM generation by inheriting the shared workflow. Half a sprint is realistic for this approach: one week to build and test the shared workflow, one week to add the call to all 30 repos (can be scripted with the GitHub API).<br><br>
+<strong>4. Storage and signing: OCI attestation + Dependency-Track</strong><br>
+Primary storage: cosign attestations in the OCI registry, binding the SBOM to each image digest. This is tamper-evident, travels with the image, and is discoverable by any cosign-aware tool. Use keyless signing (GitHub OIDC) to avoid key management overhead across 30 repos. Secondary storage: all SBOMs uploaded to Dependency-Track (the centralised monitoring platform). This gives queryability across all 30 services simultaneously. Additionally: store SBOMs as GitHub Release assets tagged by image SHA, which provides an easily accessible archive for customer requests and audit trails.<br><br>
+<strong>5. The 1-hour CVE query: OWASP Dependency-Track with webhook alerts</strong><br>
+Deploy Dependency-Track (self-hosted, open source, or Dependency-Track Cloud). Every build uploads its SBOM to DT. DT continuously rescans all ingested SBOMs against NVD, GitHub Advisory, OSV, and Sonatype OSS Index. Configure DT to: (1) Automatically rescan all projects when new vulnerabilities are published (DT does this by default via scheduled NVD sync). (2) Send Slack/PagerDuty webhook alerts when a CRITICAL CVE matches any project. (3) Set the NVD sync interval to every 4 hours (DT default) to ensure new CVEs are picked up promptly. Result: when a new Log4Shell-class CVE drops, DT rescans all 30 services within 4 hours and sends an alert listing exactly which services are affected, what versions, and what the fix versions are. For the CTO's 1-hour requirement, configure a manual rescan trigger that can be run immediately on announcement of a major CVE. This gives sub-hour response time for critical incidents while the scheduled sync handles routine monitoring.<br><br>
+<strong>6. Customer delivery: a living SBOM programme, not a one-time deliverable</strong><br>
+Initial delivery to the bank: provide the current CycloneDX JSON SBOM for each of the 30 services, plus the corresponding SPDX JSON versions. Include the Dependency-Track URL where they can query the current vulnerability status of all components (set up a read-only API key for them if they want programmatic access). Maintenance going forward: SBOMs are automatically regenerated on every build. When a new release is deployed, the bank can pull the updated SBOM from the GitHub Release assets or directly from the OCI registry via cosign. For VEX: when a CVE is found in a component you include but you have assessed it as not exploitable, publish a VEX document alongside the SBOM. This prevents the bank's scanner from raising false alarms and demonstrates mature security practice. Monthly SBOM report: send a digest of all SBOM changes (new components, version bumps, newly resolved and newly introduced CVEs) to the bank's security team to demonstrate continuous management.
+</div>
+
+<!-- JAVASCRIPT - no HTML in JS strings -->
+<script>
+function tp(id) {
+  document.getElementById(id).classList.toggle('open');
+}
+document.getElementById('pan-what').classList.add('open');
+document.getElementById('pan-formats').classList.add('open');
+
+function switchTab(btn, paneId) {
+  var bar = btn.parentElement;
+  bar.querySelectorAll('.ttab').forEach(function(t) { t.classList.remove('active'); });
+  btn.classList.add('active');
+  var wrap = bar.parentElement;
+  wrap.querySelectorAll('.tool-pane').forEach(function(p) { p.classList.remove('active'); });
+  var pane = document.getElementById(paneId);
+  if (pane) { pane.classList.add('active'); }
+}
+
+function doQ(qid, el, result) {
+  var container = document.getElementById(qid);
+  container.querySelectorAll('.qo').forEach(function(o) { o.onclick = null; });
+  el.classList.add(result === 'correct' ? 'correct' : 'wrong');
+  var exp = document.getElementById(qid + '-exp');
+  if (exp) { exp.classList.add('show'); }
+}
+
+function checkCh() {
+  var ans = document.getElementById('ch-ans').value.toLowerCase();
+  var fb  = document.getElementById('ch-fb');
+  var checks = [
+    ans.includes('cyclonedx') || ans.includes('cdx'),
+    ans.includes('syft') || ans.includes('cdxgen') || ans.includes('generation'),
+    ans.includes('reusable') || ans.includes('shared') || ans.includes('central') || ans.includes('workflow') || ans.includes('automat'),
+    ans.includes('cosign') || ans.includes('attest') || ans.includes('sign') || ans.includes('oci'),
+    ans.includes('dependency-track') || ans.includes('dtrack') || ans.includes('continuous') || ans.includes('rescan') || ans.includes('monitor'),
+    ans.includes('vex') || ans.includes('customer') || (ans.includes('bank') && ans.includes('deliver')),
+    ans.includes('spdx') || ans.includes('both format'),
+    ans.includes('purl') || ans.includes('quality') || ans.includes('version')
+  ];
+  var score = checks.filter(Boolean).length;
+  fb.className = 'ch-fb show ' + (score >= 6 ? 'good' : 'hint');
+  if (score >= 6) {
+    fb.textContent = 'Excellent — ' + score + '/8 key areas covered. The most important insight: a one-time SBOM deliverable satisfies the customer request momentarily but provides no ongoing value. The bank will ask for an updated SBOM after your next release. Building the generation into CI from day one means every release automatically has a signed, verified SBOM. The 1-hour CVE query requirement is the most operationally interesting constraint: it forces you towards a centralised monitoring platform (Dependency-Track) rather than per-service scanning, which is the right architecture for 30+ services.';
+  } else if (score >= 3) {
+    fb.textContent = 'Good work — ' + score + '/8 covered. Key areas to strengthen: (1) The automation strategy matters most for the half-sprint constraint. Reusable GitHub Actions workflows called from all 30 repos is far more practical than configuring each repo individually. (2) Dependency-Track is the answer to the 1-hour CVE query requirement. (3) VEX documents are how you prevent false alarms for the bank when your SBOM contains a library with a CVE that does not affect your product. (4) Providing both CycloneDX and SPDX to the customer is a small additional cost with significant compatibility value.';
+  } else {
+    fb.textContent = 'Think through each constraint separately. The half-sprint time pressure → centralised reusable workflow, not per-repo effort. The 1-hour CVE query → you cannot query 30 individual repos manually; you need a centralised SBOM database that rescans automatically. The customer delivery → they need a living SBOM programme, not a one-time file. The signing requirement → cosign attestations provide tamper-evidence that the SBOM came from your pipeline.';
+  }
+}
+
+function revealCh() {
+  var fb  = document.getElementById('ch-fb');
+  var src = document.getElementById('reveal-html');
+  fb.className = 'ch-fb show reveal';
+  fb.innerHTML = src ? src.innerHTML : 'Model answer unavailable.';
+}
+</script>
+</body>
+</html>

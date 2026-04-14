@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AppSec Engineer — Lesson 20: RASP</title>
+<link href="https://fonts.googleapis.com/css2?family=Raleway:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=JetBrains+Mono:wght@400;500;600;700&family=Crimson+Pro:ital,wght@0,600;0,700;1,500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f6f8f4;--surface:#ffffff;--surface2:#edf0ea;--surface3:#e3e8de;
+  --border:#d0d8ca;--border2:#b8c4b0;--ink:#151e10;--ink2:#3e5030;--ink3:#8aa078;
+  --accent:#3a7020;--accent-bg:rgba(58,112,32,0.08);
+  --red:#c02828;--red-bg:rgba(192,40,40,0.06);
+  --orange:#b85a10;--orange-bg:rgba(184,90,16,0.07);
+  --yellow:#887800;--yellow-bg:rgba(136,120,0,0.07);
+  --blue:#1a4a9a;--blue-bg:rgba(26,74,154,0.07);
+  --purple:#6a2a8a;--purple-bg:rgba(106,42,138,0.07);
+  --teal:#1a7a6a;--teal-bg:rgba(26,122,106,0.07);
+  --code-bg:#151e10;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--ink);font-family:'Raleway',sans-serif;font-size:15px;line-height:1.8;}
+.sidebar{position:fixed;left:0;top:0;bottom:0;width:252px;background:var(--ink);overflow-y:auto;z-index:100;}
+.sb-brand{padding:1.4rem 1.2rem 1rem;border-bottom:1px solid rgba(255,255,255,.07);}
+.sb-badge{font-family:'JetBrains Mono',monospace;font-size:9px;background:var(--accent);color:#fff;padding:2px 8px;border-radius:2px;letter-spacing:.12em;display:inline-block;margin-bottom:7px;text-transform:uppercase;font-weight:700;}
+.sb-brand h2{font-size:13px;font-weight:400;color:rgba(255,255,255,.35);line-height:1.4;}
+.sb-sect{padding:.7rem 1.2rem .2rem;font-size:9px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:rgba(255,255,255,.18);margin-top:.25rem;}
+.nav-item{display:flex;align-items:center;gap:9px;padding:.38rem 1.2rem;cursor:pointer;border-left:2px solid transparent;font-size:12.5px;color:rgba(255,255,255,.22);text-decoration:none;transition:all .15s;}
+.nav-item:hover{color:rgba(255,255,255,.6);background:rgba(255,255,255,.04);}
+.nav-item.done{color:rgba(255,255,255,.28);}
+.nav-item.active{color:#fff;border-left-color:var(--accent);background:var(--accent-bg);}
+.nav-item.last{color:rgba(255,255,255,.55);font-weight:600;}
+.nav-item.last.active{color:#fff;}
+.nav-item .num{font-family:'JetBrains Mono',monospace;font-size:10px;min-width:22px;opacity:.28;}
+.nav-item.active .num{opacity:1;color:var(--accent);}
+.main{margin-left:252px;}
+.topbar{position:sticky;top:0;background:rgba(246,248,244,.96);backdrop-filter:blur(14px);border-bottom:1px solid var(--border);padding:.65rem 2.5rem;display:flex;align-items:center;justify-content:space-between;z-index:50;}
+.bc{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink3);}
+.bc span{color:var(--accent);font-weight:700;}
+.top-badge{font-family:'JetBrains Mono',monospace;font-size:10px;padding:3px 10px;background:var(--ink);color:rgba(255,255,255,.6);border-radius:2px;}
+.content{padding:3rem 2.5rem 5rem;max-width:960px;}
+.hero{margin-bottom:3.5rem;padding-bottom:2.5rem;border-bottom:2px solid var(--border);}
+.hero-meta{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1rem;}
+.tag{font-family:'JetBrains Mono',monospace;font-size:10px;padding:3px 10px;border-radius:2px;font-weight:600;letter-spacing:.04em;}
+.t-beg{background:var(--accent-bg);color:var(--accent);border:1px solid rgba(58,112,32,.2);}
+.t-frm{background:var(--blue-bg);color:var(--blue);border:1px solid rgba(26,74,154,.2);}
+.t-time{background:var(--purple-bg);color:var(--purple);border:1px solid rgba(106,42,138,.2);}
+.hero h1{font-family:'Crimson Pro',serif;font-size:3.2rem;font-weight:700;line-height:1.1;color:var(--ink);margin-bottom:.85rem;}
+.hero h1 .hl{color:var(--accent);}
+.hero-sub{font-size:14.5px;color:var(--ink2);max-width:660px;line-height:1.8;margin-bottom:1.75rem;}
+.level-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:6px;overflow:hidden;}
+.lv-cell{background:var(--surface);padding:.9rem 1rem;}
+.lv-pip{width:8px;height:8px;border-radius:50%;margin-bottom:7px;}
+.lv-label{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink3);margin-bottom:3px;}
+.lv-title{font-size:13px;font-weight:700;color:var(--ink);margin-bottom:2px;}
+.lv-desc{font-size:12px;color:var(--ink3);line-height:1.5;}
+.section{margin-bottom:3.5rem;}
+.eyebrow{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.15em;color:var(--accent);margin-bottom:5px;font-weight:700;}
+.sec-title{font-family:'Crimson Pro',serif;font-size:1.95rem;color:var(--ink);line-height:1.2;margin-bottom:.35rem;}
+.sec-sub{font-size:14px;color:var(--ink2);max-width:660px;line-height:1.75;margin-bottom:1.5rem;}
+.callout{border-radius:4px;padding:.9rem 1.1rem;margin:1rem 0;display:flex;gap:10px;align-items:flex-start;border-left:3px solid;}
+.cl-warn{background:var(--red-bg);border-color:var(--red);}
+.cl-info{background:var(--blue-bg);border-color:var(--blue);}
+.cl-tip{background:var(--accent-bg);border-color:var(--accent);}
+.cl-note{background:var(--yellow-bg);border-color:var(--yellow);}
+.cl-purple{background:var(--purple-bg);border-color:var(--purple);}
+.cl-teal{background:var(--teal-bg);border-color:var(--teal);}
+.cl-icon{font-size:15px;flex-shrink:0;margin-top:2px;}
+.cl-text{font-size:13.5px;color:var(--ink2);line-height:1.7;}
+.cl-text strong{color:var(--ink);}
+.cl-text code{font-family:'JetBrains Mono',monospace;font-size:11.5px;background:rgba(0,0,0,.06);padding:1px 5px;border-radius:2px;color:var(--accent);}
+pre{background:var(--code-bg);color:#c8d8b8;border-radius:6px;padding:1.25rem;font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.8;overflow-x:auto;margin:.85rem 0;position:relative;border:1px solid rgba(255,255,255,.05);}
+.ctag{position:absolute;top:10px;right:12px;font-family:'JetBrains Mono',monospace;font-size:9px;color:rgba(255,255,255,.2);text-transform:uppercase;letter-spacing:.1em;}
+.ck{color:#c084fc;}.cf{color:#7dd3fc;}.cs{color:#86efac;}.cm{color:#374151;}.cv{color:#fcd34d;}.ce{color:#fb923c;}.cr{color:#f87171;}.cg{color:#4ade80;}.ct{color:#2dd4bf;}.cw{color:#f9a8d4;}
+.lb{display:block;background:rgba(192,40,40,.09);border-left:2px solid #ef4444;margin:0 -1.25rem;padding:0 1.25rem;}
+.lg{display:block;background:rgba(58,112,32,.08);border-left:2px solid #22c55e;margin:0 -1.25rem;padding:0 1.25rem;}
+.lw{display:block;background:rgba(252,211,77,.07);border-left:2px solid #f59e0b;margin:0 -1.25rem;padding:0 1.25rem;}
+table{width:100%;border-collapse:collapse;font-size:13px;margin:1rem 0;}
+th{padding:.55rem .9rem;text-align:left;background:var(--ink);color:rgba(255,255,255,.7);font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.08em;}
+th:first-child{border-radius:4px 0 0 0;}th:last-child{border-radius:0 4px 0 0;}
+td{padding:.55rem .9rem;border-bottom:1px solid var(--border);color:var(--ink2);line-height:1.5;vertical-align:top;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:var(--surface2);}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:6px;overflow:hidden;margin-bottom:.75rem;}
+.panel-h{display:flex;align-items:center;gap:10px;padding:.9rem 1.1rem;cursor:pointer;transition:background .15s;user-select:none;}
+.panel-h:hover{background:var(--surface2);}
+.panel-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.panel-title{font-size:13.5px;font-weight:700;flex:1;color:var(--ink);}
+.panel-sub{font-size:12px;color:var(--ink3);}
+.panel-tog{color:var(--ink3);font-size:13px;transition:transform .2s;}
+.panel.open .panel-tog{transform:rotate(180deg);}
+.panel-body{display:none;padding:0 1.1rem 1.1rem;border-top:1px solid var(--border);}
+.panel.open .panel-body{display:block;}
+.panel-body h4{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--ink3);margin:1rem 0 .5rem;font-weight:600;}
+.panel-body p{font-size:13.5px;color:var(--ink2);line-height:1.75;margin-top:.6rem;}
+.tool-tabs{border:1px solid var(--border);border-radius:6px;overflow:hidden;margin:1.25rem 0;}
+.tool-tab-bar{display:flex;background:var(--surface2);border-bottom:1px solid var(--border);flex-wrap:wrap;}
+.ttab{padding:.55rem 1rem;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;cursor:pointer;color:var(--ink3);border-right:1px solid var(--border);transition:all .15s;user-select:none;}
+.ttab:hover{color:var(--ink);}
+.ttab.active{background:var(--surface);color:var(--accent);border-bottom:2px solid var(--accent);}
+.tool-pane{display:none;padding:1.25rem;}
+.tool-pane.active{display:block;}
+.pill{font-size:11px;padding:3px 9px;border-radius:2px;font-family:'JetBrains Mono',monospace;font-weight:600;}
+.pr{background:var(--red-bg);color:var(--red);border:1px solid rgba(192,40,40,.2);}
+.pg{background:var(--accent-bg);color:var(--accent);border:1px solid rgba(58,112,32,.2);}
+.py{background:var(--yellow-bg);color:var(--yellow);border:1px solid rgba(136,120,0,.2);}
+.pb{background:var(--blue-bg);color:var(--blue);border:1px solid rgba(26,74,154,.2);}
+.pp{background:var(--purple-bg);color:var(--purple);border:1px solid rgba(106,42,138,.2);}
+.pt{background:var(--teal-bg);color:var(--teal);border:1px solid rgba(26,122,106,.2);}
+.pill-row{display:flex;flex-wrap:wrap;gap:6px;margin:.5rem 0;}
+.quiz-block{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:1.25rem;margin-bottom:1rem;}
+.quiz-q{font-size:14.5px;font-weight:600;color:var(--ink);margin-bottom:.85rem;line-height:1.55;}
+.quiz-opts{display:flex;flex-direction:column;gap:7px;}
+.qo{padding:.65rem 1rem;border:1px solid var(--border);border-radius:4px;cursor:pointer;font-size:13.5px;color:var(--ink2);background:var(--surface2);transition:all .15s;}
+.qo:hover{border-color:var(--accent);color:var(--ink);}
+.qo.correct{border-color:var(--accent);color:var(--accent);background:var(--accent-bg);cursor:default;}
+.qo.wrong{border-color:var(--red);color:var(--red);background:var(--red-bg);cursor:default;}
+.quiz-exp{font-size:13px;color:var(--ink2);line-height:1.7;padding:.75rem 1rem;background:var(--surface2);border-radius:4px;border-left:3px solid var(--accent);display:none;margin-top:.5rem;}
+.quiz-exp.show{display:block;}
+.completion{background:var(--ink);border-radius:12px;padding:2.5rem;margin:3rem 0;text-align:center;position:relative;overflow:hidden;}
+.completion::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 0%,rgba(58,112,32,.2) 0%,transparent 70%);pointer-events:none;}
+.comp-badge{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.2em;color:var(--accent);margin-bottom:1rem;display:block;}
+.comp-title{font-family:'Crimson Pro',serif;font-size:2.2rem;color:#fff;margin-bottom:.75rem;}
+.comp-sub{font-size:14px;color:rgba(255,255,255,.45);max-width:480px;margin:0 auto 2rem;line-height:1.75;}
+.comp-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:.75rem;margin:1.5rem 0;}
+.comp-item{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:6px;padding:.75rem;font-size:12px;color:rgba(255,255,255,.5);text-align:center;font-family:'JetBrains Mono',monospace;}
+.comp-item strong{display:block;font-size:18px;color:var(--accent);margin-bottom:.2rem;}
+.challenge{background:var(--ink);border-radius:10px;padding:2rem;margin:3rem 0;position:relative;overflow:hidden;}
+.challenge::before{content:'';position:absolute;top:-60px;right:-60px;width:220px;height:220px;background:radial-gradient(circle,rgba(58,112,32,.15) 0%,transparent 70%);pointer-events:none;}
+.ch-ey{font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.15em;color:var(--accent);margin-bottom:.5rem;}
+.ch h3{font-family:'Crimson Pro',serif;font-size:1.55rem;color:#fff;margin-bottom:.7rem;}
+.ch-desc{font-size:13.5px;color:rgba(255,255,255,.45);line-height:1.75;margin-bottom:1.25rem;}
+.scenario{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:5px;padding:1rem 1.1rem;margin-bottom:1.25rem;}
+.scenario p{font-size:13px;color:rgba(255,255,255,.55);line-height:1.75;}
+.scenario strong{color:rgba(255,255,255,.9);}
+.challenge textarea{width:100%;min-height:190px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:4px;padding:1rem;font-family:'JetBrains Mono',monospace;font-size:12px;color:rgba(255,255,255,.85);resize:vertical;outline:none;transition:border-color .2s;margin-bottom:1rem;}
+.challenge textarea:focus{border-color:var(--accent);}
+.challenge textarea::placeholder{color:rgba(255,255,255,.2);}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap;}
+.btn{padding:9px 20px;border-radius:4px;font-size:13px;font-family:'Raleway',sans-serif;font-weight:700;cursor:pointer;border:1px solid;transition:all .15s;}
+.btn-p{background:var(--accent);color:#fff;border-color:var(--accent);}
+.btn-p:hover{background:#2a5a10;}
+.btn-g{background:transparent;color:rgba(255,255,255,.45);border-color:rgba(255,255,255,.14);}
+.btn-g:hover{color:#fff;border-color:rgba(255,255,255,.35);}
+.ch-fb{margin-top:1rem;padding:1rem 1.1rem;border-radius:5px;font-size:13.5px;line-height:1.7;display:none;}
+.ch-fb.show{display:block;}
+.ch-fb.good{background:rgba(58,112,32,.15);border:1px solid rgba(58,112,32,.3);color:#4ade80;}
+.ch-fb.hint{background:rgba(252,211,77,.1);border:1px solid rgba(252,211,77,.25);color:#fcd34d;}
+.ch-fb.reveal{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.75);}
+.nav-footer{display:flex;justify-content:space-between;margin-top:4rem;padding-top:2rem;border-top:2px solid var(--border);}
+.nf-btn{padding:.85rem 1.5rem;border:1px solid var(--border);border-radius:4px;font-size:13px;cursor:pointer;background:var(--surface);color:var(--ink2);text-align:left;transition:all .15s;text-decoration:none;display:block;}
+.nf-btn:hover{border-color:var(--accent);}
+.nf-btn.finish{background:var(--accent);color:#fff;border-color:var(--accent);text-align:center;padding:1.1rem 2.5rem;font-size:15px;font-weight:700;}
+.nf-btn.finish:hover{background:#2a5a10;}
+code{font-family:'JetBrains Mono',monospace;font-size:12px;background:rgba(0,0,0,.06);padding:1px 5px;border-radius:2px;color:var(--accent);}
+pre code{background:none;padding:0;color:inherit;font-size:inherit;}
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px;}
+@media(max-width:860px){.sidebar{display:none;}.main{margin-left:0;}.content{padding:1.5rem 1.1rem 3rem;}.level-strip,.comp-grid{grid-template-columns:1fr 1fr;}}
+</style>
+</head>
+<body>
+<nav class="sidebar">
+  <div class="sb-brand"><div class="sb-badge">AppSec Engineer</div><h2>Application Security<br>Learning Path</h2></div>
+  <div class="sb-sect">Module 1 &mdash; Foundations</div>
+  <a class="nav-item done" href="#"><span class="num">01</span>OWASP Top 10 2021</a>
+  <a class="nav-item done" href="#"><span class="num">02</span>Secure SDLC</a>
+  <a class="nav-item done" href="#"><span class="num">03</span>Threat Modeling</a>
+  <div class="sb-sect">Module 2 &mdash; Testing Tools</div>
+  <a class="nav-item done" href="#"><span class="num">04</span>SAST</a>
+  <a class="nav-item done" href="#"><span class="num">05</span>DAST</a>
+  <a class="nav-item done" href="#"><span class="num">06</span>SCA</a>
+  <a class="nav-item done" href="#"><span class="num">07</span>IAST &amp; RASP</a>
+  <div class="sb-sect">Module 3 &mdash; API Security</div>
+  <a class="nav-item done" href="#"><span class="num">08</span>OWASP API Top 10</a>
+  <a class="nav-item done" href="#"><span class="num">09</span>API Security Testing</a>
+  <a class="nav-item done" href="#"><span class="num">10</span>GraphQL Security</a>
+  <div class="sb-sect">Module 4 &mdash; DevSecOps</div>
+  <a class="nav-item done" href="#"><span class="num">11</span>DevSecOps Pipeline</a>
+  <a class="nav-item done" href="#"><span class="num">12</span>Secrets Management</a>
+  <a class="nav-item done" href="#"><span class="num">13</span>Container Security</a>
+  <a class="nav-item done" href="#"><span class="num">14</span>Dependency Scanning</a>
+  <a class="nav-item done" href="#"><span class="num">15</span>SBOM</a>
+  <div class="sb-sect">Module 5 &mdash; Architecture</div>
+  <a class="nav-item done" href="#"><span class="num">16</span>Security Architecture</a>
+  <a class="nav-item done" href="#"><span class="num">17</span>Supply Chain Security</a>
+  <a class="nav-item done" href="#"><span class="num">18</span>WAF</a>
+  <a class="nav-item done" href="#"><span class="num">19</span>Code Review</a>
+  <a class="nav-item active last" href="#"><span class="num">20</span>RASP</a>
+</nav>
+
+<div class="main">
+<div class="topbar">
+  <div class="bc">appsec-engineer / module-5 / <span>rasp</span></div>
+  <div class="top-badge">Lesson 20 / 20 &mdash; Final</div>
+</div>
+<div class="content">
+
+<div class="hero">
+  <div class="hero-meta">
+    <span class="tag t-beg">Beginner &rarr; Advanced</span>
+    <span class="tag t-frm">Runtime Defence</span>
+    <span class="tag t-time">~55 min</span>
+  </div>
+  <h1>Runtime Application<br>Self-<span class="hl">Protection</span></h1>
+  <p class="hero-sub">Runtime Application Self-Protection (RASP) embeds security instrumentation directly inside the application runtime. Unlike a WAF, which sits outside the application and inspects HTTP traffic, RASP executes inside the application process and can see the actual function calls, database queries, and file operations that an attack triggers. RASP can block attacks that bypass WAF rules, detect second-order injection, and provide context that no external perimeter tool can match. This final lesson closes the curriculum: RASP is the innermost defence layer, the last line of defence before the vulnerability is exploited.</p>
+  <div class="level-strip">
+    <div class="lv-cell"><div class="lv-pip" style="background:var(--accent)"></div><div class="lv-label">Beginner</div><div class="lv-title">What RASP is &amp; how it works</div><div class="lv-desc">In-process instrumentation, hooking, taint tracking, RASP vs WAF vs IAST differences</div></div>
+    <div class="lv-cell"><div class="lv-pip" style="background:var(--yellow)"></div><div class="lv-label">Intermediate</div><div class="lv-title">RASP implementations</div><div class="lv-desc">Python RASP via monkey-patching, Java agent approach, Contrast Security, Sqreen/Datadog ASM, OpenRASP</div></div>
+    <div class="lv-cell"><div class="lv-pip" style="background:var(--red)"></div><div class="lv-label">Advanced</div><div class="lv-title">Deployment, tuning &amp; the full picture</div><div class="lv-desc">Blocking vs detection mode, performance impact, defence-in-depth stack, when RASP is and isn't the answer</div></div>
+  </div>
+</div>
+
+<!-- BEGINNER: WHAT RASP IS -->
+<div class="section">
+  <div class="eyebrow">&#x1F7E2; Beginner &mdash; How RASP Works</div>
+  <div class="sec-title">Security from inside the application process</div>
+  <div class="sec-sub">RASP instruments the runtime &mdash; hooking database drivers, file system calls, deserialization functions, and other sensitive operations &mdash; to detect and block attacks at the moment they attempt to execute, not at the perimeter.</div>
+
+  <div class="callout cl-tip">
+    <div class="cl-icon">&#x1F4A1;</div>
+    <div class="cl-text"><strong>Why inside the process?</strong> A WAF inspects the HTTP request and sees: <code>GET /search?q=1'%20UNION%20SELECT</code>. It applies a pattern match and may or may not block it. RASP sees what actually executes: the database driver is about to run <code>SELECT * FROM products WHERE name='' UNION SELECT password FROM users--</code>. RASP has full context: the exact SQL that would be sent, the call stack that produced it, and whether this was a parameterised call or a string concatenation. No bypass technique changes what RASP observes — it intercepts at the point of execution, after all transformations.</div>
+  </div>
+
+  <div class="panel" id="pan-how">
+    <div class="panel-h" onclick="tp('pan-how')">
+      <div class="panel-dot" style="background:var(--blue)"></div>
+      <div class="panel-title">RASP instrumentation: how hooks work</div>
+      <div class="panel-sub">Three instrumentation approaches: monkey-patching, JVM agents, eBPF</div>
+      <div class="panel-tog">&#x25BC;</div>
+    </div>
+    <div class="panel-body">
+      <table>
+        <tr><th>Approach</th><th>How it works</th><th>Languages</th><th>Pros</th><th>Cons</th></tr>
+        <tr><td style="font-weight:700;color:var(--accent)">Monkey-patching</td><td>Replace the original function at import time with a wrapper that adds security checks, then calls the original</td><td>Python, Ruby, JavaScript</td><td>No compilation step; easy to deploy; can hook any function</td><td>Fragile if original function changes; Python GIL implications</td></tr>
+        <tr><td style="font-weight:700;color:var(--blue)">JVM agent</td><td>Java -javaagent flag loads a bytecode instrumentation agent that rewrites class bytecode at load time</td><td>Java, Kotlin, Scala, Groovy</td><td>Deep visibility; JVM provides stable hook points; widely used in APM</td><td>JVM-only; startup overhead; bytecode complexity</td></tr>
+        <tr><td style="font-weight:700;color:var(--purple)">eBPF (kernel)</td><td>Extended Berkeley Packet Filter programs attach to kernel system calls; can observe any process without code changes</td><td>Any (kernel-level)</td><td>Zero code changes needed; language-agnostic; very low overhead</td><td>Linux only; kernel version requirements; complex to write</td></tr>
+        <tr><td style="font-weight:700;color:var(--teal)">Native hooks</td><td>C/C++ shared library injected via LD_PRELOAD; wraps libc functions</td><td>C, C++, any language using libc</td><td>Hooks at OS level; catches all system calls</td><td>Very complex; risk of instability</td></tr>
+      </table>
+<pre>
+<span class="ctag">Python RASP &mdash; monkey-patching DB driver</span>
+<span class="cf">import</span> functools, re, logging
+
+<span class="cf">def</span> <span class="cg">rasp_sql_hook</span>(original_execute):
+    <span class="cf">@functools.wraps</span>(original_execute)
+    <span class="cf">def</span> <span class="cg">hooked_execute</span>(self, query, params=None, **kwargs):
+        <span class="cm"># Inspect the query BEFORE it is sent to the database</span>
+        <span class="cf">if</span> params <span class="cf">is None</span>:
+            <span class="cm"># Unparameterised query: high risk — inspect for injection</span>
+            <span class="cf">if</span> detect_sqli(query):
+                logging.critical(<span class="cs">f"RASP: SQL injection blocked: {query[:200]}"</span>)
+                <span class="cf">raise</span> SecurityException(<span class="cs">"SQL injection detected and blocked"</span>)
+        <span class="cm"># Parameterised: safe to execute (params are not interpreted as SQL)</span>
+        <span class="cf">return</span> original_execute(self, query, params, **kwargs)
+    <span class="cf">return</span> hooked_execute
+
+<span class="cf">def</span> <span class="cg">detect_sqli</span>(query: str) -&gt; bool:
+    <span class="cm"># RASP has context: this IS the query going to the DB</span>
+    <span class="cm"># No encoding bypass possible: we see the decoded, final query string</span>
+    patterns = [
+        r<span class="cs">r"UNION\s+SELECT"</span>,
+        r<span class="cs">r"OR\s+['\d]+=\s*['\d]+"</span>,
+        r<span class="cs">r"--\s*$"</span>,
+        r<span class="cs">r";\s*(DROP|DELETE|INSERT|UPDATE)\s+"</span>,
+    ]
+    <span class="cf">return</span> any(re.search(p, query, re.IGNORECASE) <span class="cf">for</span> p <span class="cf">in</span> patterns)
+
+<span class="cm"># Install the hook (at application startup)</span>
+<span class="cf">import</span> psycopg2.extensions
+psycopg2.extensions.cursor.execute = rasp_sql_hook(
+    psycopg2.extensions.cursor.execute
+)
+<span class="cm"># Now every db.execute() call in the entire application passes through RASP
+# This cannot be bypassed by encoding: RASP sees the final, decoded query</span>
+</pre>
+    </div>
+  </div>
+
+  <div class="panel" id="pan-rasp-vs">
+    <div class="panel-h" onclick="tp('pan-rasp-vs')">
+      <div class="panel-dot" style="background:var(--accent)"></div>
+      <div class="panel-title">RASP vs WAF vs IAST &mdash; the complete comparison</div>
+      <div class="panel-sub">When each tool is appropriate and why they complement each other</div>
+      <div class="panel-tog">&#x25BC;</div>
+    </div>
+    <div class="panel-body">
+      <table>
+        <tr><th>Dimension</th><th>WAF</th><th>IAST</th><th>RASP</th></tr>
+        <tr><td style="font-weight:600">Where it runs</td><td>Outside the app (network proxy)</td><td>Inside the app (testing only)</td><td>Inside the app (production)</td></tr>
+        <tr><td style="font-weight:600">What it inspects</td><td>HTTP request/response headers and body</td><td>Application execution during test traffic</td><td>Actual function calls, queries, and OS operations</td></tr>
+        <tr><td style="font-weight:600">Context available</td><td>HTTP layer only; no application context</td><td>Full call stack and data flow</td><td>Full call stack and data flow</td></tr>
+        <tr><td style="font-weight:600">Can be bypassed by encoding?</td><td>Yes — encoding, obfuscation</td><td>No — inspects after decoding</td><td>No — inspects at execution point</td></tr>
+        <tr><td style="font-weight:600">Catches business logic?</td><td>No</td><td>No (only injection-type)</td><td>Partially (detects dangerous operations regardless of business logic)</td></tr>
+        <tr><td style="font-weight:600">Catches second-order injection?</td><td>No — the store looks safe</td><td>Yes — if test traffic triggers it</td><td>Yes — blocks at execution time regardless of when stored</td></tr>
+        <tr><td style="font-weight:600">Production use?</td><td>Yes</td><td>No (dev/test only)</td><td>Yes</td></tr>
+        <tr><td style="font-weight:600">Performance overhead</td><td>+2-10ms network latency</td><td>High (testing only, acceptable)</td><td>2-10% CPU; milliseconds per hook call</td></tr>
+        <tr><td style="font-weight:600">False positives</td><td>High without tuning</td><td>Low (used for detection only)</td><td>Very low (sees actual attack execution)</td></tr>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- INTERMEDIATE: IMPLEMENTATIONS -->
+<div class="section">
+  <div class="eyebrow">&#x1F7E1; Intermediate &mdash; RASP Implementations</div>
+  <div class="sec-title">Building and deploying RASP protection</div>
+  <div class="sec-sub">RASP can be custom-built by monkey-patching critical functions, or deployed via commercial platforms that provide out-of-the-box protection. Both approaches are covered here.</div>
+
+  <div class="tool-tabs">
+    <div class="tool-tab-bar">
+      <div class="ttab active" onclick="switchTab(this,'t-custom')">Custom Python RASP</div>
+      <div class="ttab" onclick="switchTab(this,'t-datadog')">Datadog ASM</div>
+      <div class="ttab" onclick="switchTab(this,'t-contrast')">Contrast Security</div>
+      <div class="ttab" onclick="switchTab(this,'t-openrasp')">OpenRASP</div>
+    </div>
+
+    <div class="tool-pane active" id="t-custom">
+      <p style="font-size:13.5px;color:var(--ink2);line-height:1.75;margin-bottom:.85rem;">A custom RASP built on Python monkey-patching is the clearest way to understand the concept. It is also practical for protecting specific high-risk operations in your codebase that commercial tools might not cover well. Here is a complete multi-hook RASP implementation covering SQL, command execution, file access, and deserialization.</p>
+<pre>
+<span class="ctag">Python RASP &mdash; complete multi-hook implementation</span>
+<span class="cm"># rasp/hooks.py</span>
+<span class="cf">import</span> functools, os, re, subprocess, pickle, logging
+
+RASP_MODE = os.getenv(<span class="cs">"RASP_MODE"</span>, <span class="cs">"block"</span>)   <span class="cm"># "block" or "detect"</span>
+
+<span class="cf">class</span> <span class="ck">RASPViolation</span>(Exception): <span class="cf">pass</span>
+
+<span class="cf">def</span> <span class="cg">_rasp_action</span>(attack_type: str, detail: str):
+    logging.critical(<span class="cs">f"[RASP] {attack_type}: {detail[:200]}"</span>)
+    <span class="cf">if</span> RASP_MODE == <span class="cs">"block"</span>:
+        <span class="cf">raise</span> RASPViolation(<span class="cs">f"Blocked by RASP: {attack_type}"</span>)
+    <span class="cm"># detect mode: log only, allow execution</span>
+
+<span class="cm"># Hook 1: Database query inspection</span>
+<span class="cf">def</span> <span class="cg">install_sql_hook</span>():
+    <span class="cf">try</span>:
+        <span class="cf">import</span> psycopg2.extensions <span class="cf">as</span> ext
+        _orig = ext.cursor.execute
+        <span class="cf">@functools.wraps</span>(_orig)
+        <span class="cf">def</span> <span class="cg">_hooked</span>(self, query, params=None, **kw):
+            <span class="cf">if</span> params <span class="cf">is None</span> <span class="cf">and</span> _is_sqli(str(query)):
+                _rasp_action(<span class="cs">"SQL_INJECTION"</span>, query)
+            <span class="cf">return</span> _orig(self, query, params, **kw)
+        ext.cursor.execute = _hooked
+    <span class="cf">except</span> ImportError: <span class="cf">pass</span>
+
+<span class="cf">def</span> <span class="cg">_is_sqli</span>(query: str) -&gt; bool:
+    dangerous = [r<span class="cs">r"UNION\s+SELECT"</span>, r<span class="cs">r";\s*(DROP|DELETE|TRUNCATE)\b"</span>,
+                 r<span class="cs">r"\bOR\b.+?=.+?\bOR\b"</span>]
+    <span class="cf">return</span> any(re.search(p, query, re.I) <span class="cf">for</span> p <span class="cf">in</span> dangerous)
+
+<span class="cm"># Hook 2: Command execution</span>
+_orig_popen = subprocess.Popen.__init__
+
+<span class="cf">def</span> <span class="cg">_safe_popen</span>(self, args, *a, shell=False, **kw):
+    <span class="cf">if</span> shell <span class="cf">and isinstance</span>(args, str):
+        _rasp_action(<span class="cs">"COMMAND_INJECTION"</span>, <span class="cs">f"shell=True: {args}"</span>)
+    _orig_popen(self, args, *a, shell=shell, **kw)
+
+subprocess.Popen.__init__ = _safe_popen
+
+<span class="cm"># Hook 3: Deserialization of pickle</span>
+_orig_pickle_loads = pickle.loads
+
+<span class="cf">def</span> <span class="cg">_safe_pickle_loads</span>(data, **kw):
+    <span class="cf">import</span> traceback
+    stack = <span class="cs">"".join</span>(traceback.format_stack()[:<span class="ce">-1</span>])
+    _rasp_action(<span class="cs">"INSECURE_DESERIALIZATION"</span>, <span class="cs">f"pickle.loads() called\n{stack}"</span>)
+    <span class="cf">return</span> _orig_pickle_loads(data, **kw)
+
+pickle.loads = _safe_pickle_loads
+
+<span class="cm"># Hook 4: File path traversal</span>
+_orig_open = open
+
+<span class="cf">def</span> <span class="cg">_safe_open</span>(file, mode=<span class="cs">'r'</span>, *args, **kwargs):
+    path = os.path.realpath(str(file))
+    allowed_roots = [<span class="cs">'/var/www/uploads'</span>, <span class="cs">'/tmp/safe'</span>]
+    <span class="cf">if</span> mode <span class="cf">in</span> (<span class="cs">'w'</span>, <span class="cs">'a'</span>, <span class="cs">'wb'</span>) <span class="cf">and not</span> any(path.startswith(r) <span class="cf">for</span> r <span class="cf">in</span> allowed_roots):
+        _rasp_action(<span class="cs">"PATH_TRAVERSAL"</span>, <span class="cs">f"Write to: {path}"</span>)
+    <span class="cf">return</span> _orig_open(file, mode, *args, **kwargs)
+
+<span class="cf">import</span> builtins
+builtins.open = _safe_open
+
+<span class="cm"># Install all hooks at application startup:</span>
+<span class="cm"># if os.getenv("RASP_ENABLED") == "1": install_all_hooks()</span>
+</pre>
+    </div>
+
+    <div class="tool-pane" id="t-datadog">
+      <p style="font-size:13.5px;color:var(--ink2);line-height:1.75;margin-bottom:.85rem;">Datadog Application Security Management (formerly Sqreen) is a commercial RASP that integrates with the Datadog APM agent. Zero code changes needed: install the Python/Java/Node ddtrace package, set environment variables, and RASP is active. It protects against SQLi, CMDi, path traversal, SSRF, deserialization, and includes request blocking with a UI.</p>
+<pre>
+<span class="ctag">Datadog ASM &mdash; Python (Django/Flask)</span>
+<span class="cm"># Install Datadog RASP (adds to existing ddtrace setup)</span>
+$ pip install ddtrace
+
+<span class="cm"># Enable RASP via environment variables (no code changes)</span>
+DD_APPSEC_ENABLED=true \
+DD_APPSEC_AUTOMATED_USER_EVENTS_TRACKING=extended \
+DD_ENV=production \
+DD_SERVICE=myapp \
+DD_TRACE_AGENT_URL=http://datadog-agent:8126 \
+ddtrace-run gunicorn myapp.wsgi:application
+
+<span class="cm"># Django settings.py: enable in-app instrumentation</span>
+INSTALLED_APPS = [
+    <span class="cs">'ddtrace.contrib.django'</span>,
+    <span class="cm"># ... other apps</span>
+]
+
+<span class="cm"># What Datadog ASM hooks automatically:
+# - SQL queries (all supported DB drivers)
+# - Shell command execution
+# - HTTP outbound requests (SSRF detection)
+# - Deserialization (yaml, pickle)
+# - File operations
+# - User authentication events (login, signup, password reset)
+#
+# Blocking mode: set DD_APPSEC_BLOCK_SUSPICIOUS_IP=true
+# Detection mode: default (logs attacks, doesn't block)
+# Rule updates: Datadog pushes updated rule sets without redeployment</span>
+
+<span class="cm"># Kubernetes deployment</span>
+env:
+  - name: DD_APPSEC_ENABLED
+    value: <span class="cs">"true"</span>
+  - name: DD_ENV
+    value: production
+  - name: DD_SERVICE
+    value: myapp
+  - name: DD_TRACE_AGENT_HOST
+    valueFrom:
+      fieldRef: { fieldPath: status.hostIP }  <span class="cm"># send to node-level agent</span>
+</pre>
+    </div>
+
+    <div class="tool-pane" id="t-contrast">
+      <p style="font-size:13.5px;color:var(--ink2);line-height:1.75;margin-bottom:.85rem;">Contrast Security provides RASP for Java, .NET, Python, Node.js, and Ruby. It uses bytecode instrumentation (Java) and monkey-patching (Python) to hook at every relevant point. Contrast is unique in combining IAST (dev/test vulnerability finding) and RASP (production protection) in the same agent — the same code that finds vulnerabilities in testing blocks them in production.</p>
+<pre>
+<span class="ctag">Contrast Security &mdash; Java agent</span>
+<span class="cm"># Java: add -javaagent to JVM startup</span>
+java -javaagent:/opt/contrast/contrast.jar \
+     -Dcontrast.api.url=https://myorg.contrastsecurity.com/Contrast \
+     -Dcontrast.api.api_key=$CONTRAST_API_KEY \
+     -Dcontrast.api.user_name=$CONTRAST_USER \
+     -Dcontrast.api.service_key=$CONTRAST_SERVICE_KEY \
+     -Dcontrast.application.name=myapp-prod \
+     -jar myapp.jar
+
+<span class="cm"># Python: install and enable the agent</span>
+$ pip install contrast-agent
+$ contrast-python-run gunicorn myapp.wsgi:application
+
+<span class="cm"># contrast_security.yaml (configuration)</span>
+api:
+  url: https://myorg.contrastsecurity.com/Contrast
+  api_key: $CONTRAST_API_KEY
+
+protect:
+  enable: true
+  rules:
+    sql-injection: { mode: BLOCK }
+    cmd-injection: { mode: BLOCK }
+    path-traversal: { mode: BLOCK }
+    ssrf:           { mode: BLOCK }
+    deserialization:{ mode: BLOCK }
+    xss:            { mode: BLOCK }
+
+<span class="cm"># Contrast blocks at the exact vulnerable code location
+# Attack shows in Contrast UI with: full request, call stack, exact line of code
+# Used for both IAST (find in dev) and RASP (block in prod)</span>
+</pre>
+    </div>
+
+    <div class="tool-pane" id="t-openrasp">
+      <p style="font-size:13.5px;color:var(--ink2);line-height:1.75;margin-bottom:.85rem;">OpenRASP is an open-source RASP from Baidu supporting Java, PHP, and Python. It uses a JavaScript-based rule engine (V8) that loads hook scripts for each protection point. Fully open-source, no licensing cost. Best for teams who want visibility into the implementation or need to write custom detection logic.</p>
+<pre>
+<span class="ctag">OpenRASP &mdash; Java</span>
+<span class="cm"># Java: add to JVM startup</span>
+java -javaagent:/opt/openrasp/rasp.jar \
+     -Dopenrasp.root=/opt/openrasp \
+     -jar myapp.jar
+
+<span class="cm"># /opt/openrasp/conf/openrasp.yml</span>
+cloud:
+  enable: false              <span class="cm"># standalone mode (no cloud dashboard)</span>
+
+log:
+  maxburst: 100
+  appender: syslog           <span class="cm"># send alerts to syslog/SIEM</span>
+
+plugin:
+  timeout.millis: 100        <span class="cm"># plugin execution timeout</span>
+
+<span class="cm"># OpenRASP hooks and their default actions:
+# sql.connection: detect/block SQLi
+# command: detect/block command injection
+# fileUpload: validate uploaded file types
+# readFile / writeFile: path traversal detection
+# ssrf: detect outbound SSRF requests
+# deserialization: detect unsafe Java deserialization
+# xxe: detect XML External Entity attacks</span>
+
+<span class="cm"># Custom rule in JavaScript (OpenRASP's rule engine):</span>
+plugin.register(<span class="cs">'sql'</span>, <span class="cf">function</span>(params, context) {
+    <span class="cf">var</span> query = params.query;
+    <span class="cm">// Block queries that appear to use UNION-based injection</span>
+    <span class="cf">if</span> (/UNION\s+SELECT/i.test(query)) {
+        <span class="cf">return</span> <span class="ck">new</span> Result(BLOCK, <span class="cs">"SQL injection detected"</span>);
+    }
+    <span class="cf">return</span> <span class="ck">new</span> Result(IGNORE);
+});
+</pre>
+    </div>
+  </div>
+</div>
+
+<!-- ADVANCED: DEPLOYMENT & FULL PICTURE -->
+<div class="section">
+  <div class="eyebrow">&#x1F534; Advanced &mdash; Deployment, Tuning &amp; the Full Defence Stack</div>
+  <div class="sec-title">RASP in production and the complete defence-in-depth picture</div>
+  <div class="sec-sub">RASP is the innermost layer of the defence-in-depth stack. Understanding its operational characteristics and its place in the full architecture is the final piece of the AppSec engineer toolkit.</div>
+
+  <div class="panel" id="pan-deploy">
+    <div class="panel-h" onclick="tp('pan-deploy')">
+      <div class="panel-dot" style="background:var(--accent)"></div>
+      <div class="panel-title">RASP rollout: monitor before block</div>
+      <div class="panel-sub">The correct deployment sequence to avoid production incidents</div>
+      <div class="panel-tog">&#x25BC;</div>
+    </div>
+    <div class="panel-body">
+<pre>
+<span class="ctag">RASP rollout phases</span>
+<span class="cm"># Phase 1: Deploy in DETECT mode (log only, never block)</span>
+<span class="cm"># Set RASP_MODE=detect in production</span>
+<span class="cm"># Run for 2 weeks. Collect all alerts.</span>
+<span class="cm"># Review: are any legitimate operations being flagged?
+#   - Internal admin scripts that run raw SQL
+#   - Backup scripts that call subprocesses with shell=True
+#   - PDF generation that writes to filesystem</span>
+
+<span class="cm"># Phase 2: Create exceptions for legitimate operations</span>
+<span class="cf">def</span> <span class="cg">is_trusted_caller</span>() -&gt; bool:
+    <span class="cf">import</span> traceback
+    stack = traceback.format_stack()
+    trusted_frames = [<span class="cs">'backup_script.py'</span>, <span class="cs">'admin_task.py'</span>]
+    <span class="cf">return</span> any(tf <span class="cf">in</span> <span class="cs">''.join</span>(stack) <span class="cf">for</span> tf <span class="cf">in</span> trusted_frames)
+
+<span class="cm"># Phase 3: Enable blocking for highest-confidence hooks first</span>
+<span class="cm"># Start with: deserialization (pickle.loads in web path is always wrong)</span>
+<span class="cm"># Then: SQL injection detection (if all DB calls are parameterised, very low FP)</span>
+<span class="cm"># Then: path traversal (hook specific upload endpoints)</span>
+<span class="cm"># Last: command injection (most likely to have legitimate shell calls)</span>
+
+<span class="cm"># Phase 4: Monitor false positive rate over 4 weeks</span>
+<span class="cm"># Target: 0 false positives per day (RASP has much less FP than WAF)</span>
+<span class="cm"># Any FP: add to trusted caller list or fix the underlying code</span>
+
+<span class="cm"># Phase 5: Enable all hooks in BLOCK mode</span>
+<span class="cm"># RASP_MODE=block in production</span>
+</pre>
+    </div>
+  </div>
+
+  <div class="panel" id="pan-perf">
+    <div class="panel-h" onclick="tp('pan-perf')">
+      <div class="panel-dot" style="background:var(--yellow)"></div>
+      <div class="panel-title">Performance impact &mdash; what to expect and how to measure</div>
+      <div class="panel-sub">RASP adds overhead; understanding it prevents surprises</div>
+      <div class="panel-tog">&#x25BC;</div>
+    </div>
+    <div class="panel-body">
+      <table>
+        <tr><th>Operation</th><th>Without RASP</th><th>With RASP</th><th>Overhead</th></tr>
+        <tr><td>DB query (per call)</td><td>0.5&ndash;5ms</td><td>0.5&ndash;5.1ms</td><td>+0.1ms (hook check)</td></tr>
+        <tr><td>HTTP request (P50)</td><td>10ms</td><td>10.2&ndash;11ms</td><td>+2-10% depending on hooks</td></tr>
+        <tr><td>CPU (overall)</td><td>Baseline</td><td>+2-10% CPU</td><td>Depends on request complexity</td></tr>
+        <tr><td>Memory (JVM agent)</td><td>Baseline</td><td>+50-150MB heap</td><td>Agent classes loaded</td></tr>
+        <tr><td>Startup time (Java)</td><td>5s</td><td>8-12s</td><td>Bytecode instrumentation at class load</td></tr>
+      </table>
+      <h4>Measuring RASP overhead in your application</h4>
+<pre>
+<span class="cm"># Load test with and without RASP, compare P50/P95/P99 latency</span>
+$ k6 run --vus 50 --duration 60s load-test.js
+<span class="cm"># Without RASP: P50=12ms, P95=45ms, P99=120ms</span>
+<span class="cm"># With RASP:    P50=13ms, P95=48ms, P99=124ms (about 3% overhead)</span>
+
+<span class="cm"># For high-frequency, low-latency APIs:
+# - Profile which hooks are most expensive
+# - Custom RASP: skip SQL check if query is definitely from ORM (parameterised)
+# - Sampling: check 100% of SQL, 10% of file reads (risk-based)
+# - Async logging: don't block request thread for logging</span>
+</pre>
+    </div>
+  </div>
+
+  <div class="panel" id="pan-stack">
+    <div class="panel-h" onclick="tp('pan-stack')">
+      <div class="panel-dot" style="background:var(--teal)"></div>
+      <div class="panel-title">The complete defence-in-depth stack &mdash; where every control fits</div>
+      <div class="panel-sub">All 20 lessons assembled into a coherent security architecture</div>
+      <div class="panel-tog">&#x25BC;</div>
+    </div>
+    <div class="panel-body">
+      <table>
+        <tr><th>Layer</th><th>Controls</th><th>Stops</th><th>Lesson</th></tr>
+        <tr><td style="font-weight:700;color:var(--blue)">Perimeter / CDN</td><td>WAF, DDoS protection, IP reputation, bot management</td><td>Commodity attacks, automated scanners, known CVE exploits, volumetric DoS</td><td>L18</td></tr>
+        <tr><td style="font-weight:700;color:var(--purple)">API / Gateway</td><td>Rate limiting, auth token validation, TLS termination, request validation</td><td>Unauthenticated requests, brute force, oversized payloads</td><td>L09, L10, L16</td></tr>
+        <tr><td style="font-weight:700;color:var(--accent)">Application code</td><td>Parameterised queries, input validation, RBAC, ownership checks, secure crypto</td><td>SQL injection, XSS, BOLA, authentication bypass, weak encryption</td><td>L04, L05, L19</td></tr>
+        <tr><td style="font-weight:700;color:var(--teal)">Runtime (RASP)</td><td>Hooks on DB drivers, file access, subprocess, deserialization</td><td>WAF bypasses, second-order injection, zero-day exploits, novel attack patterns</td><td>L07, L20</td></tr>
+        <tr><td style="font-weight:700;color:var(--yellow)">Data layer</td><td>Encryption at rest, row-level security, database user least privilege</td><td>Data exfiltration via direct DB access, backup compromise</td><td>L12, L16</td></tr>
+        <tr><td style="font-weight:700;color:var(--red)">Infrastructure</td><td>Container security contexts, network policies, image signing, SBOM</td><td>Container escape, lateral movement, supply chain attacks</td><td>L13, L14, L15, L17</td></tr>
+        <tr><td style="font-weight:700;color:var(--orange)">Detection</td><td>Falco, SIEM, audit logging, anomaly detection</td><td>Detects anything that slips through all other layers</td><td>L11, L13</td></tr>
+        <tr><td style="font-weight:700;color:var(--accent)">Build pipeline</td><td>SAST, SCA, secrets scanning, IaC scanning, provenance</td><td>Vulnerabilities introduced at development time</td><td>L04-L06, L11, L17</td></tr>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- QUIZ -->
+<div class="section">
+  <div class="eyebrow">Knowledge Check</div>
+  <div class="sec-title">RASP interview questions</div>
+
+  <div class="quiz-block">
+    <div class="quiz-q">Q1. A colleague argues that RASP is unnecessary if the application code is already secure. What is the correct counter-argument?</div>
+    <div class="quiz-opts" id="q1">
+      <div class="qo" onclick="doQ('q1',this,'wrong')">Correct — if the code is secure, RASP adds overhead with no benefit</div>
+      <div class="qo" onclick="doQ('q1',this,'correct')">RASP is defence-in-depth for vulnerabilities that: (1) are not yet known (zero-days), (2) exist in dependencies you cannot immediately patch, (3) were missed by code review and SAST, and (4) are second-order injection that reaches the DB months later. "Secure code" is an aspiration — the question is what happens when a vulnerability is discovered that your code review and SAST missed. RASP is the last line before exploitation. It also provides invaluable context during incident response: you know exactly which request triggered which operation.</div>
+      <div class="qo" onclick="doQ('q1',this,'wrong')">RASP is only needed for legacy code, not for modern applications</div>
+      <div class="qo" onclick="doQ('q1',this,'wrong')">RASP is required by all compliance frameworks so it must be deployed regardless</div>
+    </div>
+    <div class="quiz-exp" id="q1-exp">The "secure code doesn't need RASP" argument commits the same error as "we have a WAF so we don't need to fix the code" — it assumes a single control is sufficient. Three reasons RASP adds value even on "secure" code: (1) Zero-days: a new attack technique or a newly discovered vulnerability in a dependency may not be caught by existing controls. RASP's hook-based detection does not rely on knowing the attack pattern in advance — it blocks anomalous operations regardless of how they were triggered. (2) Defence-in-depth: the second-to-last layer catching what the previous layers missed. (3) Detection value: even if RASP doesn't block, it provides the call stack, request, and exact operation that was attempted — far richer incident response context than WAF logs.</div>
+  </div>
+
+  <div class="quiz-block">
+    <div class="quiz-q">Q2. How does RASP detect second-order SQL injection when a WAF cannot?</div>
+    <div class="quiz-opts" id="q2">
+      <div class="qo" onclick="doQ('q2',this,'wrong')">RASP scans the database storage for malicious payloads</div>
+      <div class="qo" onclick="doQ('q2',this,'correct')">In second-order injection: (1) the payload is stored safely (the INSERT looks clean — WAF sees nothing suspicious). (2) Later, a different request reads the stored value and uses it in a new SQL query without sanitisation. The WAF inspects HTTP requests; it sees the safe store request and the later benign-looking read request separately. It never sees the final unsafe query. RASP is hooked at the database driver: it inspects every query sent to the database, regardless of where the data came from. When the stored malicious value reaches the driver in an unsanitised query, RASP sees it and blocks the execution.</div>
+      <div class="qo" onclick="doQ('q2',this,'wrong')">RASP uses machine learning to predict which stored values will be used dangerously</div>
+      <div class="qo" onclick="doQ('q2',this,'wrong')">WAFs can also detect second-order injection with the right rule configuration</div>
+    </div>
+    <div class="quiz-exp" id="q2-exp">This is the key architectural advantage of RASP over perimeter controls for injection attacks. The WAF's inspection point is the HTTP boundary: it sees individual HTTP requests in isolation and has no memory of previous requests. Second-order injection involves two separate HTTP requests (store, then execute), with a potentially long gap between them. The WAF cannot correlate them. RASP's inspection point is the database driver: it sees every query at the moment it is about to execute, with the complete call stack showing what code path produced it. The stored malicious value, once read back and inserted into a SQL query without parameterisation, looks exactly like a first-order injection to the database driver — and RASP blocks it at that point. This is not a magic capability; it requires that the application's DB calls go through an ORM or driver that RASP has hooked.</div>
+  </div>
+</div>
+
+<!-- CHALLENGE -->
+<div class="challenge">
+  <div class="ch-ey">Final Capstone &mdash; Design the Complete Defence Stack</div>
+  <div class="ch">
+    <h3>Design the full security architecture for a payment platform</h3>
+    <p class="ch-desc">You are the AppSec lead for a Series B fintech company building a payment processing platform. PCI-DSS scope. 15 microservices on Kubernetes, Django APIs, Java payment service, React frontend. 500 engineers. You have a budget for one commercial tool. Design the complete defence-in-depth stack mapping each layer to controls from this curriculum, and justify your commercial tool choice.</p>
+    <div class="scenario">
+      <p><strong>Known risks:</strong> The Django APIs process user-uploaded data. The Java payment service handles raw card data. CI/CD runs on GitHub Actions with access to production AWS credentials. The team of 500 includes many junior engineers. No current security tooling beyond GitHub Dependabot alerts. The most likely threat actors: opportunistic criminals using automated scanners, and occasional targeted attempts given the payment data.</p>
+    </div>
+    <textarea id="ch-ans" placeholder="Layer 1 (Perimeter): ...
+Layer 2 (Pipeline): ...
+Layer 3 (Application code): ...
+Layer 4 (Runtime): ...
+Layer 5 (Infrastructure): ...
+Layer 6 (Data): ...
+Layer 7 (Detection): ...
+
+Commercial tool choice and justification: ...
+
+Priority order (what to implement first): ..."></textarea>
+    <div class="btn-row">
+      <button class="btn btn-p" onclick="checkCh()">Submit</button>
+      <button class="btn btn-g" onclick="revealCh()">Reveal model answer</button>
+    </div>
+    <div class="ch-fb" id="ch-fb"></div>
+  </div>
+</div>
+
+<!-- COMPLETION -->
+<div class="completion">
+  <span class="comp-badge">&#x2705; Curriculum Complete</span>
+  <div class="comp-title">AppSec Engineer Learning Path</div>
+  <p class="comp-sub">You have completed all 20 lessons across 5 modules. You now have a comprehensive, practitioner-level understanding of application security from first principles to production hardening.</p>
+  <div class="comp-grid">
+    <div class="comp-item"><strong>20</strong>Lessons</div>
+    <div class="comp-item"><strong>5</strong>Modules</div>
+    <div class="comp-item"><strong>100+</strong>Code examples</div>
+    <div class="comp-item"><strong>20</strong>Capstone challenges</div>
+  </div>
+  <p style="font-size:13px;color:rgba(255,255,255,.3);max-width:500px;margin:0 auto;">OWASP Top 10 &bull; SAST &bull; DAST &bull; SCA &bull; IAST &bull; RASP &bull; API Security &bull; GraphQL &bull; DevSecOps &bull; Secrets Management &bull; Container Security &bull; Dependency Scanning &bull; SBOM &bull; Security Architecture &bull; Supply Chain Security &bull; WAF &bull; Code Review</p>
+</div>
+
+<!-- SUMMARY -->
+<div class="section">
+  <div class="eyebrow">Quick Reference</div>
+  <div class="sec-title">RASP cheat sheet</div>
+  <table>
+    <tr><th>Topic</th><th>Key fact</th></tr>
+    <tr><td style="font-weight:700;color:var(--accent)">What RASP is</td><td>Security instrumentation inside the application process, hooking DB drivers, file access, subprocess, deserialization</td></tr>
+    <tr><td style="font-weight:700;color:var(--blue)">Key advantage over WAF</td><td>Sees decoded, transformed, final operation — encoding bypasses don't work; catches second-order injection</td></tr>
+    <tr><td style="font-weight:700;color:var(--accent)">Instrumentation methods</td><td>Python: monkey-patch; Java: -javaagent bytecode; eBPF: kernel-level (any language)</td></tr>
+    <tr><td style="font-weight:700;color:var(--green)">Deployment</td><td>Start in DETECT mode 2 weeks, add exceptions for legitimate callers, enable BLOCK incrementally</td></tr>
+    <tr><td style="font-weight:700;color:var(--yellow)">Performance overhead</td><td>2-10% CPU; +0.1-1ms per hooked call. Measure before and after with load testing.</td></tr>
+    <tr><td style="font-weight:700;color:var(--purple)">RASP vs IAST</td><td>IAST: dev/test only, finds vulnerabilities. RASP: production, blocks attacks. Same concept, different mode.</td></tr>
+    <tr><td style="font-weight:700;color:var(--teal)">Commercial tools</td><td>Datadog ASM (zero code change, cloud-native), Contrast (IAST+RASP same agent), OpenRASP (open source)</td></tr>
+    <tr><td style="font-weight:700;color:var(--red)">In the stack</td><td>Innermost defence layer: operates after WAF, API gateway, and application code, at the point of execution</td></tr>
+  </table>
+</div>
+
+<div class="nav-footer">
+  <a class="nf-btn" href="#"><span class="nf-dir">&larr; Previous</span><span class="nf-title">19 &mdash; Code Review</span></a>
+  <a class="nf-btn finish" href="#">&#x1F3C1; &nbsp; Curriculum Complete</a>
+</div>
+
+</div>
+</div>
+
+<!-- REVEAL HTML -->
+<div id="reveal-html" style="display:none">
+<strong>Model Answer &mdash; Complete Defence Stack for Payment Platform</strong><br><br>
+<strong>Layer 1 &mdash; Perimeter:</strong> Cloudflare WAF (or AWS WAF on ALB). OWASP CRS at PL1, tuned in detection mode for 2 weeks before blocking. Rate limiting: global 2000 req/5min, login endpoint 5/min. DDoS protection included with Cloudflare. This stops automated scanners, known CVE exploits, and credential stuffing with zero application changes.<br><br>
+<strong>Layer 2 &mdash; Build pipeline:</strong> (1) GitHub Actions: all Actions pinned by SHA. OIDC for AWS access (replace static credentials immediately — this is the highest-priority fix). (2) Semgrep SAST + custom rules for Django patterns. (3) pip-audit + npm audit in CI. (4) TruffleHog secrets scanning on every PR and scheduled daily. (5) Dependabot for dependency updates. (6) Checkov for IaC scanning. (7) Trivy for container scanning. (8) cosign image signing + Kyverno admission control. Generate SBOMs on every build. This alone covers most of the attack surface for 500 engineers making mistakes.<br><br>
+<strong>Layer 3 &mdash; Application code:</strong> Structured code review checklist for every security-relevant PR. Custom Semgrep rules for: missing @login_required, BOLA patterns (QuerySet.get() without user=), raw SQL, pickle.loads(). Django: parameterised queries, DRF explicit serialiser fields (no __all__), CSRF enforced, httpOnly SameSite cookies. Java payment service: OWASP Java Encoder, no string SQL, no Object deserialization from user input. The 500 engineer scale means education matters: security champions programme, coding guidelines, AppSec office hours.<br><br>
+<strong>Layer 4 &mdash; Runtime (RASP):</strong> Datadog ASM on all Django services (zero code change, integrates with existing Datadog APM). Deploy in detection mode first. Provides: SQLi protection that WAF bypasses can't defeat, deserialization blocking, SSRF detection, user event tracking (login anomalies). For the Java payment service: Contrast Security (the commercial tool choice — justification below).<br><br>
+<strong>Layer 5 &mdash; Infrastructure:</strong> K8s security contexts on all pods (runAsNonRoot, readOnlyRootFilesystem, drop ALL capabilities). Default-deny NetworkPolicy with explicit allowlists per service pair. Pod Security Standards: enforce=restricted on production namespace. IRSA for AWS access from pods. Separate K8s namespace for payment service with strictest policies. Falco for runtime threat detection.<br><br>
+<strong>Layer 6 &mdash; Data:</strong> PostgreSQL least-privilege: separate DB users per service (Django app user: SELECT/INSERT on its tables only; payment service: separate schema, separate user). Encryption at rest: AWS RDS with KMS. Card data: never stored in plaintext; tokenised via payment processor (Stripe handles raw card data, not the internal system — reduce PCI scope). Audit logging: immutable append-only audit table with user ID, action, timestamp on all payment operations.<br><br>
+<strong>Commercial tool choice: Contrast Security</strong> for the Java payment service. Justification: (1) PCI-DSS requires strong application security controls around card data processing — RASP on the payment service provides the strongest possible application-layer defence. (2) Contrast provides both IAST (finds vulnerabilities in dev/test, critical for a 500-engineer team) and RASP (blocks in production) in the same agent — one tool, two modes. (3) Java's JVM agent model means zero code changes, just a -javaagent flag. (4) Contrast's call stack + request context for every blocked attack gives the incident response detail PCI DSS audit trails need. Budget alternative: Datadog ASM covers Python services; OpenRASP is free for Java if commercial budget is not available.<br><br>
+<strong>Priority order:</strong> Week 1: Replace static AWS credentials with OIDC (highest blast-radius risk). Enable TruffleHog secrets scanning. Week 2-3: SAST with Semgrep on all repos (big team needs automated first line). Week 4: WAF in detection mode. Month 2: WAF blocking + SCA daily scans. Month 2-3: Container security contexts + NetworkPolicy on all services. Month 3: RASP in detection mode on Django + payment service. Month 4: RASP blocking, SBOM programme, Dependency-Track. Month 5-6: SLSA provenance, image signing, Kyverno admission control.
+</div>
+
+<script>
+function tp(id) { document.getElementById(id).classList.toggle('open'); }
+document.getElementById('pan-how').classList.add('open');
+document.getElementById('pan-rasp-vs').classList.add('open');
+
+function switchTab(btn, paneId) {
+  var bar = btn.parentElement;
+  bar.querySelectorAll('.ttab').forEach(function(t) { t.classList.remove('active'); });
+  btn.classList.add('active');
+  var wrap = bar.parentElement;
+  wrap.querySelectorAll('.tool-pane').forEach(function(p) { p.classList.remove('active'); });
+  var pane = document.getElementById(paneId);
+  if (pane) { pane.classList.add('active'); }
+}
+
+function doQ(qid, el, result) {
+  var container = document.getElementById(qid);
+  container.querySelectorAll('.qo').forEach(function(o) { o.onclick = null; });
+  el.classList.add(result === 'correct' ? 'correct' : 'wrong');
+  var exp = document.getElementById(qid + '-exp');
+  if (exp) { exp.classList.add('show'); }
+}
+
+function checkCh() {
+  var ans = document.getElementById('ch-ans').value.toLowerCase();
+  var fb  = document.getElementById('ch-fb');
+  var checks = [
+    ans.includes('waf') || (ans.includes('cloudflare') || ans.includes('aws waf')),
+    ans.includes('oidc') || ans.includes('static credential') || ans.includes('replace'),
+    ans.includes('sast') || ans.includes('semgrep'),
+    ans.includes('rasp') || ans.includes('datadog') || ans.includes('contrast'),
+    ans.includes('network') && (ans.includes('policy') || ans.includes('deny')),
+    ans.includes('secret') && (ans.includes('scan') || ans.includes('trufflehog') || ans.includes('gitleak')),
+    ans.includes('sbom') || ans.includes('sign') || ans.includes('provenance') || ans.includes('slsa'),
+    ans.includes('pci') || ans.includes('payment') || ans.includes('card'),
+    ans.includes('priority') || ans.includes('first') || ans.includes('week') || ans.includes('month')
+  ];
+  var score = checks.filter(Boolean).length;
+  fb.className = 'ch-fb show ' + (score >= 7 ? 'good' : 'hint');
+  if (score >= 7) {
+    fb.textContent = 'Excellent — ' + score + '/9 areas covered. You are thinking holistically across the full 20-lesson curriculum. The single highest-priority action in this scenario: replace the static AWS credentials in GitHub Actions with OIDC. Static credentials accessed from a compromised build server give permanent AWS access. OIDC gives 15-minute tokens tied to the specific workflow. This is the SolarWinds lesson applied to CI/CD: the pipeline has access to production, so the pipeline is part of the attack surface.';
+  } else if (score >= 4) {
+    fb.textContent = 'Good — ' + score + '/9 covered. Key additions: (1) The static AWS credentials in GitHub Actions are the highest-priority fix — replace with OIDC immediately. (2) PCI-DSS scope means RASP on the payment service is not optional — it provides the application-layer protection PCI requires around card data. (3) Priority order matters as much as the list: OIDC first, then secrets scanning, then SAST, then WAF. Tooling that takes a day to implement (OIDC, secrets scanning) should come before tooling that takes a month to tune (WAF, RASP).';
+  } else {
+    fb.textContent = 'Work through each layer of the defence stack: perimeter (WAF), pipeline (SAST/SCA/secrets), runtime (RASP), infrastructure (K8s security), data (encryption/least privilege), detection (Falco/SIEM). For PCI-DSS: the payment service needs the strongest controls. For 500 engineers: automation and education matter more than manual processes.';
+  }
+}
+
+function revealCh() {
+  var fb  = document.getElementById('ch-fb');
+  var src = document.getElementById('reveal-html');
+  fb.className = 'ch-fb show reveal';
+  fb.innerHTML = src ? src.innerHTML : 'Model answer unavailable.';
+}
+</script>
+</body>
+</html>

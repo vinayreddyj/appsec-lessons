@@ -1,0 +1,1708 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AppSec Engineer — Lesson 9: API Security Testing</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Lora:ital,wght@0,600;0,700;1,600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#faf9f7;
+  --surface:#ffffff;
+  --surface2:#f3f2ef;
+  --surface3:#ebe9e4;
+  --border:#dedad3;
+  --border2:#ccc9c0;
+  --ink:#1a1916;
+  --ink2:#4d4a43;
+  --ink3:#9a9690;
+  --accent:#0070f3;
+  --accent-bg:rgba(0,112,243,0.07);
+  --red:#d73a3a;
+  --red-bg:rgba(215,58,58,0.06);
+  --orange:#c2500a;
+  --orange-bg:rgba(194,80,10,0.06);
+  --yellow:#9a6c00;
+  --yellow-bg:rgba(154,108,0,0.07);
+  --green:#1a7a3c;
+  --green-bg:rgba(26,122,60,0.06);
+  --purple:#6b30b8;
+  --purple-bg:rgba(107,48,184,0.06);
+  --teal:#0d7c6e;
+  --teal-bg:rgba(13,124,110,0.06);
+  --pink:#b5226b;
+  --code-bg:#13120f;
+  --code-text:#e8e4dc;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--ink);font-family:'Manrope',sans-serif;font-size:15px;line-height:1.8;}
+
+/* SIDEBAR */
+.sidebar{position:fixed;left:0;top:0;bottom:0;width:252px;background:var(--ink);overflow-y:auto;z-index:100;}
+.sb-brand{padding:1.4rem 1.2rem 1rem;border-bottom:1px solid rgba(255,255,255,.07);}
+.sb-badge{font-family:'JetBrains Mono',monospace;font-size:9px;background:var(--accent);color:#fff;padding:2px 8px;border-radius:2px;letter-spacing:.12em;display:inline-block;margin-bottom:7px;text-transform:uppercase;font-weight:700;}
+.sb-brand h2{font-size:13px;font-weight:400;color:rgba(255,255,255,.4);line-height:1.4;}
+.sb-sect{padding:.7rem 1.2rem .2rem;font-size:9px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:rgba(255,255,255,.18);margin-top:.25rem;}
+.nav-item{display:flex;align-items:center;gap:9px;padding:.38rem 1.2rem;cursor:pointer;border-left:2px solid transparent;font-size:12.5px;color:rgba(255,255,255,.25);text-decoration:none;transition:all .15s;}
+.nav-item:hover{color:rgba(255,255,255,.6);background:rgba(255,255,255,.04);}
+.nav-item.done{color:rgba(255,255,255,.3);}
+.nav-item.active{color:#fff;border-left-color:var(--accent);background:var(--accent-bg);}
+.nav-item .num{font-family:'JetBrains Mono',monospace;font-size:10px;min-width:22px;opacity:.3;}
+.nav-item.active .num{opacity:1;color:var(--accent);}
+
+/* MAIN */
+.main{margin-left:252px;}
+.topbar{position:sticky;top:0;background:rgba(250,249,247,.96);backdrop-filter:blur(14px);border-bottom:1px solid var(--border);padding:.65rem 2.5rem;display:flex;align-items:center;justify-content:space-between;z-index:50;}
+.bc{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink3);}
+.bc span{color:var(--accent);font-weight:700;}
+.top-badge{font-family:'JetBrains Mono',monospace;font-size:10px;padding:3px 10px;background:var(--ink);color:rgba(255,255,255,.65);border-radius:2px;}
+.content{padding:3rem 2.5rem 5rem;max-width:960px;}
+
+/* HERO */
+.hero{margin-bottom:3.5rem;padding-bottom:2.5rem;border-bottom:2px solid var(--border);}
+.hero-meta{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1rem;}
+.tag{font-family:'JetBrains Mono',monospace;font-size:10px;padding:3px 10px;border-radius:2px;font-weight:600;letter-spacing:.04em;}
+.t-beg{background:var(--green-bg);color:var(--green);border:1px solid rgba(26,122,60,.2);}
+.t-tool{background:var(--blue-bg,var(--accent-bg));color:var(--accent);border:1px solid rgba(0,112,243,.2);}
+.t-time{background:var(--purple-bg);color:var(--purple);border:1px solid rgba(107,48,184,.2);}
+.hero h1{font-family:'Lora',serif;font-size:3.2rem;font-weight:700;line-height:1.1;color:var(--ink);margin-bottom:.85rem;letter-spacing:-.01em;}
+.hero h1 .hl{color:var(--accent);}
+.hero-sub{font-size:14.5px;color:var(--ink2);max-width:660px;line-height:1.8;margin-bottom:1.75rem;}
+.level-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:6px;overflow:hidden;}
+.lv-cell{background:var(--surface);padding:.9rem 1rem;}
+.lv-pip{width:8px;height:8px;border-radius:50%;margin-bottom:7px;}
+.lv-label{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink3);margin-bottom:3px;}
+.lv-title{font-size:13px;font-weight:700;color:var(--ink);margin-bottom:2px;}
+.lv-desc{font-size:12px;color:var(--ink3);line-height:1.5;}
+
+/* SECTIONS */
+.section{margin-bottom:3.5rem;}
+.eyebrow{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.15em;color:var(--accent);margin-bottom:5px;font-weight:700;}
+.sec-title{font-family:'Lora',serif;font-size:1.9rem;font-weight:700;color:var(--ink);line-height:1.2;margin-bottom:.35rem;}
+.sec-sub{font-size:14px;color:var(--ink2);max-width:660px;line-height:1.75;margin-bottom:1.5rem;}
+
+/* CALLOUT */
+.callout{border-radius:4px;padding:.9rem 1.1rem;margin:1rem 0;display:flex;gap:10px;align-items:flex-start;border-left:3px solid;}
+.cl-warn{background:var(--red-bg);border-color:var(--red);}
+.cl-info{background:var(--accent-bg);border-color:var(--accent);}
+.cl-tip{background:var(--green-bg);border-color:var(--green);}
+.cl-note{background:var(--yellow-bg);border-color:var(--yellow);}
+.cl-purple{background:var(--purple-bg);border-color:var(--purple);}
+.cl-teal{background:var(--teal-bg);border-color:var(--teal);}
+.cl-icon{font-size:15px;flex-shrink:0;margin-top:2px;}
+.cl-text{font-size:13.5px;color:var(--ink2);line-height:1.7;}
+.cl-text strong{color:var(--ink);}
+.cl-text code{font-family:'JetBrains Mono',monospace;font-size:11.5px;background:rgba(0,0,0,.06);padding:1px 5px;border-radius:2px;color:var(--accent);}
+
+/* CODE */
+pre{background:var(--code-bg);color:var(--code-text);border-radius:6px;padding:1.25rem;font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.8;overflow-x:auto;margin:.85rem 0;position:relative;border:1px solid rgba(255,255,255,.05);}
+.ctag{position:absolute;top:10px;right:12px;font-family:'JetBrains Mono',monospace;font-size:9px;color:rgba(255,255,255,.2);text-transform:uppercase;letter-spacing:.1em;}
+.ck{color:#c084fc;}.cf{color:#7dd3fc;}.cs{color:#86efac;}.cm{color:#374151;}.cv{color:#fcd34d;}.ce{color:#fb923c;}.cr{color:#f87171;}.cg{color:#4ade80;}.ct{color:#2dd4bf;}.cw{color:#f9a8d4;}.cy{color:#fde68a;}
+.lb{display:block;background:rgba(248,113,113,.09);border-left:2px solid #ef4444;margin:0 -1.25rem;padding:0 1.25rem;}
+.lg{display:block;background:rgba(74,222,128,.07);border-left:2px solid #22c55e;margin:0 -1.25rem;padding:0 1.25rem;}
+.lw{display:block;background:rgba(252,211,77,.07);border-left:2px solid #f59e0b;margin:0 -1.25rem;padding:0 1.25rem;}
+.lp{display:block;background:rgba(192,132,252,.07);border-left:2px solid #a855f7;margin:0 -1.25rem;padding:0 1.25rem;}
+
+/* PHASE STEPS */
+.phase-list{display:flex;flex-direction:column;gap:.65rem;margin:1.25rem 0;}
+.phase-step{background:var(--surface);border:1px solid var(--border);border-radius:6px;overflow:hidden;}
+.phase-header{display:flex;align-items:center;gap:12px;padding:.85rem 1rem;cursor:pointer;user-select:none;transition:background .15s;}
+.phase-header:hover{background:var(--surface2);}
+.phase-num{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;flex-shrink:0;}
+.phase-title{font-size:13.5px;font-weight:700;flex:1;color:var(--ink);}
+.phase-badge{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink3);}
+.phase-tog{color:var(--ink3);font-size:13px;transition:transform .2s;}
+.phase-step.open .phase-tog{transform:rotate(180deg);}
+.phase-body{display:none;padding:.9rem 1rem 1rem;border-top:1px solid var(--border);}
+.phase-step.open .phase-body{display:block;}
+.phase-body h5{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--ink3);margin:.85rem 0 .4rem;font-weight:700;}
+.phase-body p{font-size:13.5px;color:var(--ink2);line-height:1.75;}
+
+/* TOOL CARDS */
+.tool-tabs{border:1px solid var(--border);border-radius:6px;overflow:hidden;margin:1.25rem 0;}
+.tool-tab-bar{display:flex;background:var(--surface2);border-bottom:1px solid var(--border);flex-wrap:wrap;}
+.ttab{padding:.55rem 1rem;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;cursor:pointer;color:var(--ink3);border-right:1px solid var(--border);transition:all .15s;user-select:none;}
+.ttab:hover{color:var(--ink);}
+.ttab.active{background:var(--surface);color:var(--accent);border-bottom:2px solid var(--accent);}
+.tool-pane{display:none;padding:1.25rem;}
+.tool-pane.active{display:block;}
+
+/* TEST CASE CARDS */
+.test-case{background:var(--surface);border:1px solid var(--border);border-left:4px solid;border-radius:0 6px 6px 0;padding:1rem 1.1rem;margin-bottom:.75rem;cursor:pointer;transition:background .15s;}
+.test-case:hover{background:var(--surface2);}
+.tc-crit{border-left-color:var(--red);}
+.tc-high{border-left-color:var(--orange);}
+.tc-med{border-left-color:var(--yellow);}
+.tc-low{border-left-color:var(--green);}
+.tc-top{display:flex;align-items:flex-start;gap:1rem;justify-content:space-between;}
+.tc-title{font-size:13.5px;font-weight:700;color:var(--ink);margin-bottom:3px;}
+.tc-meta{font-size:11px;color:var(--ink3);font-family:'JetBrains Mono',monospace;}
+.tc-sev{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;padding:3px 10px;border-radius:2px;flex-shrink:0;white-space:nowrap;}
+.sc{background:var(--red-bg);color:var(--red);border:1px solid rgba(215,58,58,.2);}
+.sh{background:var(--orange-bg);color:var(--orange);border:1px solid rgba(194,80,10,.2);}
+.sm{background:var(--yellow-bg);color:var(--yellow);border:1px solid rgba(154,108,0,.2);}
+.sl{background:var(--green-bg);color:var(--green);border:1px solid rgba(26,122,60,.2);}
+.tc-body{display:none;margin-top:.85rem;padding-top:.85rem;border-top:1px solid var(--border);}
+.tc-body.show{display:block;}
+.tc-body h5{font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:var(--ink3);margin:.75rem 0 .35rem;font-weight:700;}
+.tc-body p{font-size:13.5px;color:var(--ink2);line-height:1.7;}
+
+/* TABLE */
+table{width:100%;border-collapse:collapse;font-size:13px;margin:1rem 0;}
+th{padding:.55rem .9rem;text-align:left;background:var(--ink);color:rgba(255,255,255,.7);font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.08em;}
+th:first-child{border-radius:4px 0 0 0;}th:last-child{border-radius:0 4px 0 0;}
+td{padding:.55rem .9rem;border-bottom:1px solid var(--border);color:var(--ink2);line-height:1.5;vertical-align:top;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:var(--surface2);}
+
+/* PANELS */
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:6px;overflow:hidden;margin-bottom:.75rem;}
+.panel-h{display:flex;align-items:center;gap:10px;padding:.9rem 1.1rem;cursor:pointer;transition:background .15s;user-select:none;}
+.panel-h:hover{background:var(--surface2);}
+.panel-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.panel-title{font-size:13.5px;font-weight:700;flex:1;color:var(--ink);}
+.panel-sub{font-size:12px;color:var(--ink3);}
+.panel-tog{color:var(--ink3);font-size:13px;transition:transform .2s;}
+.panel.open .panel-tog{transform:rotate(180deg);}
+.panel-body{display:none;padding:0 1.1rem 1.1rem;border-top:1px solid var(--border);}
+.panel.open .panel-body{display:block;}
+.panel-body h4{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--ink3);margin:1rem 0 .5rem;font-weight:700;}
+.panel-body p{font-size:13.5px;color:var(--ink2);line-height:1.75;margin-top:.6rem;}
+
+/* RW BOX */
+.rw-box{background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:1rem 1.1rem;margin:.85rem 0;}
+.rw-label{font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.12em;color:var(--red);margin-bottom:5px;font-weight:700;}
+.rw-box p{font-size:13px;color:var(--ink2);line-height:1.7;}
+
+/* PILL */
+.pill{font-size:11px;padding:3px 9px;border-radius:2px;font-family:'JetBrains Mono',monospace;font-weight:600;}
+.pr{background:var(--red-bg);color:var(--red);border:1px solid rgba(215,58,58,.2);}
+.pg{background:var(--green-bg);color:var(--green);border:1px solid rgba(26,122,60,.2);}
+.py{background:var(--yellow-bg);color:var(--yellow);border:1px solid rgba(154,108,0,.2);}
+.pb{background:var(--accent-bg);color:var(--accent);border:1px solid rgba(0,112,243,.2);}
+.pp{background:var(--purple-bg);color:var(--purple);border:1px solid rgba(107,48,184,.2);}
+.pt{background:var(--teal-bg);color:var(--teal);border:1px solid rgba(13,124,110,.2);}
+.pill-row{display:flex;flex-wrap:wrap;gap:6px;margin:.5rem 0;}
+
+/* TWO COL */
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin:1rem 0;}
+.cb{background:var(--red-bg);border:1px solid rgba(215,58,58,.15);border-radius:6px;padding:1rem;}
+.cg-box{background:var(--green-bg);border:1px solid rgba(26,122,60,.15);border-radius:6px;padding:1rem;}
+.cmp-l{font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.12em;font-weight:700;margin-bottom:.6rem;}
+.cb .cmp-l{color:var(--red);}
+.cg-box .cmp-l{color:var(--green);}
+
+/* QUIZ */
+.quiz-block{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:1.25rem;margin-bottom:1rem;}
+.quiz-q{font-size:14.5px;font-weight:700;color:var(--ink);margin-bottom:.85rem;line-height:1.55;}
+.quiz-opts{display:flex;flex-direction:column;gap:7px;margin-bottom:.75rem;}
+.qo{padding:.65rem 1rem;border:1px solid var(--border);border-radius:4px;cursor:pointer;font-size:13.5px;color:var(--ink2);background:var(--surface2);transition:all .15s;}
+.qo:hover{border-color:var(--accent);color:var(--ink);}
+.qo.correct{border-color:var(--green);color:var(--green);background:var(--green-bg);cursor:default;}
+.qo.wrong{border-color:var(--red);color:var(--red);background:var(--red-bg);cursor:default;}
+.quiz-exp{font-size:13px;color:var(--ink2);line-height:1.7;padding:.75rem 1rem;background:var(--surface2);border-radius:4px;border-left:3px solid var(--green);display:none;margin-top:.5rem;}
+.quiz-exp.show{display:block;}
+
+/* CHALLENGE */
+.challenge{background:var(--ink);border-radius:10px;padding:2rem;margin:3rem 0;position:relative;overflow:hidden;}
+.challenge::before{content:'';position:absolute;top:-60px;right:-60px;width:220px;height:220px;background:radial-gradient(circle,rgba(0,112,243,.12) 0%,transparent 70%);pointer-events:none;}
+.ch-ey{font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.15em;color:var(--accent);margin-bottom:.5rem;}
+.ch h3{font-family:'Lora',serif;font-size:1.55rem;font-weight:700;color:#fff;margin-bottom:.7rem;}
+.ch-desc{font-size:13.5px;color:rgba(255,255,255,.45);line-height:1.75;margin-bottom:1.25rem;}
+.scenario{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:5px;padding:1rem 1.1rem;margin-bottom:1.25rem;}
+.scenario p{font-size:13px;color:rgba(255,255,255,.55);line-height:1.75;}
+.scenario strong{color:rgba(255,255,255,.9);}
+.challenge textarea{width:100%;min-height:180px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:4px;padding:1rem;font-family:'JetBrains Mono',monospace;font-size:12px;color:rgba(255,255,255,.85);resize:vertical;outline:none;transition:border-color .2s;margin-bottom:1rem;}
+.challenge textarea:focus{border-color:var(--accent);}
+.challenge textarea::placeholder{color:rgba(255,255,255,.2);}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap;}
+.btn{padding:9px 20px;border-radius:4px;font-size:13px;font-family:'Manrope',sans-serif;font-weight:700;cursor:pointer;border:1px solid;transition:all .15s;}
+.btn-p{background:var(--accent);color:#fff;border-color:var(--accent);}
+.btn-p:hover{background:#0059c4;}
+.btn-g{background:transparent;color:rgba(255,255,255,.45);border-color:rgba(255,255,255,.14);}
+.btn-g:hover{color:#fff;border-color:rgba(255,255,255,.35);}
+.ch-fb{margin-top:1rem;padding:1rem 1.1rem;border-radius:5px;font-size:13.5px;line-height:1.7;display:none;}
+.ch-fb.show{display:block;}
+.ch-fb.good{background:rgba(26,122,60,.15);border:1px solid rgba(26,122,60,.3);color:#4ade80;}
+.ch-fb.hint{background:rgba(252,211,77,.1);border:1px solid rgba(252,211,77,.25);color:#fcd34d;}
+.ch-fb.reveal{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.75);}
+
+/* NAV FOOTER */
+.nav-footer{display:flex;justify-content:space-between;margin-top:4rem;padding-top:2rem;border-top:2px solid var(--border);}
+.nf-btn{padding:.85rem 1.5rem;border:1px solid var(--border);border-radius:4px;font-size:13px;cursor:pointer;background:var(--surface);color:var(--ink2);text-align:left;transition:all .15s;text-decoration:none;display:block;}
+.nf-btn:hover{border-color:var(--accent);}
+.nf-btn.next{background:var(--accent);color:#fff;border-color:var(--accent);text-align:right;}
+.nf-btn.next:hover{background:#0059c4;}
+.nf-dir{font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:var(--ink3);display:block;margin-bottom:3px;}
+.nf-btn.next .nf-dir{color:rgba(255,255,255,.4);}
+.nf-title{font-weight:700;display:block;}
+
+code{font-family:'JetBrains Mono',monospace;font-size:12px;background:rgba(0,0,0,.06);padding:1px 5px;border-radius:2px;color:var(--accent);}
+pre code{background:none;padding:0;color:inherit;font-size:inherit;}
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px;}
+
+@media(max-width:860px){
+  .sidebar{display:none;}.main{margin-left:0;}
+  .content{padding:1.5rem 1.1rem 3rem;}
+  .level-strip,.two-col{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<nav class="sidebar">
+  <div class="sb-brand">
+    <div class="sb-badge">AppSec Engineer</div>
+    <h2>Application Security<br>Learning Path</h2>
+  </div>
+  <div class="sb-sect">Module 1 &mdash; Foundations</div>
+  <a class="nav-item done" href="#"><span class="num">01</span>OWASP Top 10 2021</a>
+  <a class="nav-item done" href="#"><span class="num">02</span>Secure SDLC</a>
+  <a class="nav-item done" href="#"><span class="num">03</span>Threat Modeling</a>
+  <div class="sb-sect">Module 2 &mdash; Testing Tools</div>
+  <a class="nav-item done" href="#"><span class="num">04</span>SAST</a>
+  <a class="nav-item done" href="#"><span class="num">05</span>DAST</a>
+  <a class="nav-item done" href="#"><span class="num">06</span>SCA</a>
+  <a class="nav-item done" href="#"><span class="num">07</span>IAST &amp; RASP</a>
+  <div class="sb-sect">Module 3 &mdash; API Security</div>
+  <a class="nav-item done" href="#"><span class="num">08</span>OWASP API Top 10</a>
+  <a class="nav-item active" href="#"><span class="num">09</span>API Security Testing</a>
+  <a class="nav-item" href="#"><span class="num">10</span>GraphQL Security</a>
+  <div class="sb-sect">Module 4 &mdash; DevSecOps</div>
+  <a class="nav-item" href="#"><span class="num">11</span>DevSecOps Pipeline</a>
+  <a class="nav-item" href="#"><span class="num">12</span>Secrets Management</a>
+  <a class="nav-item" href="#"><span class="num">13</span>Container Security</a>
+  <a class="nav-item" href="#"><span class="num">14</span>Dependency Scanning</a>
+  <a class="nav-item" href="#"><span class="num">15</span>SBOM</a>
+  <div class="sb-sect">Module 5 &mdash; Architecture</div>
+  <a class="nav-item" href="#"><span class="num">16</span>Security Architecture</a>
+  <a class="nav-item" href="#"><span class="num">17</span>Supply Chain Security</a>
+  <a class="nav-item" href="#"><span class="num">18</span>WAF</a>
+  <a class="nav-item" href="#"><span class="num">19</span>Code Review</a>
+  <a class="nav-item" href="#"><span class="num">20</span>RASP</a>
+</nav>
+
+<div class="main">
+<div class="topbar">
+  <div class="bc">appsec-engineer / module-3 / <span>api-security-testing</span></div>
+  <div class="top-badge">Lesson 09 / 20</div>
+</div>
+<div class="content">
+
+<!-- ═══ HERO ═══ -->
+<div class="hero">
+  <div class="hero-meta">
+    <span class="tag t-beg">Beginner &rarr; Advanced</span>
+    <span class="tag t-tool">Tool</span>
+    <span class="tag t-time">~70 min</span>
+  </div>
+  <h1>API Security<br><span class="hl">Testing</span></h1>
+  <p class="hero-sub">Knowing the OWASP API Top 10 is theory. API security testing is the practice &mdash; the hands-on skill of actually finding those vulnerabilities in real APIs before attackers do. This lesson builds a complete testing methodology from the ground up: reconnaissance and attack surface mapping, authentication testing, business logic abuse, manual testing with Burp Suite, automated scanning, and building a repeatable test suite that runs in your CI/CD pipeline on every release.</p>
+  <div class="level-strip">
+    <div class="lv-cell">
+      <div class="lv-pip" style="background:var(--green)"></div>
+      <div class="lv-label">Beginner</div>
+      <div class="lv-title">Methodology &amp; recon</div>
+      <div class="lv-desc">The 5-phase testing methodology, reading OpenAPI specs, understanding attack surface, setting up your environment</div>
+    </div>
+    <div class="lv-cell">
+      <div class="lv-pip" style="background:var(--yellow)"></div>
+      <div class="lv-label">Intermediate</div>
+      <div class="lv-title">Manual testing deep dives</div>
+      <div class="lv-desc">Burp Suite for API testing, BOLA enumeration, auth bypass, mass assignment, JWT attacks, rate limit testing</div>
+    </div>
+    <div class="lv-cell">
+      <div class="lv-pip" style="background:var(--red)"></div>
+      <div class="lv-label">Advanced</div>
+      <div class="lv-title">Automation &amp; CI/CD</div>
+      <div class="lv-desc">Writing test scripts, ZAP automation, Postman security collections, GitHub Actions API security gate, reporting</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ BEGINNER: THE METHODOLOGY ═══ -->
+<div class="section">
+  <div class="eyebrow">&#x1F7E2; Beginner &mdash; The Testing Methodology</div>
+  <div class="sec-title">A structured 5-phase API security testing methodology</div>
+  <div class="sec-sub">Ad-hoc testing finds some bugs by luck. A methodology finds them systematically. Every professional API security engagement follows a structured process. This is the one you will use.</div>
+
+  <div class="callout cl-info">
+    <div class="cl-icon">&#x2139;&#xFE0F;</div>
+    <div class="cl-text"><strong>Difference from web app testing:</strong> Web app testing starts with a browser. API testing starts with documentation. Before sending a single request, you spend time understanding what the API does, what objects it exposes, what operations it supports, and what the authentication model is. The OpenAPI specification is your map of the entire attack surface.</div>
+  </div>
+
+  <div class="phase-list">
+
+    <div class="phase-step" id="ph1">
+      <div class="phase-header" onclick="togglePhase('ph1')">
+        <div class="phase-num" style="background:var(--green-bg);color:var(--green)">1</div>
+        <div class="phase-title">Reconnaissance &mdash; Map the attack surface before touching the API</div>
+        <div class="phase-badge">30&ndash;60 min</div>
+        <div class="phase-tog">&#x25BC;</div>
+      </div>
+      <div class="phase-body">
+        <p>Reconnaissance is everything you learn about an API before sending your first test request. The goal is to understand: what endpoints exist, what objects they expose, what authentication they require, what the data model looks like, and where the interesting business logic lives. Skipping recon means testing blindly and missing entire attack surfaces.</p>
+
+        <h5>Recon checklist &mdash; do all of these before testing</h5>
+        <table>
+          <tr><th>Source</th><th>What to find</th><th>How to find it</th></tr>
+          <tr>
+            <td style="font-weight:600">OpenAPI / Swagger spec</td>
+            <td>Every endpoint, parameter, data type, authentication requirement</td>
+            <td>Try: <code>/openapi.json</code>, <code>/swagger.json</code>, <code>/api-docs</code>, <code>/v1/docs</code>, <code>/swagger-ui.html</code>, <code>/.well-known/openapi</code></td>
+          </tr>
+          <tr>
+            <td style="font-weight:600">JavaScript bundles</td>
+            <td>Hardcoded API endpoints, internal routes not in the spec</td>
+            <td>Open browser DevTools &rarr; Sources &rarr; search for <code>/api/</code> in JS files. Use <code>linkfinder</code> tool to extract URLs from minified JS.</td>
+          </tr>
+          <tr>
+            <td style="font-weight:600">Mobile app</td>
+            <td>API endpoints, authentication tokens, internal URLs</td>
+            <td>Decompile Android APK with jadx. Intercept iOS traffic with Burp + mitmproxy. Strings extraction: <code>strings app.apk | grep https://</code></td>
+          </tr>
+          <tr>
+            <td style="font-weight:600">Network traffic</td>
+            <td>Actual requests made by the app during normal usage</td>
+            <td>Proxy browser through Burp Suite. Browse all app features. Every request that hits the API is captured and added to your test scope.</td>
+          </tr>
+          <tr>
+            <td style="font-weight:600">Error responses</td>
+            <td>Framework version, stack traces, field names, DB schema hints</td>
+            <td>Send malformed requests (wrong content-type, missing required fields, SQL characters). Read error messages carefully.</td>
+          </tr>
+          <tr>
+            <td style="font-weight:600">Git / public repos</td>
+            <td>Hardcoded API keys, internal endpoint names, auth tokens</td>
+            <td>Search GitHub for company name + "api_key" or "internal_api". Check commit history if repo is public.</td>
+          </tr>
+        </table>
+
+<pre>
+<span class="cm"># Reading an OpenAPI spec to build your attack plan</span>
+
+<span class="cm"># 1. List all endpoints and their HTTP methods</span>
+$ cat openapi.json | jq '.paths | keys[]'
+<span class="cg">"/api/v1/users/{user_id}"</span>
+<span class="cg">"/api/v1/users/{user_id}/orders"</span>
+<span class="cg">"/api/v1/admin/users"</span>
+<span class="cg">"/api/v1/payments/transfer"</span>
+
+<span class="cm"># 2. Find endpoints with path parameters (BOLA candidates)</span>
+$ cat openapi.json | jq '.paths | to_entries[] | select(.key | contains("{")) | .key'
+<span class="cg">"/api/v1/users/{user_id}"</span>         <span class="cm"># ← test BOLA: can you access other users?</span>
+<span class="cg">"/api/v1/orders/{order_id}"</span>        <span class="cm"># ← test BOLA: can you access other orders?</span>
+<span class="cg">"/api/v1/documents/{doc_id}"</span>       <span class="cm"># ← test BOLA: can you access other documents?</span>
+
+<span class="cm"># 3. Find endpoints with no security defined (auth bypass candidates)</span>
+$ cat openapi.json | jq '.paths | to_entries[] |
+  select(.value | to_entries[] | .value | has("security") | not) | .key'
+<span class="cr">"/api/v1/admin/users"</span>              <span class="cm"># ← NO security defined! → test unauthenticated access</span>
+<span class="cr">"/api/v1/internal/config"</span>          <span class="cm"># ← missing security → potential BFLA</span>
+
+<span class="cm"># 4. Find endpoints accepting file uploads (path traversal, malware upload)</span>
+$ cat openapi.json | jq '.. | objects | select(.type=="string" and .format=="binary") | ..'
+</pre>
+      </div>
+    </div>
+
+    <div class="phase-step" id="ph2">
+      <div class="phase-header" onclick="togglePhase('ph2')">
+        <div class="phase-num" style="background:var(--accent-bg);color:var(--accent)">2</div>
+        <div class="phase-title">Authentication &amp; Authorisation Testing</div>
+        <div class="phase-badge">Most impactful phase</div>
+        <div class="phase-tog">&#x25BC;</div>
+      </div>
+      <div class="phase-body">
+        <p>Authentication testing asks: can I skip authentication entirely? Can I use someone else's credentials? Can I forge my own tokens? Authorisation testing asks: once authenticated, can I access resources that aren't mine, and can I perform actions I shouldn't be able to?</p>
+
+        <h5>Authentication test checklist</h5>
+        <table>
+          <tr><th>Test</th><th>How to perform it</th><th>Pass condition</th></tr>
+          <tr><td>Access without token</td><td>Remove the Authorization header entirely from authenticated requests</td><td>401 Unauthorized on all protected endpoints</td></tr>
+          <tr><td>Expired token</td><td>Use a token from a previous session or manually set exp claim to past time</td><td>401 Unauthorized &mdash; expired tokens rejected</td></tr>
+          <tr><td>Malformed token</td><td>Send <code>Authorization: Bearer abc123</code> (not a valid JWT)</td><td>401 Unauthorized &mdash; not 500 Internal Server Error</td></tr>
+          <tr><td>Wrong signature</td><td>Modify the JWT payload and keep the original signature</td><td>401 Unauthorized &mdash; signature mismatch detected</td></tr>
+          <tr><td>Algorithm: none</td><td>Set JWT header to <code>alg: none</code>, remove signature</td><td>401 Unauthorized &mdash; alg:none rejected</td></tr>
+          <tr><td>Weak secret brute-force</td><td>Run <code>hashcat</code> or <code>jwt_tool</code> against the JWT HMAC signature</td><td>Secret is not in common wordlists (minimum 256-bit random)</td></tr>
+          <tr><td>Token in URL</td><td>Check if any endpoints accept the token as a query parameter</td><td>Tokens only accepted in Authorization header, never URL params</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <div class="phase-step" id="ph3">
+      <div class="phase-header" onclick="togglePhase('ph3')">
+        <div class="phase-num" style="background:var(--orange-bg);color:var(--orange)">3</div>
+        <div class="phase-title">Object &amp; Function Level Authorisation (BOLA / BFLA)</div>
+        <div class="phase-badge">Highest impact findings</div>
+        <div class="phase-tog">&#x25BC;</div>
+      </div>
+      <div class="phase-body">
+        <p>This phase is the most likely to find critical vulnerabilities. You systematically test every resource endpoint with two accounts to verify that ownership is enforced, and every function endpoint to verify that role checks are in place.</p>
+
+        <h5>BOLA testing protocol &mdash; two-account method</h5>
+<pre>
+<span class="cm"># Setup: two legitimate test accounts</span>
+USER_A_TOKEN=<span class="cs">"eyJhbGciOiJIUzI1NiJ9..."</span>   <span class="cm"># alice@test.com</span>
+USER_B_TOKEN=<span class="cs">"eyJhbGciOiJIUzI1NiJ9..."</span>   <span class="cm"># bob@test.com</span>
+
+<span class="cm"># Step 1: User A creates a resource</span>
+$ curl -X POST https://api.target.com/api/v1/documents \
+  -H <span class="cs">"Authorization: Bearer $USER_A_TOKEN"</span> \
+  -H <span class="cs">"Content-Type: application/json"</span> \
+  -d <span class="cs">'{"title":"Private Doc","content":"sensitive"}'</span>
+<span class="cm"># Response: {"id": "doc-uuid-abc123", "owner": "alice"}</span>
+
+<span class="cm"># Step 2: User B attempts to read User A's resource</span>
+$ curl https://api.target.com/api/v1/documents/doc-uuid-abc123 \
+  -H <span class="cs">"Authorization: Bearer $USER_B_TOKEN"</span>
+<span class="cm"># PASS: 403 or 404</span>
+<span class="cr"># FAIL: 200 OK with Alice's document → BOLA (API1)</span>
+
+<span class="cm"># Step 3: User B attempts to UPDATE User A's resource</span>
+$ curl -X PATCH https://api.target.com/api/v1/documents/doc-uuid-abc123 \
+  -H <span class="cs">"Authorization: Bearer $USER_B_TOKEN"</span> \
+  -d <span class="cs">'{"title":"Hacked"}'</span>
+<span class="cm"># PASS: 403 or 404</span>
+<span class="cr"># FAIL: 200 OK → BOLA on write (often missed!)</span>
+
+<span class="cm"># Step 4: User B attempts to DELETE User A's resource</span>
+$ curl -X DELETE https://api.target.com/api/v1/documents/doc-uuid-abc123 \
+  -H <span class="cs">"Authorization: Bearer $USER_B_TOKEN"</span>
+<span class="cm"># PASS: 403 or 404</span>
+<span class="cr"># FAIL: 200/204 → BOLA on delete</span>
+
+<span class="cm"># Automate for ALL endpoints with path parameters using a script</span>
+</pre>
+      </div>
+    </div>
+
+    <div class="phase-step" id="ph4">
+      <div class="phase-header" onclick="togglePhase('ph4')">
+        <div class="phase-num" style="background:var(--purple-bg);color:var(--purple)">4</div>
+        <div class="phase-title">Input Validation &amp; Injection Testing</div>
+        <div class="phase-badge">Injection, XXE, SSRF, deserialization</div>
+        <div class="phase-tog">&#x25BC;</div>
+      </div>
+      <div class="phase-body">
+        <p>Every input field, every query parameter, every HTTP header is a potential injection point. This phase tests each one systematically with payloads for SQLi, NoSQL injection, command injection, SSTI, path traversal, XXE, and SSRF.</p>
+
+        <h5>Injection test payload matrix</h5>
+        <table>
+          <tr><th>Vulnerability</th><th>Test parameters</th><th>Payloads to try</th><th>Success indicator</th></tr>
+          <tr><td style="font-weight:600;color:var(--red)">SQL Injection</td><td>Any string parameter sent to a DB query</td><td><code>'</code>, <code>' OR 1=1 --</code>, <code>'; DROP TABLE users--</code>, <code>' AND SLEEP(5)--</code></td><td>DB error, different results, 5-second delay</td></tr>
+          <tr><td style="font-weight:600;color:var(--red)">NoSQL Injection</td><td>JSON body parameters in MongoDB-backed APIs</td><td><code>{"$gt":""}</code>, <code>{"$where":"sleep(5000)"}</code>, <code>{"$regex":".*"}</code></td><td>All records returned, time delay</td></tr>
+          <tr><td style="font-weight:600;color:var(--red)">Command Injection</td><td>Filenames, hostnames, system command parameters</td><td><code>; id</code>, <code>| whoami</code>, <code>$(sleep 5)</code>, <code>&amp;&amp; cat /etc/passwd</code></td><td>Command output in response, time delay</td></tr>
+          <tr><td style="font-weight:600;color:var(--orange)">SSTI</td><td>Template name, message content, format strings</td><td><code>{{7*7}}</code>, <code>${7*7}</code>, <code>#{7*7}</code>, <code>{{config}}</code></td><td>49 in response, config data leaked</td></tr>
+          <tr><td style="font-weight:600;color:var(--orange)">Path Traversal</td><td>File download, document load, import endpoints</td><td><code>../../../etc/passwd</code>, <code>....//....//etc/passwd</code>, <code>%2e%2e%2f</code></td><td><code>root:x:0:0</code> in response</td></tr>
+          <tr><td style="font-weight:600;color:var(--orange)">XXE</td><td>Any endpoint accepting XML or multipart with XML</td><td>DOCTYPE with SYSTEM pointing to local file or OOB server</td><td>File contents in response, DNS lookup to OOB server</td></tr>
+          <tr><td style="font-weight:600;color:var(--yellow)">SSRF</td><td>URL, webhook, image URL, redirect parameters</td><td><code>http://169.254.169.254/</code>, <code>http://localhost:8080/admin</code></td><td>AWS metadata returned, internal service response</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <div class="phase-step" id="ph5">
+      <div class="phase-header" onclick="togglePhase('ph5')">
+        <div class="phase-num" style="background:var(--teal-bg);color:var(--teal)">5</div>
+        <div class="phase-title">Business Logic &amp; Rate Limiting Tests</div>
+        <div class="phase-badge">Unique to each API &mdash; most creative phase</div>
+        <div class="phase-tog">&#x25BC;</div>
+      </div>
+      <div class="phase-body">
+        <p>Business logic flaws can't be found by automated scanners because they require understanding what the API is <em>supposed</em> to do. The question is: can you use the API in ways the developers didn't intend that produce a harmful outcome?</p>
+
+        <h5>Business logic test scenarios</h5>
+        <table>
+          <tr><th>Scenario</th><th>What to test</th><th>Example attack</th></tr>
+          <tr><td style="font-weight:600">Price/amount manipulation</td><td>Can the client send the price/amount in the request?</td><td>Send <code>{"amount": -100}</code> to get a refund instead of charge. Send <code>{"quantity": 0}</code> for free items.</td></tr>
+          <tr><td style="font-weight:600">Workflow bypass</td><td>Can you skip required steps in a multi-step process?</td><td>Complete step 1 (add to cart), then directly call step 3 (confirm order) without step 2 (payment). Does the order confirm?</td></tr>
+          <tr><td style="font-weight:600">State machine abuse</td><td>Can you set an object to an invalid or privileged state?</td><td>PATCH order status directly to "shipped" without going through "paid" state. PATCH account is_frozen to false on a suspended account.</td></tr>
+          <tr><td style="font-weight:600">Coupon/voucher abuse</td><td>Can you reuse single-use codes or apply them in stacking combinations?</td><td>Apply the same discount code twice in the same order. Apply multiple codes to get 200% off. Use an expired code.</td></tr>
+          <tr><td style="font-weight:600">Race conditions</td><td>Does concurrent execution of the same request produce unexpected results?</td><td>Send 10 simultaneous transfer requests for the same amount. Do all 10 process? Does balance go negative?</td></tr>
+          <tr><td style="font-weight:600">Referral fraud</td><td>Can you refer yourself and collect the referral bonus?</td><td>Create account A, use referral code from account A to register account B, claim referral bonus on account A.</td></tr>
+        </table>
+
+<pre>
+<span class="cm"># Race condition test with parallel requests</span>
+<span class="cm"># Test: can a user apply a discount code twice simultaneously?</span>
+
+<span class="cf">import</span> threading, requests, time
+
+TOKEN = <span class="cs">"your_test_token"</span>
+URL   = <span class="cs">"https://api.target.com/api/v1/orders/apply-coupon"</span>
+
+results = []
+
+<span class="cf">def</span> <span class="cg">apply_coupon</span>():
+    r = requests.post(URL,
+        headers={<span class="cs">"Authorization"</span>: <span class="cs">f"Bearer {TOKEN}"</span>},
+        json={<span class="cs">"coupon_code"</span>: <span class="cs">"SAVE50"</span>, <span class="cs">"order_id"</span>: <span class="cs">"order-abc"</span>}
+    )
+    results.append(r.status_code)
+
+<span class="cm"># Fire 10 simultaneous requests</span>
+threads = [threading.Thread(target=apply_coupon) <span class="cf">for</span> _ <span class="cf">in</span> range(<span class="ce">10</span>)]
+<span class="cf">for</span> t <span class="cf">in</span> threads: t.start()
+<span class="cf">for</span> t <span class="cf">in</span> threads: t.join()
+
+print(results)
+<span class="cm"># If multiple 200s: race condition! Coupon applied multiple times.</span>
+<span class="cm"># Expected: only one 200, rest 409 Conflict or 422 Unprocessable</span>
+</pre>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══ INTERMEDIATE: BURP SUITE FOR API TESTING ═══ -->
+<div class="section">
+  <div class="eyebrow">&#x1F7E1; Intermediate &mdash; Burp Suite for API Testing</div>
+  <div class="sec-title">Burp Suite &mdash; your primary manual API testing tool</div>
+  <div class="sec-sub">Burp Suite is the professional standard for API security testing. This section covers the workflow, every key tool, and how to use each one effectively against REST APIs.</div>
+
+  <div class="tool-tabs">
+    <div class="tool-tab-bar">
+      <div class="ttab active" onclick="switchTab(this,'bt-setup')">Setup &amp; Proxy</div>
+      <div class="ttab" onclick="switchTab(this,'bt-repeater')">Repeater</div>
+      <div class="ttab" onclick="switchTab(this,'bt-intruder')">Intruder</div>
+      <div class="ttab" onclick="switchTab(this,'bt-scanner')">Scanner</div>
+      <div class="ttab" onclick="switchTab(this,'bt-extensions')">Extensions</div>
+    </div>
+
+    <div class="tool-pane active" id="bt-setup">
+      <p style="font-size:13.5px;color:var(--ink2);line-height:1.75;margin-bottom:1rem;">Burp Suite operates as an intercepting HTTP/HTTPS proxy. Every request from your browser or test scripts flows through it, giving you complete visibility and control. For API testing, you also need to import your OpenAPI spec to give Burp a complete picture of the attack surface.</p>
+<pre>
+<span class="cm"># 1. Configure proxy: Burp listens on 127.0.0.1:8080</span>
+<span class="cm"># Browser: Settings → Network → Manual Proxy → 127.0.0.1:8080</span>
+<span class="cm"># OR use Burp's embedded browser (no config needed)</span>
+
+<span class="cm"># 2. Install Burp's CA certificate (for HTTPS interception)</span>
+<span class="cm"># Navigate to http://burpsuite in your proxied browser → download cert</span>
+<span class="cm"># Install in browser's certificate store</span>
+
+<span class="cm"># 3. Import OpenAPI spec into Burp (gives Burp full endpoint list)</span>
+<span class="cm"># Target → Site map → right-click → "Load OpenAPI definition"</span>
+<span class="cm"># OR: Proxy → HTTP history → drag openapi.json to repeater</span>
+
+<span class="cm"># 4. Configure scope (critical: only test YOUR API, not third parties)</span>
+<span class="cm"># Target → Scope → Add: https://api.targetapp.com</span>
+<span class="cm"># Enable "Show only in-scope items" in HTTP history</span>
+
+<span class="cm"># 5. Set up test credentials as a Burp session</span>
+<span class="cm"># Project options → Sessions → Add session handling rule</span>
+<span class="cm"># Configure macro to re-authenticate when token expires</span>
+<span class="cm"># Or: use "Match and Replace" to inject Bearer token into every request</span>
+<span class="cm"># Proxy → Options → Match and Replace:</span>
+<span class="cm">#   Type: Request header, Match: ^Authorization:.*</span>
+<span class="cm">#   Replace: Authorization: Bearer YOUR_TOKEN_HERE</span>
+</pre>
+    </div>
+
+    <div class="tool-pane" id="bt-repeater">
+      <p style="font-size:13.5px;color:var(--ink2);line-height:1.75;margin-bottom:1rem;">Repeater is your manual testing workbench. You capture a request, send it to Repeater, then modify it and resend as many times as you like, observing the response each time. This is how you manually confirm suspected vulnerabilities, craft escalating payloads, and explore unexpected API behaviour.</p>
+<pre>
+<span class="cm"># Typical Repeater workflow for BOLA testing:</span>
+
+<span class="cm"># 1. Intercept your own profile request in Burp Proxy</span>
+GET /api/v1/users/uuid-a1b2c3 HTTP/1.1
+Host: api.target.com
+Authorization: Bearer USER_A_TOKEN
+
+<span class="cm"># Response: {"id":"uuid-a1b2c3","email":"alice@test.com","balance":"1000.00"}</span>
+
+<span class="cm"># 2. Send to Repeater (Ctrl+R)</span>
+<span class="cm"># 3. Change the user ID to a different user's ID</span>
+GET /api/v1/users/<span class="cr">uuid-x9y8z7</span> HTTP/1.1    <span class="cm"># ← changed to Bob's ID</span>
+Authorization: Bearer USER_A_TOKEN        <span class="cm"># ← still Alice's token</span>
+
+<span class="cm"># 4. Click "Send" and observe response</span>
+<span class="cm"># PASS: 404 Not Found or 403 Forbidden</span>
+<span class="cr"># FAIL: 200 OK with {"email":"bob@test.com","balance":"5500.00"} → BOLA!</span>
+
+<span class="cm"># 5. Escalate: try admin ID (often "1" or "admin-uuid")</span>
+GET /api/v1/users/<span class="cr">00000000-0000-0000-0000-000000000001</span> HTTP/1.1
+<span class="cm"># Can you read the admin account?</span>
+
+<span class="cm"># 6. Test write BOLA with PATCH</span>
+PATCH /api/v1/users/<span class="cr">uuid-x9y8z7</span> HTTP/1.1
+Authorization: Bearer USER_A_TOKEN
+Content-Type: application/json
+
+{"email": "hacked@attacker.com"}          <span class="cm"># ← change Bob's email</span>
+</pre>
+    </div>
+
+    <div class="tool-pane" id="bt-intruder">
+      <p style="font-size:13.5px;color:var(--ink2);line-height:1.75;margin-bottom:1rem;">Intruder automates a single request with a payload list &mdash; perfect for BOLA enumeration, credential stuffing, parameter fuzzing, and rate limit testing. You mark injection points with &sect; symbols, choose a payload type, and Intruder iterates through all combinations.</p>
+<pre>
+<span class="cm"># Intruder configuration for BOLA enumeration</span>
+
+<span class="cm"># Base request (from Repeater → right-click → "Send to Intruder"):</span>
+GET /api/v1/orders/<span class="cr">§ORDER_ID§</span> HTTP/1.1    <span class="cm"># ← § marks injection point</span>
+Authorization: Bearer USER_B_TOKEN
+
+<span class="cm"># Payload type: Simple List</span>
+<span class="cm"># Payload source: extract all order IDs you discovered as User A</span>
+<span class="cm"># Payloads:</span>
+order-uuid-001
+order-uuid-002
+order-uuid-003
+<span class="cm"># ... (paste from User A's order history)</span>
+
+<span class="cm"># Analysis: sort results by Response Length or Status Code</span>
+<span class="cm"># 200 responses with long bodies = BOLA confirmed</span>
+<span class="cm"># 404/403 = properly protected</span>
+
+<span class="cm"># Intruder attack types:</span>
+<span class="cm"># Sniper:       one payload list, one position — standard BOLA test</span>
+<span class="cm"># Battering Ram: same payload in all positions — test where ID appears multiple places</span>
+<span class="cm"># Pitchfork:    parallel lists — credential stuffing (usernames + passwords)</span>
+<span class="cm"># Cluster Bomb: all combinations — parameter fuzzing with multiple unknowns</span>
+
+<span class="cm"># Rate limit test with Intruder:</span>
+POST /api/v1/auth/login HTTP/1.1
+
+{"email":"victim@test.com","password":"§PASSWORD§"}
+
+<span class="cm"># Payload: common-passwords.txt (1000 entries)</span>
+<span class="cm"># Watch for: 200 OK (credential worked) or 429 (rate limit hit)</span>
+<span class="cm"># If all 1000 return 401 without any 429 → NO RATE LIMITING</span>
+</pre>
+    </div>
+
+    <div class="tool-pane" id="bt-scanner">
+      <p style="font-size:13.5px;color:var(--ink2);line-height:1.75;margin-bottom:1rem;">Burp Scanner (Pro only) actively tests for injection vulnerabilities, authentication flaws, and misconfigurations. For APIs, you right-click any request in the history and "Actively scan" it, or you run the scanner against your entire in-scope target after the spider has discovered all endpoints.</p>
+<pre>
+<span class="cm"># Burp Scanner best practices for API testing</span>
+
+<span class="cm"># Option 1: Scan a specific endpoint</span>
+<span class="cm"># Right-click any request in HTTP history → "Scan" → "Active Scan"</span>
+<span class="cm"># Scanner tests that endpoint for all injection types</span>
+
+<span class="cm"># Option 2: Scan all discovered endpoints</span>
+<span class="cm"># Scanner → New scan → "Crawl and audit"</span>
+<span class="cm"># Enter starting URL: https://api.target.com</span>
+<span class="cm"># Scope: include https://api.target.com</span>
+<span class="cm"># Audit coverage: thorough (slower but finds more)</span>
+
+<span class="cm"># Configure scanner for API-specific testing:</span>
+<span class="cm"># Scanner → Audit options → Insertion points:</span>
+<span class="cm">#   ✓ Query parameters</span>
+<span class="cm">#   ✓ Body parameters (JSON)</span>
+<span class="cm">#   ✓ HTTP headers (test: User-Agent, Referer, X-Forwarded-For)</span>
+<span class="cm">#   ✓ URL path parameters (e.g., /users/{id})</span>
+<span class="cm">#   ✗ Cookie parameters (APIs typically use Bearer not cookies)</span>
+
+<span class="cm"># NOTE: Burp Scanner will NOT find BOLA — that requires the two-account method</span>
+<span class="cm"># Scanner finds: SQLi, XSS, XXE, SSRF, command injection, path traversal</span>
+<span class="cm"># Manual testing finds: BOLA, BFLA, business logic, mass assignment</span>
+</pre>
+    </div>
+
+    <div class="tool-pane" id="bt-extensions">
+      <p style="font-size:13.5px;color:var(--ink2);line-height:1.75;margin-bottom:1rem;">Burp's extension ecosystem (BApp Store) adds capabilities that the core tool lacks. These four extensions are essential for API security testing and should be installed in every engagement.</p>
+<pre>
+<span class="cm"># Must-have Burp extensions for API security testing</span>
+
+<span class="cm"># 1. JWT Editor (free)</span>
+<span class="cm"># Purpose: Decode, modify, and re-sign JWT tokens</span>
+<span class="cm"># Use for: algorithm confusion attacks, weak secret brute-force, claim manipulation</span>
+<span class="cm"># Install: Extensions → BApp Store → search "JWT Editor" → Install</span>
+<span class="cm"># Usage: Intercept any JWT → Extensions → JWT Editor → modify claims → re-sign</span>
+
+<span class="cm"># 2. Autorize (free)</span>
+<span class="cm"># Purpose: Automatically tests BOLA by replaying every request with User B's token</span>
+<span class="cm"># Use for: Systematic BOLA testing across ALL endpoints simultaneously</span>
+<span class="cm"># Install: BApp Store → "Autorize"</span>
+<span class="cm"># Usage:</span>
+<span class="cm">#   - Configure User B's token in Autorize panel</span>
+<span class="cm">#   - Browse as User A normally</span>
+<span class="cm">#   - Autorize replays each request with User B's token automatically</span>
+<span class="cm">#   - Red = BOLA (User B got 200 on User A's resource)</span>
+<span class="cm">#   - Green = Properly protected</span>
+
+<span class="cm"># 3. ParamMiner (free)</span>
+<span class="cm"># Purpose: Discovers hidden/undocumented parameters by fuzzing</span>
+<span class="cm"># Use for: Finding mass assignment fields, hidden debug params, shadow params</span>
+<span class="cm"># Usage: Right-click any request → Extensions → ParamMiner → "Guess params"</span>
+<span class="cm"># Finds: parameters that the API accepts but aren't in the OpenAPI spec</span>
+
+<span class="cm"># 4. InQL (free) — GraphQL-specific, covered in Lesson 10</span>
+<span class="cm"># Purpose: GraphQL introspection, mutation testing</span>
+<span class="cm"># Use for: Lesson 10 (GraphQL Security)</span>
+</pre>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ INTERMEDIATE: JWT ATTACK DEEP DIVE ═══ -->
+<div class="section">
+  <div class="eyebrow">&#x1F7E1; Intermediate &mdash; JWT Attacks</div>
+  <div class="sec-title">JWT attacks in full depth</div>
+  <div class="sec-sub">JWT (JSON Web Token) is the most common API authentication mechanism. It has a well-documented set of attack techniques that every AppSec engineer must know how to test for. These attacks are checked manually because automated scanners rarely find them correctly.</div>
+
+  <div class="panel" id="pan-jwt-decode">
+    <div class="panel-h" onclick="tp('pan-jwt-decode')">
+      <div class="panel-dot" style="background:var(--accent)"></div>
+      <div class="panel-title">Reading JWTs &mdash; decode before you attack</div>
+      <div class="panel-sub">Never attack what you haven't read. Always decode the token first.</div>
+      <div class="panel-tog">&#x25BC;</div>
+    </div>
+    <div class="panel-body">
+<pre>
+<span class="cm"># A JWT has three base64url-encoded sections separated by dots:</span>
+<span class="cm"># eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyLTEyMyIsInJvbGUiOiJ1c2VyIiwiZXhwIjoxNzA5OTk5OTk5fQ.SIG</span>
+<span class="cm"># [    HEADER     ]                      [            PAYLOAD             ]   [SIG]</span>
+
+<span class="cm"># Decode header (base64url → JSON):</span>
+$ echo "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9" | base64 -d
+{ <span class="cs">"alg"</span>: <span class="cs">"HS256"</span>, <span class="cs">"typ"</span>: <span class="cs">"JWT"</span> }
+<span class="cm"># Note the algorithm: HS256 (symmetric HMAC) vs RS256 (asymmetric RSA)</span>
+
+<span class="cm"># Decode payload:</span>
+$ echo "eyJzdWIiOiJ1c2VyLTEyMyIsInJvbGUiOiJ1c2VyIiwiZXhwIjoxNzA5OTk5OTk5fQ" | base64 -d
+{
+  <span class="cs">"sub"</span>: <span class="cs">"user-123"</span>,     <span class="cm"># subject (user ID) — can you change this?</span>
+  <span class="cs">"role"</span>: <span class="cs">"user"</span>,       <span class="cm"># role claim — can you change to "admin"?</span>
+  <span class="cs">"exp"</span>: 1709999999    <span class="cm"># expiry timestamp — does server check this?</span>
+}
+
+<span class="cm"># Or use jwt.io in browser to decode visually</span>
+<span class="cm"># Or use jwt_tool:  python3 jwt_tool.py [TOKEN]</span>
+
+<span class="cm"># What to look for when reading a JWT:</span>
+<span class="cm"># 1. Algorithm: HS256 (HMAC) or RS256 (RSA)? Different attacks apply</span>
+<span class="cm"># 2. Does the payload contain a "role" or "is_admin" claim?</span>
+<span class="cm"># 3. Is the sub claim a user ID you can change?</span>
+<span class="cm"># 4. How far in the future is exp? Short = good security practice</span>
+<span class="cm"># 5. Are there any sensitive data fields in the payload?</span>
+</pre>
+    </div>
+  </div>
+
+  <div class="panel" id="pan-jwt-attacks">
+    <div class="panel-h" onclick="tp('pan-jwt-attacks')">
+      <div class="panel-dot" style="background:var(--red)"></div>
+      <div class="panel-title">The 5 JWT attack techniques you must be able to test</div>
+      <div class="panel-sub">In order of severity &mdash; start with the most impactful</div>
+      <div class="panel-tog">&#x25BC;</div>
+    </div>
+    <div class="panel-body">
+
+      <h4>Attack 1 &mdash; Algorithm: none (no signature required)</h4>
+<pre>
+<span class="cm"># Tool: jwt_tool or Burp JWT Editor</span>
+<span class="cm"># Principle: some libraries accept JWT with alg:none and skip signature validation</span>
+
+<span class="cm"># Original token: alg=HS256, signed</span>
+<span class="cm"># Modified header: change alg to "none"</span>
+<span class="cf">import</span> base64, json
+
+header  = base64.urlsafe_b64encode(json.dumps({<span class="cs">"alg"</span>:<span class="cs">"none"</span>,<span class="cs">"typ"</span>:<span class="cs">"JWT"</span>}).encode()).rstrip(<span class="ce">b</span><span class="cs">'='</span>)
+payload = base64.urlsafe_b64encode(json.dumps({<span class="cs">"sub"</span>:<span class="cs">"admin"</span>,<span class="cs">"role"</span>:<span class="cs">"admin"</span>}).encode()).rstrip(<span class="ce">b</span><span class="cs">'='</span>)
+forged  = header + <span class="ce">b</span><span class="cs">'.'</span> + payload + <span class="ce">b</span><span class="cs">'.'</span>   <span class="cm"># empty signature</span>
+print(forged.decode())
+
+<span class="cm"># Send in Authorization header — if server accepts: critical auth bypass</span>
+<span class="cm"># Mitigation: always specify algorithms=["HS256"] in jwt.decode()</span>
+</pre>
+
+      <h4>Attack 2 &mdash; Weak secret brute-force (HS256 only)</h4>
+<pre>
+<span class="cm"># Tool: hashcat mode 16500 or jwt_tool</span>
+<span class="cm"># Principle: HS256 signs with a symmetric secret. If the secret is weak, you can brute-force it.</span>
+
+<span class="cm"># Option A: hashcat (GPU-accelerated, fastest)</span>
+$ hashcat -a 0 -m 16500 token.jwt /usr/share/wordlists/rockyou.txt
+<span class="cg">eyJ...SIG:secret123</span>  <span class="cm"># ← secret found! "secret123" is the HMAC key</span>
+
+<span class="cm"># Option B: jwt_tool (Python, simpler)</span>
+$ python3 jwt_tool.py [TOKEN] -C -d /usr/share/wordlists/rockyou.txt
+<span class="cg">[+] secret found: mysecretkey</span>
+
+<span class="cm"># Once you have the secret, forge any token:</span>
+<span class="cf">import</span> jwt
+forged = jwt.encode({<span class="cs">"sub"</span>:<span class="cs">"admin"</span>, <span class="cs">"role"</span>:<span class="cs">"admin"</span>}, <span class="cs">"mysecretkey"</span>, algorithm=<span class="cs">"HS256"</span>)
+<span class="cm"># Now send forged token as any user — full account takeover</span>
+
+<span class="cm"># Mitigation: use a cryptographically random 256-bit secret</span>
+<span class="cm"># import secrets; secrets.token_hex(32)  → 64-character hex string</span>
+</pre>
+
+      <h4>Attack 3 &mdash; Algorithm confusion (RS256 &rarr; HS256)</h4>
+<pre>
+<span class="cm"># Tool: Burp JWT Editor or jwt_tool -X k</span>
+<span class="cm"># Principle: server uses RS256 (asymmetric). Public key is available.</span>
+<span class="cm"># Change alg to HS256, sign with the PUBLIC KEY as the HMAC secret.</span>
+<span class="cm"># Vulnerable servers verify HS256 with the public key → accepts forged token.</span>
+
+<span class="cm"># Step 1: Get the server's public key</span>
+$ curl https://api.target.com/.well-known/jwks.json
+<span class="cm"># Extract the RSA public key from the "keys" array</span>
+
+<span class="cm"># Step 2: In Burp JWT Editor</span>
+<span class="cm"># Decode your token → change alg to HS256 → change payload claims</span>
+<span class="cm"># Click "Sign" → select "Sign with public key (for alg confusion)"</span>
+<span class="cm"># Paste the RSA public key as the HMAC secret</span>
+
+<span class="cm"># Step 3: Send the modified token</span>
+<span class="cm"># If server accepts it: auth bypass via algorithm confusion</span>
+
+<span class="cm"># Mitigation: pin algorithm on server side — NEVER accept alg from token</span>
+</pre>
+
+      <h4>Attack 4 &mdash; Claim manipulation (role/sub modification)</h4>
+<pre>
+<span class="cm"># Simplest attack — but only works if signature is not validated</span>
+<span class="cm"># Decode token → change sub or role in payload → re-encode → send</span>
+<span class="cm"># If server validates signature: 401. If not (common mistake): works.</span>
+
+<span class="cm"># Example: change "role": "user" to "role": "admin"</span>
+<span class="cm"># If accepted: immediate vertical privilege escalation</span>
+
+<span class="cm"># HOW TO TEST: use Burp Repeater</span>
+<span class="cm"># 1. Intercept a request with your JWT</span>
+<span class="cm"># 2. In Burp JWT Editor plugin: decode → modify role claim → Forward</span>
+<span class="cm"># 3. Observe: same response (validation works) vs different response (broken)</span>
+</pre>
+
+      <h4>Attack 5 &mdash; JWT kid injection (key ID parameter injection)</h4>
+<pre>
+<span class="cm"># kid (key ID) header param tells server which key to use for verification</span>
+<span class="cm"># If kid is used in a SQL or filesystem lookup without sanitisation: injection</span>
+
+<span class="cm"># Original header: {"alg":"HS256","kid":"keystore/main.key"}</span>
+<span class="cm"># Injected header: {"alg":"HS256","kid":"../../dev/null"}</span>
+<span class="cm"># If server reads /dev/null as the HMAC key → key is empty string ""</span>
+<span class="cm"># Sign forged token with "" → server verifies with "" → accepts!</span>
+
+<span class="cm"># SQL injection variant:</span>
+<span class="cm"># kid: "a' UNION SELECT 'attacker_secret' --"</span>
+<span class="cm"># Server looks up key in DB: SELECT key FROM keys WHERE id='a' UNION SELECT 'attacker_secret'--</span>
+<span class="cm"># Returns 'attacker_secret' as the key → sign token with 'attacker_secret' → accepted</span>
+
+<span class="cm"># Test with jwt_tool:</span>
+$ python3 jwt_tool.py [TOKEN] -T   <span class="cm"># tamper mode — modify kid interactively</span>
+</pre>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ INTERMEDIATE: MASS ASSIGNMENT & PARAMETER TESTING ═══ -->
+<div class="section">
+  <div class="eyebrow">&#x1F7E1; Intermediate &mdash; Mass Assignment &amp; Parameter Discovery</div>
+  <div class="sec-title">Finding and exploiting hidden writable fields</div>
+  <div class="sec-sub">Mass assignment vulnerabilities exist because developers forget to allowlist writeable fields in their serialisers. The attack requires discovering which hidden fields exist. Burp ParamMiner and manual exploration are the primary techniques.</div>
+
+  <div class="panel" id="pan-mass">
+    <div class="panel-h" onclick="tp('pan-mass')">
+      <div class="panel-dot" style="background:var(--orange)"></div>
+      <div class="panel-title">Mass assignment testing &mdash; finding the hidden fields</div>
+      <div class="panel-sub">The attack you can only find by trying fields that aren't in the documentation</div>
+      <div class="panel-tog">&#x25BC;</div>
+    </div>
+    <div class="panel-body">
+<pre>
+<span class="cm"># Step 1: Understand the data model by reading GET responses</span>
+GET /api/v1/users/me
+Authorization: Bearer MY_TOKEN
+
+<span class="cm"># Response reveals ALL fields the server stores (not necessarily all writable):</span>
+{
+  <span class="cs">"id"</span>: <span class="cs">"user-123"</span>,
+  <span class="cs">"name"</span>: <span class="cs">"Alice"</span>,
+  <span class="cs">"email"</span>: <span class="cs">"alice@test.com"</span>,
+  <span class="cs">"role"</span>: <span class="cs">"user"</span>,              <span class="cm"># ← interesting! can we write this?</span>
+  <span class="cs">"is_verified"</span>: <span class="ck">true</span>,         <span class="cm"># ← can we set is_verified on a fresh account?</span>
+  <span class="cs">"credit_balance"</span>: 0,          <span class="cm"># ← can we write a positive value here?</span>
+  <span class="cs">"created_at"</span>: <span class="cs">"2024-01-01"</span>
+}
+
+<span class="cm"># Step 2: Try sending those fields in a PATCH/PUT request</span>
+PATCH /api/v1/users/me HTTP/1.1
+Authorization: Bearer MY_TOKEN
+Content-Type: application/json
+
+{
+  <span class="cs">"name"</span>: <span class="cs">"Alice"</span>,            <span class="cm"># ← documented writable field</span>
+  <span class="cr">"role"</span>: <span class="cs">"admin"</span>,           <span class="cm"># ← undocumented — test if accepted</span>
+  <span class="cr">"is_verified"</span>: <span class="ck">true</span>,       <span class="cm"># ← bypass email verification?</span>
+  <span class="cr">"credit_balance"</span>: 9999,    <span class="cm"># ← free money?</span>
+  <span class="cr">"is_premium"</span>: <span class="ck">true</span>          <span class="cm"># ← upgrade tier for free?</span>
+}
+
+<span class="cm"># Step 3: Verify by reading the resource again</span>
+GET /api/v1/users/me
+<span class="cm"># If role changed to "admin" in the response → mass assignment confirmed</span>
+
+<span class="cm"># Step 4: Use Burp ParamMiner to discover fields not visible in responses</span>
+<span class="cm"># Right-click the PATCH request → Extensions → ParamMiner → "Guess JSON params"</span>
+<span class="cm"># ParamMiner fuzzes through thousands of common field names</span>
+<span class="cm"># Finds fields the server accepts silently even if not in GET response</span>
+</pre>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ INTERMEDIATE: REAL TEST CASES ═══ -->
+<div class="section">
+  <div class="eyebrow">&#x1F7E1; Intermediate &mdash; Real Test Cases</div>
+  <div class="sec-title">A full API security test case library</div>
+  <div class="sec-sub">These are the specific test cases you execute during an API security engagement. Each one maps to an OWASP API category, has a clear pass/fail criterion, and documents exactly how to perform it.</div>
+
+  <!-- TC1 -->
+  <div class="test-case tc-crit" id="t1" onclick="toggleTC('t1')">
+    <div class="tc-top">
+      <div>
+        <div class="tc-title">TC-01: Unauthenticated access to all endpoints</div>
+        <div class="tc-meta">API1, API5 &bull; OWASP API Security &bull; Priority: Critical &bull; Time: 15 min</div>
+      </div>
+      <span class="tc-sev sc">CRITICAL</span>
+    </div>
+    <div class="tc-body" id="t1-b">
+      <h5>Objective</h5>
+      <p>Verify that every API endpoint requires authentication. Discover endpoints accessible without a valid token. Map all endpoints that return data without credentials.</p>
+      <h5>Steps</h5>
+<pre>
+<span class="cm"># 1. Export all discovered URLs from Burp HTTP history</span>
+<span class="cm"># Target → Site map → right-click target → "Copy URLs in this host"</span>
+
+<span class="cm"># 2. Replay every request WITHOUT the Authorization header</span>
+$ while IFS= read -r url; do
+    STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$url")
+    echo "$STATUS $url"
+  done &lt; all_api_urls.txt | grep "^2"    <span class="cm"># show only 2xx responses</span>
+
+<span class="cm"># 3. Note any 200 responses — these are endpoints with no auth</span>
+<span class="cm"># 4. For each unauth endpoint: what data is returned? Is it sensitive?</span>
+<span class="cm"># 5. Test HTTP methods: some APIs protect GET but not POST/PUT/DELETE</span>
+$ curl -X DELETE https://api.target.com/api/v1/users/123   <span class="cm"># no token!</span>
+</pre>
+      <h5>Pass / Fail</h5>
+      <p><strong>Pass:</strong> All endpoints return 401 Unauthorized without a valid token (except intentionally public endpoints like /health, /login, /register). <strong>Fail:</strong> Any endpoint returns 200 with sensitive data without authentication.</p>
+      <div class="pill-row"><span class="pill pr">Critical if data returned</span><span class="pill py">API1 BOLA</span><span class="pill py">API5 BFLA</span></div>
+    </div>
+  </div>
+
+  <!-- TC2 -->
+  <div class="test-case tc-crit" id="t2" onclick="toggleTC('t2')">
+    <div class="tc-top">
+      <div>
+        <div class="tc-title">TC-02: BOLA &mdash; Cross-account object access (all HTTP methods)</div>
+        <div class="tc-meta">API1 &bull; Two accounts required &bull; Priority: Critical &bull; Time: 45 min</div>
+      </div>
+      <span class="tc-sev sc">CRITICAL</span>
+    </div>
+    <div class="tc-body" id="t2-b">
+      <h5>Objective</h5>
+      <p>Verify that every resource endpoint enforces ownership. User A must not be able to read, modify, or delete resources owned by User B using User A's valid authentication token.</p>
+      <h5>Steps</h5>
+<pre>
+<span class="cm"># Automated BOLA test script — runs for ALL endpoints with path params</span>
+<span class="cf">import</span> json, requests
+
+<span class="cm"># Load OpenAPI spec and find all endpoints with path parameters</span>
+spec = json.load(open(<span class="cs">"openapi.json"</span>))
+path_param_endpoints = [
+    path <span class="cf">for</span> path <span class="cf">in</span> spec[<span class="cs">"paths"</span>]
+    <span class="cf">if</span> <span class="cs">"{"</span> <span class="cf">in</span> path
+]
+
+<span class="cm"># For each endpoint: User A creates a resource, User B tries to access it</span>
+failures = []
+<span class="cf">for</span> endpoint <span class="cf">in</span> path_param_endpoints:
+    <span class="cf">for</span> method <span class="cf">in</span> [<span class="cs">"GET"</span>, <span class="cs">"PUT"</span>, <span class="cs">"PATCH"</span>, <span class="cs">"DELETE"</span>]:
+        url = BASE_URL + endpoint.replace(<span class="cs">"{id}"</span>, USER_A_RESOURCE_ID)
+        r = requests.request(method, url,
+            headers={<span class="cs">"Authorization"</span>: <span class="cs">f"Bearer {USER_B_TOKEN}"</span>}
+        )
+        <span class="cf">if</span> r.status_code == <span class="ce">200</span>:
+            failures.append({<span class="cs">"endpoint"</span>: endpoint, <span class="cs">"method"</span>: method,
+                             <span class="cs">"status"</span>: r.status_code})
+            print(<span class="cs">f"BOLA FOUND: {method} {endpoint} → {r.status_code}"</span>)
+
+print(<span class="cs">f"Total BOLA findings: {len(failures)}"</span>)
+</pre>
+      <h5>Pass / Fail</h5>
+      <p><strong>Pass:</strong> All cross-account resource access returns 403 or 404. <strong>Fail:</strong> User B can read/modify/delete any of User A's resources.</p>
+      <div class="pill-row"><span class="pill pr">Critical</span><span class="pill py">OWASP API1</span><span class="pill py">CWE-639</span></div>
+    </div>
+  </div>
+
+  <!-- TC3 -->
+  <div class="test-case tc-high" id="t3" onclick="toggleTC('t3')">
+    <div class="tc-top">
+      <div>
+        <div class="tc-title">TC-03: Mass assignment &mdash; privileged field injection on writable endpoints</div>
+        <div class="tc-meta">API3 &bull; All PATCH/PUT/POST endpoints &bull; Priority: High &bull; Time: 30 min</div>
+      </div>
+      <span class="tc-sev sh">HIGH</span>
+    </div>
+    <div class="tc-body" id="t3-b">
+      <h5>Steps</h5>
+<pre>
+<span class="cm"># For every PATCH/PUT endpoint:</span>
+<span class="cm"># 1. Read the resource first (GET) to learn the full data model</span>
+<span class="cm"># 2. Add privileged fields to the update request body</span>
+<span class="cm"># 3. Re-read the resource to see if any privileged fields changed</span>
+
+PRIVILEGED_FIELDS = [
+    <span class="cs">"role"</span>, <span class="cs">"is_admin"</span>, <span class="cs">"is_staff"</span>, <span class="cs">"permission_level"</span>,
+    <span class="cs">"subscription_tier"</span>, <span class="cs">"credit_balance"</span>, <span class="cs">"account_balance"</span>,
+    <span class="cs">"is_verified"</span>, <span class="cs">"is_premium"</span>, <span class="cs">"is_active"</span>,
+    <span class="cs">"created_at"</span>, <span class="cs">"updated_at"</span>, <span class="cs">"deleted_at"</span>
+]
+
+<span class="cf">for</span> field <span class="cf">in</span> PRIVILEGED_FIELDS:
+    payload = {<span class="cs">"name"</span>: <span class="cs">"Alice"</span>, field: <span class="cs">"admin"</span>}   <span class="cm"># inject field alongside legit field</span>
+    r = requests.patch(f<span class="cs">"{BASE_URL}/api/v1/users/me"</span>,
+        headers={<span class="cs">"Authorization"</span>: f<span class="cs">"Bearer {TOKEN}"</span>},
+        json=payload
+    )
+    after = requests.get(f<span class="cs">"{BASE_URL}/api/v1/users/me"</span>,
+        headers={<span class="cs">"Authorization"</span>: f<span class="cs">"Bearer {TOKEN}"</span>}
+    ).json()
+    <span class="cf">if</span> str(after.get(field)) == <span class="cs">"admin"</span>:
+        print(<span class="cs">f"MASS ASSIGNMENT: {field} was changed!"</span>)
+</pre>
+      <div class="pill-row"><span class="pill py">High</span><span class="pill py">OWASP API3</span><span class="pill py">Privilege escalation</span></div>
+    </div>
+  </div>
+
+  <!-- TC4 -->
+  <div class="test-case tc-high" id="t4" onclick="toggleTC('t4')">
+    <div class="tc-top">
+      <div>
+        <div class="tc-title">TC-04: Rate limiting &mdash; verify limits enforced on all sensitive endpoints</div>
+        <div class="tc-meta">API4 &bull; Login, register, transfer, OTP endpoints &bull; Priority: High &bull; Time: 20 min</div>
+      </div>
+      <span class="tc-sev sh">HIGH</span>
+    </div>
+    <div class="tc-body" id="t4-b">
+      <h5>Steps</h5>
+<pre>
+<span class="cm"># Test 1: Login endpoint rate limiting</span>
+$ for i in $(seq 1 20); do
+    CODE=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
+      https://api.target.com/api/v1/auth/login \
+      -H "Content-Type: application/json" \
+      -d '{"email":"victim@test.com","password":"wrong"}')
+    echo "Request $i: $CODE"
+  done
+
+<span class="cm"># Expected: 401 for first 5, then 429 Too Many Requests</span>
+<span class="cr"># FAIL if: 20 requests all return 401 with no 429 → no rate limiting</span>
+
+<span class="cm"># Test 2: Are rate limits per-IP or per-account?</span>
+<span class="cm"># Use X-Forwarded-For header to simulate different IPs:</span>
+$ for i in $(seq 1 20); do
+    curl -s -o /dev/null -w "%{http_code}" \
+      -H "X-Forwarded-For: 10.0.0.$i" \    <span class="cm"># ← change IP each time</span>
+      -X POST https://api.target.com/api/v1/auth/login \
+      -d '{"email":"victim@test.com","password":"wrong"}'
+    echo " (IP: 10.0.0.$i)"
+  done
+<span class="cm"># If each "new IP" gets fresh quota → rate limiting is bypassable</span>
+<span class="cm"># FAIL: if X-Forwarded-For header resets the rate limit counter</span>
+
+<span class="cm"># Test 3: Rate limit bypass with header rotation</span>
+<span class="cm"># Some APIs trust X-Real-IP, X-Originating-IP, X-Remote-Addr</span>
+<span class="cm"># Test all common forwarding headers to see if any bypass the counter</span>
+</pre>
+      <div class="pill-row"><span class="pill py">High</span><span class="pill py">OWASP API4</span><span class="pill py">Credential stuffing risk</span></div>
+    </div>
+  </div>
+
+  <!-- TC5 -->
+  <div class="test-case tc-high" id="t5" onclick="toggleTC('t5')">
+    <div class="tc-top">
+      <div>
+        <div class="tc-title">TC-05: Excessive data exposure &mdash; API returns more than the client needs</div>
+        <div class="tc-meta">API3 &bull; All GET endpoints &bull; Priority: High &bull; Time: 20 min</div>
+      </div>
+      <span class="tc-sev sh">HIGH</span>
+    </div>
+    <div class="tc-body" id="t5-b">
+      <h5>Steps</h5>
+<pre>
+<span class="cm"># For every GET endpoint: compare response fields against API spec</span>
+<span class="cm"># Flag any field in the response that isn't documented in the spec</span>
+
+<span class="cf">import</span> json, requests
+
+spec = json.load(open(<span class="cs">"openapi.json"</span>))
+
+<span class="cf">def</span> <span class="cg">get_documented_fields</span>(endpoint, method=<span class="cs">"get"</span>):
+    schema = spec[<span class="cs">"paths"</span>].get(endpoint, {}).get(method, {})
+    <span class="cf">return</span> set(schema.get(<span class="cs">"responses"</span>,{}).get(<span class="cs">"200"</span>,{})
+              .get(<span class="cs">"content"</span>,{}).get(<span class="cs">"application/json"</span>,{})
+              .get(<span class="cs">"schema"</span>,{}).get(<span class="cs">"properties"</span>,{}).keys())
+
+SENSITIVE_FIELDS = {
+    <span class="cs">"password"</span>, <span class="cs">"password_hash"</span>, <span class="cs">"secret"</span>, <span class="cs">"token"</span>,
+    <span class="cs">"ssn"</span>, <span class="cs">"credit_card"</span>, <span class="cs">"api_key"</span>, <span class="cs">"internal_note"</span>,
+    <span class="cs">"is_admin"</span>, <span class="cs">"is_staff"</span>, <span class="cs">"role"</span>   <span class="cm"># privilege fields in responses</span>
+}
+
+<span class="cf">for</span> endpoint <span class="cf">in</span> spec[<span class="cs">"paths"</span>]:
+    url = BASE_URL + endpoint.replace(<span class="cs">"{id}"</span>, MY_RESOURCE_ID)
+    r = requests.get(url, headers={<span class="cs">"Authorization"</span>: <span class="cs">f"Bearer {TOKEN}"</span>})
+    <span class="cf">if</span> r.status_code == <span class="ce">200</span>:
+        actual_fields = set(r.json().keys()) <span class="cf">if</span> isinstance(r.json(), dict) <span class="cf">else</span> set()
+        documented    = get_documented_fields(endpoint)
+        undocumented  = actual_fields - documented
+        sensitive     = actual_fields &amp; SENSITIVE_FIELDS
+        <span class="cf">if</span> sensitive:
+            print(<span class="cs">f"SENSITIVE FIELDS EXPOSED: {endpoint} → {sensitive}"</span>)
+        <span class="cf">if</span> undocumented:
+            print(<span class="cs">f"UNDOCUMENTED FIELDS: {endpoint} → {undocumented}"</span>)
+</pre>
+      <div class="pill-row"><span class="pill py">High</span><span class="pill py">OWASP API3</span><span class="pill py">Data leakage</span></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ═══ ADVANCED: AUTOMATION & CI/CD ═══ -->
+<div class="section">
+  <div class="eyebrow">&#x1F534; Advanced &mdash; Automated API Security Testing</div>
+  <div class="sec-title">Building an automated API security test suite</div>
+  <div class="sec-sub">Manual testing finds vulnerabilities. Automated testing ensures they don't come back. Here is a complete automated API security pipeline using Python, ZAP, and GitHub Actions.</div>
+
+  <div class="panel" id="pan-postman">
+    <div class="panel-h" onclick="tp('pan-postman')">
+      <div class="panel-dot" style="background:var(--orange)"></div>
+      <div class="panel-title">Postman security collection &mdash; tests that run on every release</div>
+      <div class="panel-sub">Turn manual test cases into automated checks using Postman scripting</div>
+      <div class="panel-tog">&#x25BC;</div>
+    </div>
+    <div class="panel-body">
+<pre>
+<span class="cm">// Postman: Tests tab — security assertions on every response</span>
+
+<span class="cm">// Test 1: Response never contains sensitive field names</span>
+pm.test(<span class="cs">"No sensitive fields in response"</span>, function() {
+    <span class="cf">const</span> body = pm.response.json();
+    <span class="cf">const</span> sensitive = [<span class="cs">"password"</span>, <span class="cs">"password_hash"</span>, <span class="cs">"secret"</span>,
+                       <span class="cs">"api_key"</span>, <span class="cs">"ssn"</span>, <span class="cs">"credit_card_number"</span>];
+    sensitive.forEach(field =&gt; {
+        pm.expect(body).to.not.have.property(field);
+        <span class="cm">// If field found: Excessive Data Exposure (API3)</span>
+    });
+});
+
+<span class="cm">// Test 2: Security headers present on every response</span>
+pm.test(<span class="cs">"Security headers present"</span>, function() {
+    pm.expect(pm.response.headers.get(<span class="cs">"X-Content-Type-Options"</span>)).to.equal(<span class="cs">"nosniff"</span>);
+    pm.expect(pm.response.headers.get(<span class="cs">"X-Frame-Options"</span>)).to.equal(<span class="cs">"DENY"</span>);
+    pm.expect(pm.response.headers.get(<span class="cs">"Cache-Control"</span>)).to.include(<span class="cs">"no-store"</span>);
+});
+
+<span class="cm">// Test 3: Error responses never leak stack traces</span>
+pm.test(<span class="cs">"No stack traces in error responses"</span>, function() {
+    <span class="cf">if</span> (pm.response.code &gt;= 400) {
+        <span class="cf">const</span> body = pm.response.text();
+        pm.expect(body).to.not.include(<span class="cs">"Traceback"</span>);
+        pm.expect(body).to.not.include(<span class="cs">"File \""</span>);
+        pm.expect(body).to.not.include(<span class="cs">"line "</span>);
+        pm.expect(body).to.not.include(<span class="cs">"OperationalError"</span>);
+    }
+});
+
+<span class="cm">// Test 4: Response time reasonable (DoS / resource exhaustion check)</span>
+pm.test(<span class="cs">"Response time under 2000ms"</span>, function() {
+    pm.expect(pm.response.responseTime).to.be.below(<span class="ce">2000</span>);
+});
+
+<span class="cm">// Test 5: Content-Type is JSON (not HTML — check for XSS content sniffing)</span>
+pm.test(<span class="cs">"Content-Type is application/json"</span>, function() {
+    pm.expect(pm.response.headers.get(<span class="cs">"Content-Type"</span>)).to.include(<span class="cs">"application/json"</span>);
+});
+</pre>
+    </div>
+  </div>
+
+  <div class="panel" id="pan-pytest">
+    <div class="panel-h" onclick="tp('pan-pytest')">
+      <div class="panel-dot" style="background:var(--accent)"></div>
+      <div class="panel-title">pytest security test suite &mdash; BOLA, mass assignment, rate limiting</div>
+      <div class="panel-sub">A real Python test file you can drop into any Django REST Framework project</div>
+      <div class="panel-tog">&#x25BC;</div>
+    </div>
+    <div class="panel-body">
+<pre>
+<span class="ctag">python / pytest</span>
+<span class="cm"># tests/security/test_api_security.py</span>
+<span class="cf">import</span> pytest, requests, time
+
+BASE = <span class="cs">"http://localhost:8000"</span>
+
+<span class="ck">@pytest.fixture</span>(scope=<span class="cs">"session"</span>)
+<span class="cf">def</span> <span class="cg">tokens</span>():
+    <span class="cm"># Create two test users and get their JWT tokens</span>
+    a = requests.post(<span class="cs">f"{BASE}/api/auth/register"</span>,
+                      json={<span class="cs">"email"</span>:<span class="cs">"alice@sec-test.com"</span>,<span class="cs">"password"</span>:<span class="cs">"Pass123!"</span>}).json()
+    b = requests.post(<span class="cs">f"{BASE}/api/auth/register"</span>,
+                      json={<span class="cs">"email"</span>:<span class="cs">"bob@sec-test.com"</span>,  <span class="cs">"password"</span>:<span class="cs">"Pass123!"</span>}).json()
+    ta = requests.post(<span class="cs">f"{BASE}/api/auth/login"</span>,
+                       json={<span class="cs">"email"</span>:<span class="cs">"alice@sec-test.com"</span>,<span class="cs">"password"</span>:<span class="cs">"Pass123!"</span>}).json()[<span class="cs">"token"</span>]
+    tb = requests.post(<span class="cs">f"{BASE}/api/auth/login"</span>,
+                       json={<span class="cs">"email"</span>:<span class="cs">"bob@sec-test.com"</span>,  <span class="cs">"password"</span>:<span class="cs">"Pass123!"</span>}).json()[<span class="cs">"token"</span>]
+    <span class="cf">return</span> {<span class="cs">"alice"</span>: ta, <span class="cs">"bob"</span>: tb,
+            <span class="cs">"alice_id"</span>: a[<span class="cs">"id"</span>], <span class="cs">"bob_id"</span>: b[<span class="cs">"id"</span>]}
+
+
+<span class="cm"># ── BOLA Tests ───────────────────────────────────────────────</span>
+<span class="cf">class</span> <span class="ck">TestBOLA</span>:
+    <span class="cf">def</span> <span class="cg">test_cannot_read_another_users_profile</span>(self, tokens):
+        <span class="cm"># Bob tries to read Alice's profile</span>
+        r = requests.get(<span class="cs">f"{BASE}/api/v1/users/{tokens['alice_id']}"</span>,
+                         headers={<span class="cs">"Authorization"</span>: <span class="cs">f"Bearer {tokens['bob']}"</span>})
+        <span class="cf">assert</span> r.status_code <span class="cf">in</span> (<span class="ce">403</span>, <span class="ce">404</span>), \
+               <span class="cs">f"BOLA: Bob read Alice's profile! Status: {r.status_code}"</span>
+
+    <span class="cf">def</span> <span class="cg">test_cannot_update_another_users_profile</span>(self, tokens):
+        r = requests.patch(<span class="cs">f"{BASE}/api/v1/users/{tokens['alice_id']}"</span>,
+                           headers={<span class="cs">"Authorization"</span>: <span class="cs">f"Bearer {tokens['bob']}"</span>},
+                           json={<span class="cs">"name"</span>: <span class="cs">"Hacked"</span>})
+        <span class="cf">assert</span> r.status_code <span class="cf">in</span> (<span class="ce">403</span>, <span class="ce">404</span>), \
+               <span class="cs">f"BOLA write: Bob updated Alice's profile! Status: {r.status_code}"</span>
+
+    <span class="cf">def</span> <span class="cg">test_cannot_delete_another_users_profile</span>(self, tokens):
+        r = requests.delete(<span class="cs">f"{BASE}/api/v1/users/{tokens['alice_id']}"</span>,
+                            headers={<span class="cs">"Authorization"</span>: <span class="cs">f"Bearer {tokens['bob']}"</span>})
+        <span class="cf">assert</span> r.status_code <span class="cf">in</span> (<span class="ce">403</span>, <span class="ce">404</span>), \
+               <span class="cs">f"BOLA delete: Bob deleted Alice's account! Status: {r.status_code}"</span>
+
+
+<span class="cm"># ── Mass Assignment Tests ─────────────────────────────────────</span>
+<span class="cf">class</span> <span class="ck">TestMassAssignment</span>:
+    <span class="ck">@pytest.mark.parametrize</span>(<span class="cs">"field,value"</span>, [
+        (<span class="cs">"role"</span>,         <span class="cs">"admin"</span>),
+        (<span class="cs">"is_admin"</span>,     <span class="ck">True</span>),
+        (<span class="cs">"is_verified"</span>,  <span class="ck">True</span>),
+        (<span class="cs">"credit_balance"</span>, <span class="ce">99999</span>),
+    ])
+    <span class="cf">def</span> <span class="cg">test_privileged_field_not_writable</span>(self, tokens, field, value):
+        before = requests.get(<span class="cs">f"{BASE}/api/v1/users/me"</span>,
+                              headers={<span class="cs">"Authorization"</span>: <span class="cs">f"Bearer {tokens['alice']}"</span>}).json()
+        requests.patch(<span class="cs">f"{BASE}/api/v1/users/me"</span>,
+                       headers={<span class="cs">"Authorization"</span>: <span class="cs">f"Bearer {tokens['alice']}"</span>},
+                       json={<span class="cs">"name"</span>: <span class="cs">"Alice"</span>, field: value})
+        after = requests.get(<span class="cs">f"{BASE}/api/v1/users/me"</span>,
+                             headers={<span class="cs">"Authorization"</span>: <span class="cs">f"Bearer {tokens['alice']}"</span>}).json()
+        <span class="cf">assert</span> after.get(field) == before.get(field), \
+               <span class="cs">f"MASS ASSIGNMENT: {field} changed from {before.get(field)} to {after.get(field)}"</span>
+
+
+<span class="cm"># ── Rate Limiting Tests ───────────────────────────────────────</span>
+<span class="cf">class</span> <span class="ck">TestRateLimiting</span>:
+    <span class="cf">def</span> <span class="cg">test_login_rate_limited</span>(self):
+        statuses = []
+        <span class="cf">for</span> _ <span class="cf">in</span> range(<span class="ce">15</span>):
+            r = requests.post(<span class="cs">f"{BASE}/api/auth/login"</span>,
+                              json={<span class="cs">"email"</span>:<span class="cs">"test@test.com"</span>,<span class="cs">"password"</span>:<span class="cs">"wrong"</span>})
+            statuses.append(r.status_code)
+        <span class="cf">assert</span> <span class="ce">429</span> <span class="cf">in</span> statuses, \
+               <span class="cs">f"NO RATE LIMITING: sent 15 bad logins, statuses: {set(statuses)}"</span>
+
+
+<span class="cm"># ── Security Headers Tests ────────────────────────────────────</span>
+<span class="cf">class</span> <span class="ck">TestSecurityHeaders</span>:
+    <span class="ck">@pytest.mark.parametrize</span>(<span class="cs">"header,expected"</span>, [
+        (<span class="cs">"X-Content-Type-Options"</span>, <span class="cs">"nosniff"</span>),
+        (<span class="cs">"X-Frame-Options"</span>,        <span class="cs">"DENY"</span>),
+        (<span class="cs">"Cache-Control"</span>,          <span class="cs">"no-store"</span>),
+    ])
+    <span class="cf">def</span> <span class="cg">test_security_header_present</span>(self, tokens, header, expected):
+        r = requests.get(<span class="cs">f"{BASE}/api/v1/users/me"</span>,
+                         headers={<span class="cs">"Authorization"</span>: <span class="cs">f"Bearer {tokens['alice']}"</span>})
+        <span class="cf">assert</span> expected <span class="cf">in</span> r.headers.get(header, <span class="cs">""</span>), \
+               <span class="cs">f"Missing/wrong header: {header}. Got: {r.headers.get(header)}"</span>
+</pre>
+    </div>
+  </div>
+
+  <!-- CI/CD pipeline -->
+  <div class="panel" id="pan-cicd">
+    <div class="panel-h" onclick="tp('pan-cicd')">
+      <div class="panel-dot" style="background:var(--purple)"></div>
+      <div class="panel-title">GitHub Actions &mdash; full API security testing pipeline</div>
+      <div class="panel-sub">Automated security gate that runs on every PR before merge</div>
+      <div class="panel-tog">&#x25BC;</div>
+    </div>
+    <div class="panel-body">
+<pre>
+<span class="ctag">github-actions</span>
+<span class="cm"># .github/workflows/api-security.yml</span>
+name: API Security Tests
+
+on:
+  pull_request: { branches: [main, staging] }
+  push: { branches: [main] }
+
+jobs:
+  api-security:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15
+        env: { POSTGRES_PASSWORD: testpass, POSTGRES_DB: testdb }
+        options: --health-cmd pg_isready --health-interval 5s
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+
+      <span class="cm"># ── Start the application ────────────────────────────────────</span>
+      - name: Start API server
+        run: |
+          pip install -r requirements.txt
+          python manage.py migrate
+          python manage.py loaddata test_fixtures.json
+          python manage.py runserver 0.0.0.0:8000 &amp;
+          sleep 5    <span class="cm"># wait for server to be ready</span>
+        env:
+          DATABASE_URL: postgresql://postgres:testpass@localhost/testdb
+          SECRET_KEY: ci-test-key-not-for-production
+          DEBUG: 'False'
+
+      <span class="cm"># ── Gate 1: pytest security tests ───────────────────────────</span>
+      - name: Run API security test suite (BOLA, mass assignment, rate limiting)
+        run: |
+          pip install pytest requests
+          pytest tests/security/ -v \
+            --tb=short \
+            --json-report \
+            --json-report-file=security-results.json
+        env:
+          API_BASE_URL: http://localhost:8000
+
+      <span class="cm"># ── Gate 2: ZAP API scan ─────────────────────────────────────</span>
+      - name: ZAP API Scan (injection, auth, misconfig)
+        run: |
+          docker run --network host \
+            ghcr.io/zaproxy/zaproxy:stable zap-api-scan.py \
+            -t http://localhost:8000/openapi.json \
+            -f openapi \
+            -r zap-api-report.html \
+            -J zap-api-report.json \
+            -z "-config scanner.strength=HIGH" \
+            -H "Authorization: Bearer ${{ steps.auth.outputs.token }}"
+
+      <span class="cm"># ── Gate 3: Check ZAP results ───────────────────────────────</span>
+      - name: Enforce ZAP security gate
+        run: |
+          HIGH=$(cat zap-api-report.json | jq \
+            '[.site[].alerts[] | select(.riskdesc | startswith("High"))] | length')
+          CRIT=$(cat zap-api-report.json | jq \
+            '[.site[].alerts[] | select(.riskdesc | startswith("Critical"))] | length')
+          echo "High: $HIGH  Critical: $CRIT"
+          [ $((HIGH + CRIT)) -eq 0 ] || { echo "ZAP gate FAILED"; exit 1; }
+
+      <span class="cm"># ── Upload reports as artifacts ──────────────────────────────</span>
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: api-security-reports
+          path: |
+            security-results.json
+            zap-api-report.html
+</pre>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ ADVANCED: WRITING A PENTEST REPORT ═══ -->
+<div class="section">
+  <div class="eyebrow">&#x1F534; Advanced &mdash; Reporting</div>
+  <div class="sec-title">Writing an API security test report</div>
+  <div class="sec-sub">A security finding is only valuable if the development team understands it and can fix it. A good report communicates severity, business impact, reproduction steps, and a specific fix &mdash; not just "SQLi found on /search."</div>
+
+  <div class="panel" id="pan-report">
+    <div class="panel-h" onclick="tp('pan-report')">
+      <div class="panel-dot" style="background:var(--teal)"></div>
+      <div class="panel-title">Finding report template &mdash; the format that gets vulnerabilities fixed</div>
+      <div class="panel-sub">Every finding must answer: what, where, how bad, how to reproduce, how to fix</div>
+      <div class="panel-tog">&#x25BC;</div>
+    </div>
+    <div class="panel-body">
+<pre>
+<span class="cm">═══════════════════════════════════════════════════════════════</span>
+<span class="cg">FINDING: API-001 — Broken Object Level Authorization (BOLA)</span>
+<span class="cm">═══════════════════════════════════════════════════════════════</span>
+
+<span class="cv">Severity:</span>     CRITICAL (CVSS 9.1)
+<span class="cv">Category:</span>     OWASP API1:2023 — Broken Object Level Authorization
+<span class="cv">Endpoint:</span>     GET /api/v1/orders/{order_id}
+              PATCH /api/v1/orders/{order_id}
+<span class="cv">Auth:</span>         Required (Bearer JWT) but not enforced for ownership
+<span class="cv">Affected:</span>     All authenticated users can access all order records
+
+<span class="cv">Description:</span>
+The orders endpoint retrieves and modifies order records using
+the supplied order_id without verifying that the authenticated
+user owns that order. An attacker with a valid account can
+enumerate all order IDs and retrieve or modify any customer's
+order, including order contents, shipping address, and payment
+status.
+
+<span class="cv">Business Impact:</span>
+An attacker can: (1) Enumerate all 2.3M customer orders and
+exfiltrate order data, PII, and purchase history. (2) Modify
+any order's status to "shipped" without payment. (3) Change
+delivery addresses to redirect orders. Potential GDPR/PCI-DSS
+violation requiring breach notification.
+
+<span class="cv">Reproduction Steps:</span>
+1. Create two accounts: alice@test.com and bob@test.com
+2. Login as Alice, create an order → note order ID "ord-abc123"
+3. Login as Bob, send request:
+   GET /api/v1/orders/ord-abc123
+   Authorization: Bearer BOB_TOKEN
+4. Observe: 200 OK with Alice's order details returned
+
+<span class="cv">Evidence:</span>
+[Request]
+GET /api/v1/orders/ord-abc123 HTTP/1.1
+Authorization: Bearer eyJ...(Bob's token)
+
+[Response 200]
+{"id":"ord-abc123","user_id":"alice-uuid","items":[...]
+ "shipping_address":"123 Alice St","payment_last4":"4242"}
+
+<span class="cv">Fix:</span>
+Add ownership filter to the order retrieval queryset:
+  BEFORE: Order.objects.get(id=order_id)
+  AFTER:  Order.objects.get(id=order_id, user=request.user)
+Also: use UUID instead of sequential integer IDs in the URL
+to prevent enumeration. Return 404 (not 403) for unauthorised
+access to avoid leaking resource existence.
+
+<span class="cv">Verification:</span>
+After fix is deployed, re-run TC-02 (cross-account access test)
+and confirm Bob receives 404 when accessing Alice's orders.
+</pre>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ QUIZ ═══ -->
+<div class="section">
+  <div class="eyebrow">Knowledge Check</div>
+  <div class="sec-title">API security testing interview questions</div>
+  <div class="sec-sub">Questions you will face in security engineer and AppSec interviews when the topic is API testing methodology</div>
+
+  <div class="quiz-block">
+    <div class="quiz-q">Q1. You are testing a REST API and every endpoint uses UUID v4 identifiers instead of sequential integers. Does this eliminate BOLA risk? Explain your answer.</div>
+    <div class="quiz-opts" id="q1">
+      <div class="qo" onclick="doQ('q1',this,'wrong')">Yes &mdash; UUIDs are unguessable so BOLA is impossible without knowing another user's resource ID</div>
+      <div class="qo" onclick="doQ('q1',this,'wrong')">Yes &mdash; UUIDs combined with authentication completely prevent BOLA</div>
+      <div class="qo" onclick="doQ('q1',this,'correct')">No. UUIDs eliminate enumeration but BOLA still exists if the server doesn't check ownership. An attacker who obtains another user's UUID (from a leaked URL, a shared document link, an API that returns IDs in a list response) can still access that resource. BOLA requires both: UUID IDs (prevents enumeration) AND server-side ownership check (prevents access).</div>
+      <div class="qo" onclick="doQ('q1',this,'wrong')">No &mdash; UUIDs make BOLA worse because they're harder to test</div>
+    </div>
+    <div class="quiz-exp" id="q1-exp">UUIDs are a defence-in-depth measure, not a complete fix. They prevent brute-force enumeration (the automated attack that extracted 11M Optus records). But if an attacker has any way to learn a UUID &mdash; it appears in an email notification, a shared link, a list endpoint that leaks other users' IDs, or from a leak elsewhere &mdash; they can use it. The only complete fix for BOLA is a server-side ownership check on every resource operation: <code>Order.objects.get(id=id, user=request.user)</code>. UUIDs + ownership check = properly protected.</div>
+  </div>
+
+  <div class="quiz-block">
+    <div class="quiz-q">Q2. During API testing, you notice that the login endpoint returns a different error message for "user not found" vs "wrong password." What vulnerability does this indicate and how would you exploit it?</div>
+    <div class="quiz-opts" id="q2">
+      <div class="qo" onclick="doQ('q2',this,'wrong')">SQL injection &mdash; different error messages indicate the query is being parsed differently</div>
+      <div class="qo" onclick="doQ('q2',this,'correct')">User enumeration (API2 Broken Authentication). Different messages tell an attacker which email addresses have accounts. Exploitation: use a wordlist of email addresses and send login requests. Emails that get "wrong password" = valid accounts. Use those accounts for targeted credential stuffing with known breached passwords.</div>
+      <div class="qo" onclick="doQ('q2',this,'wrong')">BOLA &mdash; the server is returning data about other users</div>
+      <div class="qo" onclick="doQ('q2',this,'wrong')">Rate limiting bypass &mdash; different responses indicate different code paths</div>
+    </div>
+    <div class="quiz-exp" id="q2-exp">User enumeration is a classic API2 (Broken Authentication) finding. The attacker uses the login error message as an oracle: send "test@gmail.com" and get "User not found" = this email has no account. Send "victim@gmail.com" and get "Invalid password" = this email HAS an account. The attacker can now target that account specifically with credential stuffing (trying breached passwords). Fix: always return the same generic message: "Invalid email or password" regardless of which check failed. Also ensure the response time is identical (bcrypt should run regardless of whether the user exists to prevent timing attacks).</div>
+  </div>
+
+  <div class="quiz-block">
+    <div class="quiz-q">Q3. You are testing an API that has rate limiting: it allows 5 failed login attempts per IP before blocking. You send the X-Forwarded-For: 1.2.3.4 header and notice the rate limit counter resets. What is this called and what is the correct fix?</div>
+    <div class="quiz-opts" id="q3">
+      <div class="qo" onclick="doQ('q3',this,'wrong')">IP spoofing &mdash; the server should validate the source IP address at the network layer</div>
+      <div class="qo" onclick="doQ('q3',this,'wrong')">Header injection &mdash; the X-Forwarded-For header should be stripped at the WAF</div>
+      <div class="qo" onclick="doQ('q3',this,'correct')">Rate limit bypass via IP header manipulation. The API trusts client-supplied X-Forwarded-For as the real IP. Fix: rate limit by BOTH account (email) AND IP. Account-level rate limiting prevents this bypass entirely &mdash; attacker can't change what account they're targeting. IP-based limiting should only use the real IP from a trusted reverse proxy, not the client-supplied header.</div>
+      <div class="qo" onclick="doQ('q3',this,'wrong')">This is expected behavior &mdash; X-Forwarded-For is a legitimate way to handle proxy networks</div>
+    </div>
+    <div class="quiz-exp" id="q3-exp">This is one of the most common rate limiting bypasses. The fix has two parts: (1) <strong>Account-level rate limiting</strong>: limit failed attempts PER ACCOUNT (email address), not just per IP. Even with rotating IPs, the attacker still targets the same account. This is the more important control. (2) <strong>Trusted IP extraction</strong>: if you need IP-based limiting, only trust the X-Forwarded-For from your own reverse proxy (Nginx/load balancer), not from the client. In Django: <code>TRUSTED_PROXY_LIST = ['10.0.0.1']</code> and only use XFF header if the request came from a trusted proxy.</div>
+  </div>
+</div>
+
+<!-- ═══ CHALLENGE ═══ -->
+<div class="challenge">
+  <div class="ch-ey">Capstone Challenge &mdash; Full Engagement Simulation</div>
+  <div class="ch">
+    <h3>Plan and execute a complete API security test</h3>
+    <p class="ch-desc">You have been given a one-week API security testing engagement for a healthcare SaaS platform. You have been provided with: the OpenAPI spec (300 endpoints), two test accounts (doctor and patient), and access to a staging environment. Plan your complete testing strategy, tooling, and what findings you expect to discover.</p>
+    <div class="scenario">
+      <p><strong>API details:</strong> Django REST Framework backend. Authentication: JWT Bearer tokens with separate roles (patient, doctor, admin). 300 endpoints covering: patient records, doctor appointments, prescription management, billing, and an admin panel. The API serves both a React web app and a mobile app. No previous security testing has been performed. Discovered during recon: OpenAPI spec is publicly accessible at /api/docs. The mobile app APK is available on the Play Store. There are two URL prefixes: /api/v1/ (current) and /api/v2/ (beta with new features).<br><br>
+      <strong>Your task:</strong> Write your complete 5-phase testing plan with specific tests for this healthcare context, identify which OWASP API categories you expect to find vulnerabilities in and why, list the tools you will use for each phase, and write one specific test case for the most critical expected finding.</p>
+    </div>
+    <textarea id="ch-ans" placeholder="Phase 1 - Recon:
+...
+
+Phase 2 - Auth testing:
+...
+
+Phase 3 - BOLA/BFLA:
+...
+
+Phase 4 - Injection:
+...
+
+Phase 5 - Business logic:
+...
+
+Expected findings (with reasoning):
+...
+
+Tools per phase:
+...
+
+Critical test case code:
+..."></textarea>
+    <div class="btn-row">
+      <button class="btn btn-p" onclick="checkCh()">Submit</button>
+      <button class="btn btn-g" onclick="revealCh()">Reveal model answer</button>
+    </div>
+    <div class="ch-fb" id="ch-fb"></div>
+  </div>
+</div>
+
+<!-- ═══ SUMMARY ═══ -->
+<div class="section">
+  <div class="eyebrow">Quick Reference</div>
+  <div class="sec-title">API security testing cheat sheet</div>
+  <table>
+    <tr><th>Phase</th><th>Key activity</th><th>Primary tool</th><th>Finding category</th></tr>
+    <tr><td style="font-weight:700;color:var(--green)">1. Recon</td><td>OpenAPI spec parsing, JS bundle analysis, traffic capture</td><td>Burp Suite, jq, linkfinder</td><td>API9 shadow endpoints</td></tr>
+    <tr><td style="font-weight:700;color:var(--accent)">2. Auth</td><td>JWT attacks, token bypass, credential stuffing, alg confusion</td><td>jwt_tool, Burp JWT Editor, hashcat</td><td>API2 Broken Auth</td></tr>
+    <tr><td style="font-weight:700;color:var(--orange)">3. BOLA/BFLA</td><td>Two-account cross-object test, admin endpoint discovery</td><td>Burp Autorize, custom pytest, Intruder</td><td>API1 BOLA, API5 BFLA</td></tr>
+    <tr><td style="font-weight:700;color:var(--red)">4. Injection</td><td>SQLi, NoSQL, SSTI, path traversal, XXE, SSRF per field</td><td>Burp Scanner, ZAP, manual Repeater</td><td>API3, API7 SSRF</td></tr>
+    <tr><td style="font-weight:700;color:var(--purple)">5. Business logic</td><td>Price manipulation, workflow bypass, race conditions, rate limits</td><td>Burp Intruder, custom Python scripts</td><td>API4, API6</td></tr>
+    <tr><td style="font-weight:700;color:var(--teal)">Automation</td><td>pytest security suite, ZAP API scan, GitHub Actions gate</td><td>pytest, ZAP Docker, Postman Newman</td><td>All categories</td></tr>
+    <tr><td style="font-weight:700;color:var(--yellow)">Reporting</td><td>CVSS-scored findings with PoC, business impact, specific fix</td><td>Custom template</td><td>Communication to dev team</td></tr>
+  </table>
+</div>
+
+<!-- NAV FOOTER -->
+<div class="nav-footer">
+  <a class="nf-btn" href="#">
+    <span class="nf-dir">&larr; Previous</span>
+    <span class="nf-title">08 &mdash; OWASP API Security Top 10</span>
+  </a>
+  <a class="nf-btn next" href="#">
+    <span class="nf-dir">Next Lesson &rarr;</span>
+    <span class="nf-title">10 &mdash; GraphQL Security</span>
+  </a>
+</div>
+
+</div>
+</div>
+
+<!-- ═══ REVEAL HTML stored safely in DOM ═══ -->
+<div id="reveal-html" style="display:none">
+<strong>Model Answer &mdash; Healthcare API Security Engagement</strong><br><br>
+<strong>Phase 1 &mdash; Reconnaissance (Day 1, 4 hours):</strong><br>
+Start with the publicly accessible OpenAPI spec at /api/docs. Use jq to extract all 300 endpoints, identify every path parameter (BOLA candidates), find endpoints with no security definition (auth bypass candidates), and list all PATCH/PUT/POST endpoints (mass assignment targets). Download the Play Store APK and decompile with jadx to find any API endpoints not in the spec (shadow APIs, internal debug endpoints). Proxy the React web app through Burp and browse all features as both patient and doctor roles to capture real request/response traffic. Check for /api/v2/ endpoints &mdash; whether v1 has fewer security controls is high priority.<br><br>
+<strong>Phase 2 &mdash; Authentication (Day 1-2, 3 hours):</strong><br>
+Healthcare context makes this critical: a doctor token that can be used as an admin, or a patient token that can act as a doctor, has severe implications. Decode the JWT with jwt_tool &mdash; check the algorithm (HS256 vs RS256), claims (role, patient_id, doctor_id), and expiry. Test alg:none, run hashcat against the HMAC signature if HS256. Test role claim modification: change "role":"patient" to "role":"doctor" or "role":"admin". Test expired token acceptance. Test whether doctor endpoints reject patient tokens and vice versa.<br><br>
+<strong>Phase 3 &mdash; BOLA/BFLA (Day 2-3, full day):</strong><br>
+Most critical phase for healthcare. BOLA here means Patient A can access Patient B's medical records, prescriptions, and billing data. Use the Burp Autorize extension: configure the patient token as the "lower privilege" token, browse as the doctor account, and Autorize automatically replays every doctor request with the patient token. Any 200 response = BOLA. Also test: can a patient access any doctor's appointment schedule? Can a patient modify their own prescription? Can a patient access another patient's billing records? Test all HTTP methods (GET, PATCH, PUT, DELETE) on every resource endpoint.<br><br>
+<strong>Phase 4 &mdash; Injection (Day 3-4, 3 hours):</strong><br>
+Priority targets: the prescription search endpoint (SQL query on medication names), the appointment notes field (free text saved to DB), the document upload endpoint (file path in POST body &mdash; path traversal), the webhook/notification URL field (SSRF to internal services or AWS metadata). Run Burp Scanner on all endpoints. Manually test the prescription search with SQLi payloads and SSTI payloads (if it uses a template for results). Test the webhook URL with 169.254.169.254 for SSRF.<br><br>
+<strong>Phase 5 &mdash; Business Logic (Day 4-5, 3 hours):</strong><br>
+Healthcare-specific business logic tests: Can a patient create an appointment without going through the scheduling flow? Can a patient mark their own appointment as "completed" (which might trigger a billing event)? Can a patient set their own prescription as "refillable:true"? Can a patient change their doctor assignment directly? Can the billing API be called with amount=0 or amount=-1? Test race conditions on appointment booking (double-booking the same slot). Test whether the /api/v2/ beta endpoints have the same auth controls as v1 &mdash; often they don't.<br><br>
+<strong>Expected high-priority findings:</strong><br>
+1. API9 (High): v1 endpoints still active alongside v2 with potentially fewer controls. OpenAPI spec publicly accessible &mdash; entire attack surface mapped for any attacker.<br>
+2. API1 (Critical): BOLA on patient records. Healthcare SaaS with no previous testing almost certainly has missing ownership checks on at least some endpoints.<br>
+3. API3 (High): fields='__all__' in serialisers returning internal_notes, doctor_flags, or administrative fields to patients.<br>
+4. API2 (High): JWT role claim trusted from token without DB verification. Patient changing role claim to doctor.<br>
+5. API5 (High): Admin endpoints accessible to doctors or patients without proper role segregation.<br><br>
+<strong>Critical test case &mdash; BOLA on patient records:</strong><br>
+<pre style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);padding:.75rem;border-radius:4px;font-size:11px;color:rgba(255,255,255,.7);">
+def test_patient_cannot_read_other_patient_records(tokens):
+    patient_a_token = tokens['patient_a']
+    patient_b_record_id = tokens['patient_b_record_id']
+    r = requests.get(
+        f"{BASE}/api/v1/patients/{patient_b_record_id}/records",
+        headers={"Authorization": f"Bearer {patient_a_token}"}
+    )
+    assert r.status_code in (403, 404), \
+        f"CRITICAL BOLA: Patient A accessed Patient B's medical records! Status: {r.status_code}, Data: {r.text[:200]}"
+</pre>
+<strong>Tools per phase:</strong> Recon: Burp Suite proxy + jq + jadx. Auth: jwt_tool + Burp JWT Editor + hashcat. BOLA/BFLA: Burp Autorize + custom pytest suite. Injection: Burp Scanner + ZAP API scan + manual Repeater. Business logic: custom Python threading scripts + Burp Intruder. Automation: GitHub Actions with pytest + ZAP Docker.
+</div>
+
+<!-- ═══ JAVASCRIPT ═══ -->
+<script>
+function tp(id) {
+  document.getElementById(id).classList.toggle('open');
+}
+
+function togglePhase(id) {
+  document.getElementById(id).classList.toggle('open');
+}
+document.getElementById('ph1').classList.add('open');
+
+function switchTab(btn, paneId) {
+  var bar = btn.parentElement;
+  bar.querySelectorAll('.ttab').forEach(function(t) { t.classList.remove('active'); });
+  btn.classList.add('active');
+  var wrap = bar.parentElement;
+  wrap.querySelectorAll('.tool-pane').forEach(function(p) { p.classList.remove('active'); });
+  var pane = document.getElementById(paneId);
+  if (pane) { pane.classList.add('active'); }
+}
+
+function toggleTC(id) {
+  document.getElementById(id + '-b').classList.toggle('show');
+}
+
+function doQ(qid, el, result) {
+  var container = document.getElementById(qid);
+  container.querySelectorAll('.qo').forEach(function(o) { o.onclick = null; });
+  el.classList.add(result === 'correct' ? 'correct' : 'wrong');
+  var exp = document.getElementById(qid + '-exp');
+  if (exp) { exp.classList.add('show'); }
+}
+
+function checkCh() {
+  var ans = document.getElementById('ch-ans').value.toLowerCase();
+  var fb  = document.getElementById('ch-fb');
+  var checks = [
+    ans.includes('recon') || ans.includes('openapi') || ans.includes('spec'),
+    ans.includes('jwt') || ans.includes('auth') || ans.includes('token'),
+    ans.includes('bola') || ans.includes('ownership') || ans.includes('cross'),
+    ans.includes('inject') || ans.includes('ssrf') || ans.includes('sql'),
+    ans.includes('business') || ans.includes('race') || ans.includes('logic'),
+    ans.includes('v1') || ans.includes('v2') || ans.includes('shadow') || ans.includes('inventory'),
+    ans.includes('patient') && (ans.includes('record') || ans.includes('prescription') || ans.includes('medical')),
+    ans.includes('autorize') || ans.includes('burp') || ans.includes('jwt_tool') || ans.includes('zap')
+  ];
+  var score = checks.filter(Boolean).length;
+  fb.className = 'ch-fb show ' + (score >= 6 ? 'good' : 'hint');
+  if (score >= 6) {
+    fb.textContent = 'Excellent — ' + score + '/8 areas covered. You are planning a professional API security engagement. The healthcare context is important: BOLA on patient records is not just a security finding, it is a HIPAA violation requiring breach notification and potential regulatory fines. That elevates the severity and urgency of any BOLA finding above what the CVSS score alone would suggest.';
+  } else if (score >= 3) {
+    fb.textContent = 'Good work — ' + score + '/8 covered. Key things to add: (1) The v1 vs v2 parallel API versions need explicit testing — beta APIs often skip auth controls. (2) The publicly exposed OpenAPI spec is itself a finding (API9) — it gives attackers your complete endpoint inventory. (3) For healthcare, BOLA between patients is a HIPAA violation, not just a technical finding — mention the compliance impact in your report.';
+  } else {
+    fb.textContent = 'Work through the 5 phases systematically. Start with Phase 1: what does the OpenAPI spec at /api/docs tell you? Which endpoints have path parameters? Which have no security defined? That analysis drives everything else.';
+  }
+}
+
+function revealCh() {
+  var fb  = document.getElementById('ch-fb');
+  var src = document.getElementById('reveal-html');
+  fb.className = 'ch-fb show reveal';
+  fb.innerHTML = src ? src.innerHTML : 'Model answer unavailable.';
+}
+</script>
+</body>
+</html>

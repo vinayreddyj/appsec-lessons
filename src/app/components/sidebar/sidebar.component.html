@@ -1,0 +1,108 @@
+<!-- src/app/components/sidebar/sidebar.component.html -->
+<nav class="sidebar">
+
+  <!-- Brand -->
+  <div class="sidebar-brand">
+    <div class="brand-badge">APPSEC ENGINEER</div>
+    <h2>Application Security<br>Learning Path</h2>
+    <div class="brand-progress">
+      <div class="prog-bar">
+        <div class="prog-fill" [style.width.%]="progressPercent()"></div>
+      </div>
+      <span class="prog-label">
+        {{ completedCount() }} / 20 lessons complete
+      </span>
+    </div>
+  </div>
+
+  <!-- Search -->
+  <div class="search-wrap">
+    <div class="search-inner">
+      <svg class="search-icon" viewBox="0 0 20 20" fill="none">
+        <circle cx="8.5" cy="8.5" r="5.5" stroke="currentColor" stroke-width="1.5"/>
+        <path d="M13 13l3.5 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      <input
+        class="search-input"
+        type="text"
+        placeholder="Search lessons, tags…"
+        [value]="searchQuery()"
+        (input)="setSearch($any($event.target).value)"
+        autocomplete="off"
+        spellcheck="false"
+      />
+      <button
+        *ngIf="searchQuery()"
+        class="search-clear"
+        (click)="setSearch('')"
+        aria-label="Clear search"
+      >✕</button>
+    </div>
+  </div>
+
+  <!-- Module groups -->
+  <div class="modules-list">
+    <div
+      *ngFor="let mod of filteredModules(); trackBy: trackByModule"
+      class="module-group"
+    >
+      <!-- Module header -->
+      <button
+        class="module-header"
+        (click)="toggleModule(mod.id)"
+        [attr.aria-expanded]="isModuleExpanded(mod.id)"
+      >
+        <span class="module-icon">{{ mod.icon }}</span>
+        <span class="module-name">{{ mod.name }}</span>
+        <span class="module-chevron" [class.open]="isModuleExpanded(mod.id)">
+          <svg viewBox="0 0 12 12" fill="none">
+            <path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5"
+                  stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </span>
+        <span class="module-done-count">
+          {{ mod.lessons | lessonDoneCount: progress.completed() }}
+        </span>
+      </button>
+
+      <!-- Lesson items -->
+      <div class="lesson-list" [class.collapsed]="!isModuleExpanded(mod.id)">
+        <a
+          *ngFor="let lesson of mod.lessons; trackBy: trackByLesson"
+          class="nav-item"
+          [class.active]="isActive(lesson.num)"
+          [class.done]="isCompleted(lesson.num)"
+          [routerLink]="['/lesson', lesson.num]"
+          (click)="onLessonClick(lesson.num)"
+        >
+          <span class="nav-num">{{ lesson.num | number:'2.0-0' }}</span>
+          <span class="nav-title">{{ lesson.title }}</span>
+          <span class="nav-check" *ngIf="isCompleted(lesson.num)" aria-label="Complete">
+            <svg viewBox="0 0 14 14" fill="none">
+              <circle cx="7" cy="7" r="6"
+                fill="currentColor" fill-opacity="0.15"
+                stroke="currentColor" stroke-width="1"/>
+              <path d="M4 7l2.5 2.5L10 5" stroke="currentColor"
+                stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </span>
+          <span class="nav-level" [attr.data-level]="lesson.level">
+            {{ lesson.level[0].toUpperCase() }}
+          </span>
+        </a>
+      </div>
+    </div>
+
+    <!-- No results -->
+    <div *ngIf="filteredModules().length === 0" class="no-results">
+      <svg viewBox="0 0 40 40" fill="none">
+        <circle cx="18" cy="18" r="11" stroke="currentColor" stroke-width="2"/>
+        <path d="M26 26l7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        <path d="M14 18h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+      <p>No lessons match <strong>"{{ searchQuery() }}"</strong></p>
+      <button (click)="setSearch('')">Clear search</button>
+    </div>
+  </div>
+
+</nav>

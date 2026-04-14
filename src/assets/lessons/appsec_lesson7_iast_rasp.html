@@ -1,0 +1,1575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AppSec Engineer — Lesson 7: IAST &amp; RASP</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Bitter:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f8f6f1;
+  --surface:#ffffff;
+  --surface2:#f0ede5;
+  --surface3:#e8e4da;
+  --border:#ddd9ce;
+  --border2:#ccc8bb;
+  --ink:#1c1a15;
+  --ink2:#4a4740;
+  --ink3:#9a9588;
+  --accent:#7c3aed;
+  --accent-bg:rgba(124,58,237,0.07);
+  --accent2:#0d9488;
+  --accent2-bg:rgba(13,148,136,0.07);
+  --red:#dc2626;
+  --red-bg:rgba(220,38,38,0.06);
+  --orange:#ea580c;
+  --orange-bg:rgba(234,88,12,0.06);
+  --yellow:#b45309;
+  --yellow-bg:rgba(180,83,9,0.07);
+  --blue:#1d4ed8;
+  --blue-bg:rgba(29,78,216,0.06);
+  --green:#15803d;
+  --green-bg:rgba(21,128,61,0.06);
+  --code-bg:#13111c;
+  --code-text:#e2dff5;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--ink);font-family:'Sora',sans-serif;font-size:15px;line-height:1.8;}
+
+/* SIDEBAR */
+.sidebar{position:fixed;left:0;top:0;bottom:0;width:252px;background:var(--ink);overflow-y:auto;z-index:100;}
+.sb-brand{padding:1.4rem 1.2rem 1rem;border-bottom:1px solid rgba(255,255,255,0.07);}
+.sb-badge{font-family:'JetBrains Mono',monospace;font-size:9px;background:var(--accent);color:#fff;padding:2px 8px;border-radius:2px;letter-spacing:.12em;display:inline-block;margin-bottom:7px;text-transform:uppercase;font-weight:700;}
+.sb-brand h2{font-size:13px;font-weight:400;color:rgba(255,255,255,0.45);line-height:1.4;}
+.sb-sect{padding:.7rem 1.2rem .2rem;font-size:9px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:rgba(255,255,255,0.2);margin-top:.25rem;}
+.nav-item{display:flex;align-items:center;gap:9px;padding:.38rem 1.2rem;cursor:pointer;border-left:2px solid transparent;font-size:12.5px;color:rgba(255,255,255,0.28);text-decoration:none;transition:all .15s;}
+.nav-item:hover{color:rgba(255,255,255,0.65);background:rgba(255,255,255,0.04);}
+.nav-item.done{color:rgba(255,255,255,0.32);}
+.nav-item.active{color:#fff;border-left-color:var(--accent);background:var(--accent-bg);}
+.nav-item .num{font-family:'JetBrains Mono',monospace;font-size:10px;min-width:22px;opacity:.3;}
+.nav-item.active .num{opacity:1;color:var(--accent);}
+
+/* MAIN */
+.main{margin-left:252px;}
+.topbar{position:sticky;top:0;background:rgba(248,246,241,0.95);backdrop-filter:blur(14px);border-bottom:1px solid var(--border);padding:.65rem 2.5rem;display:flex;align-items:center;justify-content:space-between;z-index:50;}
+.bc{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink3);}
+.bc span{color:var(--accent);font-weight:700;}
+.top-badge{font-family:'JetBrains Mono',monospace;font-size:10px;padding:3px 10px;background:var(--ink);color:rgba(255,255,255,0.65);border-radius:2px;}
+.content{padding:3rem 2.5rem 5rem;max-width:940px;}
+
+/* HERO */
+.hero{margin-bottom:3.5rem;padding-bottom:2.5rem;border-bottom:2px solid var(--border);}
+.hero-meta{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1rem;}
+.tag{font-family:'JetBrains Mono',monospace;font-size:10px;padding:3px 10px;border-radius:2px;font-weight:600;letter-spacing:.04em;}
+.t-beg{background:var(--green-bg);color:var(--green);border:1px solid rgba(21,128,61,.2);}
+.t-tool{background:var(--blue-bg);color:var(--blue);border:1px solid rgba(29,78,216,.2);}
+.t-time{background:var(--accent-bg);color:var(--accent);border:1px solid rgba(124,58,237,.2);}
+.hero h1{font-family:'Bitter',serif;font-size:3.4rem;font-weight:700;line-height:1.1;color:var(--ink);margin-bottom:.85rem;letter-spacing:-.01em;}
+.hero h1 .hl{color:var(--accent);}
+.hero h1 .hl2{color:var(--accent2);}
+.hero-sub{font-size:14.5px;color:var(--ink2);max-width:640px;line-height:1.8;margin-bottom:1.75rem;}
+.level-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:6px;overflow:hidden;}
+.lv-cell{background:var(--surface);padding:.9rem 1rem;}
+.lv-pip{width:8px;height:8px;border-radius:50%;margin-bottom:7px;}
+.lv-label{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink3);margin-bottom:3px;}
+.lv-title{font-size:13px;font-weight:700;color:var(--ink);margin-bottom:2px;}
+.lv-desc{font-size:12px;color:var(--ink3);line-height:1.5;}
+
+/* SECTIONS */
+.section{margin-bottom:3.5rem;}
+.eyebrow{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.15em;color:var(--accent);margin-bottom:5px;font-weight:600;}
+.eyebrow2{color:var(--accent2);}
+.sec-title{font-family:'Bitter',serif;font-size:1.9rem;font-weight:700;color:var(--ink);line-height:1.2;margin-bottom:.35rem;}
+.sec-sub{font-size:14px;color:var(--ink2);max-width:650px;line-height:1.75;margin-bottom:1.5rem;}
+
+/* CALLOUT */
+.callout{border-radius:4px;padding:.9rem 1.1rem;margin:1rem 0;display:flex;gap:10px;align-items:flex-start;border-left:3px solid;}
+.cl-warn{background:var(--red-bg);border-color:var(--red);}
+.cl-info{background:var(--blue-bg);border-color:var(--blue);}
+.cl-tip{background:var(--green-bg);border-color:var(--green);}
+.cl-note{background:var(--yellow-bg);border-color:var(--yellow);}
+.cl-purple{background:var(--accent-bg);border-color:var(--accent);}
+.cl-teal{background:var(--accent2-bg);border-color:var(--accent2);}
+.cl-icon{font-size:15px;flex-shrink:0;margin-top:2px;}
+.cl-text{font-size:13.5px;color:var(--ink2);line-height:1.7;}
+.cl-text strong{color:var(--ink);}
+.cl-text code{font-family:'JetBrains Mono',monospace;font-size:11.5px;background:rgba(0,0,0,.06);padding:1px 5px;border-radius:2px;color:var(--accent);}
+
+/* CODE */
+pre{background:var(--code-bg);color:var(--code-text);border-radius:6px;padding:1.25rem;font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.8;overflow-x:auto;margin:.85rem 0;position:relative;border:1px solid rgba(255,255,255,.05);}
+.ctag{position:absolute;top:10px;right:12px;font-family:'JetBrains Mono',monospace;font-size:9px;color:rgba(255,255,255,.2);text-transform:uppercase;letter-spacing:.1em;}
+.ck{color:#c084fc;}.cf{color:#7dd3fc;}.cs{color:#86efac;}.cm{color:#374151;}.cv{color:#fcd34d;}.ce{color:#fb923c;}.cr{color:#f87171;}.cg{color:#4ade80;}.ct{color:#2dd4bf;}.cw{color:#f9a8d4;}.cy{color:#fde68a;}
+.lb{display:block;background:rgba(248,113,113,.09);border-left:2px solid #ef4444;margin:0 -1.25rem;padding:0 1.25rem;}
+.lg{display:block;background:rgba(74,222,128,.07);border-left:2px solid #22c55e;margin:0 -1.25rem;padding:0 1.25rem;}
+.lw{display:block;background:rgba(252,211,77,.07);border-left:2px solid #f59e0b;margin:0 -1.25rem;padding:0 1.25rem;}
+.lp{display:block;background:rgba(192,132,252,.07);border-left:2px solid #a855f7;margin:0 -1.25rem;padding:0 1.25rem;}
+.lt{display:block;background:rgba(45,212,191,.07);border-left:2px solid #14b8a6;margin:0 -1.25rem;padding:0 1.25rem;}
+
+/* TABLE */
+table{width:100%;border-collapse:collapse;font-size:13px;margin:1rem 0;}
+th{padding:.55rem .9rem;text-align:left;background:var(--ink);color:rgba(255,255,255,.7);font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.08em;}
+th:first-child{border-radius:4px 0 0 0;}th:last-child{border-radius:0 4px 0 0;}
+td{padding:.55rem .9rem;border-bottom:1px solid var(--border);color:var(--ink2);line-height:1.5;vertical-align:top;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:var(--surface2);}
+
+/* PANELS */
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:6px;overflow:hidden;margin-bottom:.75rem;}
+.panel-h{display:flex;align-items:center;gap:10px;padding:.9rem 1.1rem;cursor:pointer;transition:background .15s;user-select:none;}
+.panel-h:hover{background:var(--surface2);}
+.panel-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.panel-title{font-size:13.5px;font-weight:600;flex:1;color:var(--ink);}
+.panel-sub{font-size:12px;color:var(--ink3);}
+.panel-tog{color:var(--ink3);font-size:13px;transition:transform .2s;}
+.panel.open .panel-tog{transform:rotate(180deg);}
+.panel-body{display:none;padding:0 1.1rem 1.1rem;border-top:1px solid var(--border);}
+.panel.open .panel-body{display:block;}
+.panel-body h4{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--ink3);margin:1rem 0 .5rem;font-weight:600;}
+.panel-body p{font-size:13.5px;color:var(--ink2);line-height:1.75;margin-top:.6rem;}
+
+/* COMPARISON CARDS */
+.compare-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin:1.25rem 0;}
+.ccard{border-radius:8px;padding:1.25rem;border:1px solid;}
+.ccard-iast{background:var(--accent-bg);border-color:rgba(124,58,237,.2);}
+.ccard-rasp{background:var(--accent2-bg);border-color:rgba(13,148,136,.2);}
+.ccard-label{font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.12em;font-weight:700;margin-bottom:.6rem;}
+.ccard-iast .ccard-label{color:var(--accent);}
+.ccard-rasp .ccard-label{color:var(--accent2);}
+.ccard-title{font-family:'Bitter',serif;font-size:1.1rem;font-weight:700;margin-bottom:.6rem;color:var(--ink);}
+
+/* FLOW DIAGRAM */
+.flow-wrap{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1.5rem;margin:1.25rem 0;overflow-x:auto;}
+.flow-title{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--ink3);margin-bottom:1rem;}
+.flow-row{display:flex;align-items:center;gap:0;flex-wrap:nowrap;min-width:600px;}
+.flow-node{border:1px solid var(--border);padding:.55rem .8rem;font-size:11.5px;font-weight:600;text-align:center;min-width:100px;transition:background .15s;line-height:1.4;}
+.flow-node:first-child{border-radius:5px 0 0 5px;}
+.flow-node:last-child{border-radius:0 5px 5px 0;}
+.fn-normal{background:var(--surface);color:var(--ink2);}
+.fn-iast{background:var(--accent-bg);border-color:rgba(124,58,237,.3);color:var(--accent);}
+.fn-rasp{background:var(--accent2-bg);border-color:rgba(13,148,136,.3);color:var(--accent2);}
+.fn-bad{background:var(--red-bg);border-color:rgba(220,38,38,.3);color:var(--red);}
+.fn-good{background:var(--green-bg);border-color:rgba(21,128,61,.3);color:var(--green);}
+.flow-arrow{padding:0 6px;color:var(--ink3);font-size:14px;background:var(--bg);}
+
+/* TAINT DIAGRAM */
+.taint-wrap{background:var(--code-bg);border:1px solid rgba(255,255,255,.06);border-radius:6px;padding:1.25rem;margin:.85rem 0;font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.9;overflow-x:auto;}
+.ts{color:#f87171;}.ti{color:#c084fc;}.tsan{color:#4ade80;}.tsink{color:#fb923c;}.tblock{color:#2dd4bf;}
+
+/* TOOL CARDS */
+.tool-tabs{border:1px solid var(--border);border-radius:6px;overflow:hidden;margin:1.25rem 0;}
+.tool-tab-bar{display:flex;background:var(--surface2);border-bottom:1px solid var(--border);}
+.ttab{padding:.6rem 1.1rem;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;cursor:pointer;color:var(--ink3);border-right:1px solid var(--border);transition:all .15s;user-select:none;}
+.ttab:hover{color:var(--ink);}
+.ttab.active{background:var(--surface);color:var(--accent);border-bottom:2px solid var(--accent);}
+.tool-pane{display:none;padding:1.25rem;}
+.tool-pane.active{display:block;}
+
+/* FINDING CARD */
+.finding{background:var(--surface);border:1px solid var(--border);border-left:4px solid;border-radius:0 6px 6px 0;padding:1rem 1.1rem;margin-bottom:.75rem;cursor:pointer;transition:background .15s;}
+.finding:hover{background:var(--surface2);}
+.f-crit{border-left-color:var(--red);}
+.f-high{border-left-color:var(--orange);}
+.f-med{border-left-color:var(--yellow);}
+.f-low{border-left-color:var(--green);}
+.f-top{display:flex;align-items:flex-start;gap:1rem;justify-content:space-between;}
+.f-title{font-size:13.5px;font-weight:700;color:var(--ink);margin-bottom:3px;}
+.f-meta{font-size:11px;color:var(--ink3);font-family:'JetBrains Mono',monospace;}
+.f-sev{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;padding:3px 10px;border-radius:2px;flex-shrink:0;white-space:nowrap;}
+.sc{background:var(--red-bg);color:var(--red);border:1px solid rgba(220,38,38,.2);}
+.sh{background:var(--orange-bg);color:var(--orange);border:1px solid rgba(234,88,12,.2);}
+.sm{background:var(--yellow-bg);color:var(--yellow);border:1px solid rgba(180,83,9,.2);}
+.sl{background:var(--green-bg);color:var(--green);border:1px solid rgba(21,128,61,.2);}
+.f-body{display:none;margin-top:.85rem;padding-top:.85rem;border-top:1px solid var(--border);}
+.f-body.show{display:block;}
+.f-body h5{font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:var(--ink3);margin:.75rem 0 .35rem;font-weight:700;}
+.f-body p{font-size:13.5px;color:var(--ink2);line-height:1.7;}
+
+/* TWO COL */
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin:1rem 0;}
+.cb{background:var(--red-bg);border:1px solid rgba(220,38,38,.15);border-radius:6px;padding:1rem;}
+.cg-box{background:var(--green-bg);border:1px solid rgba(21,128,61,.15);border-radius:6px;padding:1rem;}
+.cmp-l{font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.12em;font-weight:700;margin-bottom:.6rem;}
+.cb .cmp-l{color:var(--red);}
+.cg-box .cmp-l{color:var(--green);}
+
+/* PILL */
+.pill{font-size:11px;padding:3px 9px;border-radius:2px;font-family:'JetBrains Mono',monospace;font-weight:600;}
+.pr{background:var(--red-bg);color:var(--red);border:1px solid rgba(220,38,38,.2);}
+.pg{background:var(--green-bg);color:var(--green);border:1px solid rgba(21,128,61,.2);}
+.py{background:var(--yellow-bg);color:var(--yellow);border:1px solid rgba(180,83,9,.2);}
+.pb{background:var(--blue-bg);color:var(--blue);border:1px solid rgba(29,78,216,.2);}
+.pp{background:var(--accent-bg);color:var(--accent);border:1px solid rgba(124,58,237,.2);}
+.pt{background:var(--accent2-bg);color:var(--accent2);border:1px solid rgba(13,148,136,.2);}
+.pill-row{display:flex;flex-wrap:wrap;gap:6px;margin:.5rem 0;}
+
+/* RW BOX */
+.rw-box{background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:1rem 1.1rem;margin:.85rem 0;}
+.rw-label{font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.12em;color:var(--red);margin-bottom:5px;font-weight:700;}
+.rw-box p{font-size:13px;color:var(--ink2);line-height:1.7;}
+
+/* QUIZ */
+.quiz-block{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:1.25rem;margin-bottom:1rem;}
+.quiz-q{font-size:14.5px;font-weight:700;color:var(--ink);margin-bottom:.85rem;line-height:1.55;}
+.quiz-opts{display:flex;flex-direction:column;gap:7px;margin-bottom:.75rem;}
+.qo{padding:.65rem 1rem;border:1px solid var(--border);border-radius:4px;cursor:pointer;font-size:13.5px;color:var(--ink2);background:var(--surface2);transition:all .15s;}
+.qo:hover{border-color:var(--accent);color:var(--ink);}
+.qo.correct{border-color:var(--green);color:var(--green);background:var(--green-bg);cursor:default;}
+.qo.wrong{border-color:var(--red);color:var(--red);background:var(--red-bg);cursor:default;}
+.quiz-exp{font-size:13px;color:var(--ink2);line-height:1.7;padding:.75rem 1rem;background:var(--surface2);border-radius:4px;border-left:3px solid var(--green);display:none;margin-top:.5rem;}
+.quiz-exp.show{display:block;}
+
+/* CHALLENGE */
+.challenge{background:var(--ink);border-radius:10px;padding:2rem;margin:3rem 0;position:relative;overflow:hidden;}
+.challenge::before{content:'';position:absolute;top:-60px;right:-60px;width:220px;height:220px;background:radial-gradient(circle,rgba(124,58,237,.15) 0%,transparent 70%);pointer-events:none;}
+.ch-ey{font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.15em;color:var(--accent);margin-bottom:.5rem;}
+.ch h3{font-family:'Bitter',serif;font-size:1.6rem;font-weight:700;color:#fff;margin-bottom:.7rem;}
+.ch-desc{font-size:13.5px;color:rgba(255,255,255,.45);line-height:1.75;margin-bottom:1.25rem;}
+.scenario{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:5px;padding:1rem 1.1rem;margin-bottom:1.25rem;}
+.scenario p{font-size:13px;color:rgba(255,255,255,.55);line-height:1.75;}
+.scenario strong{color:rgba(255,255,255,.9);}
+.challenge textarea{width:100%;min-height:160px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:4px;padding:1rem;font-family:'JetBrains Mono',monospace;font-size:12px;color:rgba(255,255,255,.85);resize:vertical;outline:none;transition:border-color .2s;margin-bottom:1rem;}
+.challenge textarea:focus{border-color:var(--accent);}
+.challenge textarea::placeholder{color:rgba(255,255,255,.2);}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap;}
+.btn{padding:9px 20px;border-radius:4px;font-size:13px;font-family:'Sora',sans-serif;font-weight:700;cursor:pointer;border:1px solid;transition:all .15s;}
+.btn-p{background:var(--accent);color:#fff;border-color:var(--accent);}
+.btn-p:hover{background:#6d28d9;}
+.btn-g{background:transparent;color:rgba(255,255,255,.45);border-color:rgba(255,255,255,.14);}
+.btn-g:hover{color:#fff;border-color:rgba(255,255,255,.35);}
+.ch-fb{margin-top:1rem;padding:1rem 1.1rem;border-radius:5px;font-size:13.5px;line-height:1.7;display:none;}
+.ch-fb.show{display:block;}
+.ch-fb.good{background:rgba(21,128,61,.15);border:1px solid rgba(21,128,61,.3);color:#4ade80;}
+.ch-fb.hint{background:rgba(252,211,77,.1);border:1px solid rgba(252,211,77,.25);color:#fcd34d;}
+.ch-fb.reveal{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.75);}
+
+/* NAV FOOTER */
+.nav-footer{display:flex;justify-content:space-between;margin-top:4rem;padding-top:2rem;border-top:2px solid var(--border);}
+.nf-btn{padding:.85rem 1.5rem;border:1px solid var(--border);border-radius:4px;font-size:13px;cursor:pointer;background:var(--surface);color:var(--ink2);text-align:left;transition:all .15s;text-decoration:none;display:block;}
+.nf-btn:hover{border-color:var(--accent);}
+.nf-btn.next{background:var(--accent);color:#fff;border-color:var(--accent);text-align:right;}
+.nf-btn.next:hover{background:#6d28d9;}
+.nf-dir{font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:var(--ink3);display:block;margin-bottom:3px;}
+.nf-btn.next .nf-dir{color:rgba(255,255,255,.4);}
+.nf-title{font-weight:700;display:block;}
+
+code{font-family:'JetBrains Mono',monospace;font-size:12px;background:rgba(0,0,0,.06);padding:1px 5px;border-radius:2px;color:var(--accent);}
+pre code{background:none;padding:0;color:inherit;font-size:inherit;}
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px;}
+
+@media(max-width:860px){
+  .sidebar{display:none;}.main{margin-left:0;}
+  .content{padding:1.5rem 1.1rem 3rem;}
+  .level-strip,.two-col,.compare-grid{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<nav class="sidebar">
+  <div class="sb-brand">
+    <div class="sb-badge">AppSec Engineer</div>
+    <h2>Application Security<br>Learning Path</h2>
+  </div>
+  <div class="sb-sect">Module 1 — Foundations</div>
+  <a class="nav-item done" href="#"><span class="num">01</span>OWASP Top 10 2021</a>
+  <a class="nav-item done" href="#"><span class="num">02</span>Secure SDLC</a>
+  <a class="nav-item done" href="#"><span class="num">03</span>Threat Modeling</a>
+  <div class="sb-sect">Module 2 — Testing Tools</div>
+  <a class="nav-item done" href="#"><span class="num">04</span>SAST</a>
+  <a class="nav-item done" href="#"><span class="num">05</span>DAST</a>
+  <a class="nav-item done" href="#"><span class="num">06</span>SCA</a>
+  <a class="nav-item active" href="#"><span class="num">07</span>IAST &amp; RASP</a>
+  <div class="sb-sect">Module 3 — API Security</div>
+  <a class="nav-item" href="#"><span class="num">08</span>OWASP API Top 10</a>
+  <a class="nav-item" href="#"><span class="num">09</span>API Security Testing</a>
+  <a class="nav-item" href="#"><span class="num">10</span>GraphQL Security</a>
+  <div class="sb-sect">Module 4 — DevSecOps</div>
+  <a class="nav-item" href="#"><span class="num">11</span>DevSecOps Pipeline</a>
+  <a class="nav-item" href="#"><span class="num">12</span>Secrets Management</a>
+  <a class="nav-item" href="#"><span class="num">13</span>Container Security</a>
+  <a class="nav-item" href="#"><span class="num">14</span>Dependency Scanning</a>
+  <a class="nav-item" href="#"><span class="num">15</span>SBOM</a>
+  <div class="sb-sect">Module 5 — Architecture</div>
+  <a class="nav-item" href="#"><span class="num">16</span>Security Architecture</a>
+  <a class="nav-item" href="#"><span class="num">17</span>Supply Chain Security</a>
+  <a class="nav-item" href="#"><span class="num">18</span>WAF</a>
+  <a class="nav-item" href="#"><span class="num">19</span>Code Review</a>
+  <a class="nav-item" href="#"><span class="num">20</span>RASP</a>
+</nav>
+
+<div class="main">
+<div class="topbar">
+  <div class="bc">appsec-engineer / module-2 / <span>iast-rasp</span></div>
+  <div class="top-badge">Lesson 07 / 20</div>
+</div>
+<div class="content">
+
+<!-- ═══════════════════════════════════ HERO -->
+<div class="hero">
+  <div class="hero-meta">
+    <span class="tag t-beg">Beginner &rarr; Advanced</span>
+    <span class="tag t-tool">Tool</span>
+    <span class="tag t-time">~60 min</span>
+  </div>
+  <h1><span class="hl">IAST</span> &amp;<br><span class="hl2">RASP</span></h1>
+  <p class="hero-sub">IAST and RASP are the two security techniques that live <em>inside</em> your running application — not scanning it from the outside. IAST instruments your app during testing to find vulnerabilities with near-zero false positives. RASP instruments it in production to detect and block attacks in real time. Together, they form the innermost security layer that no external scanner can replicate. This lesson takes you from first principles all the way to deploying a RASP agent and writing custom RASP rules.</p>
+  <div class="level-strip">
+    <div class="lv-cell">
+      <div class="lv-pip" style="background:var(--green)"></div>
+      <div class="lv-label">Beginner</div>
+      <div class="lv-title">What IAST &amp; RASP are</div>
+      <div class="lv-desc">How instrumentation works, taint tracking, why they differ from SAST/DAST, the full testing tool landscape</div>
+    </div>
+    <div class="lv-cell">
+      <div class="lv-pip" style="background:var(--yellow)"></div>
+      <div class="lv-label">Intermediate</div>
+      <div class="lv-title">IAST in depth</div>
+      <div class="lv-desc">Agent architecture, taint propagation, how IAST finds SQLi/XSS/SSRF with zero false positives, tools: Contrast, Hdiv, Seeker</div>
+    </div>
+    <div class="lv-cell">
+      <div class="lv-pip" style="background:var(--red)"></div>
+      <div class="lv-label">Advanced</div>
+      <div class="lv-title">RASP in production</div>
+      <div class="lv-desc">RASP architecture, blocking vs monitoring mode, writing custom rules, WAF vs RASP, deployment patterns and performance</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════ BEGINNER: THE TESTING LANDSCAPE -->
+<div class="section">
+  <div class="eyebrow">&#x1F7E2; Beginner &mdash; Level 1</div>
+  <div class="sec-title">Where IAST &amp; RASP fit in the security testing landscape</div>
+  <div class="sec-sub">You have learned SAST (reads code), DAST (attacks from outside), and SCA (scans dependencies). IAST and RASP are the missing piece &mdash; security that runs <em>inside</em> the application.</div>
+
+  <p style="font-size:14.5px;color:var(--ink2);line-height:1.8;margin-bottom:1rem;">Imagine a bank vault. SAST inspects the blueprints for design flaws. DAST tries to pick the lock from the outside. SCA checks whether the steel supplier had any known defects. IAST puts a sensor <em>inside</em> the vault during a security drill — it watches every interaction and reports exactly which mechanisms failed and why. RASP keeps that sensor running when the vault opens to real customers, and it can slam the door shut the instant it detects an intrusion.</p>
+
+  <div class="callout cl-purple">
+    <div class="cl-icon">&#x1F4A1;</div>
+    <div class="cl-text"><strong>The core concept — instrumentation:</strong> Both IAST and RASP work by injecting a software agent directly into your application's runtime process. The agent instruments your code at the bytecode or interpreter level — hooking into function calls, data flows, and system calls. It observes every operation the application performs from the inside, with full context that no external scanner can ever have.</div>
+  </div>
+
+  <!-- Full landscape comparison -->
+  <div class="panel" id="pan-landscape">
+    <div class="panel-h" onclick="tp('pan-landscape')">
+      <div class="panel-dot" style="background:var(--blue)"></div>
+      <div class="panel-title">The complete AppSec testing tool landscape</div>
+      <div class="panel-sub">All five approaches compared — know this table cold for interviews</div>
+      <div class="panel-tog">&#x25BC;</div>
+    </div>
+    <div class="panel-body">
+      <table>
+        <tr><th>Tool Type</th><th>When it runs</th><th>What it sees</th><th>False positives</th><th>Finds</th><th>Misses</th></tr>
+        <tr>
+          <td style="font-weight:700;color:var(--blue)">SAST</td>
+          <td>Development — on every commit</td>
+          <td>Source code / bytecode / AST</td>
+          <td style="color:var(--red)">High — no runtime context</td>
+          <td>Injection patterns, hardcoded secrets, weak crypto</td>
+          <td>Runtime flaws, auth issues, business logic</td>
+        </tr>
+        <tr>
+          <td style="font-weight:700;color:var(--orange)">DAST</td>
+          <td>Testing — against running app</td>
+          <td>HTTP responses only — black box</td>
+          <td style="color:var(--yellow)">Medium — confirms via response</td>
+          <td>XSS, SQLi, header misconfig, auth flows</td>
+          <td>Code-level detail, complex multi-step flows</td>
+        </tr>
+        <tr>
+          <td style="font-weight:700;color:var(--yellow)">SCA</td>
+          <td>Development &amp; CI — on manifest files</td>
+          <td>Package names and versions</td>
+          <td style="color:var(--yellow)">Medium — context-dependent</td>
+          <td>Known CVEs in dependencies</td>
+          <td>Your own code, novel vulnerabilities</td>
+        </tr>
+        <tr>
+          <td style="font-weight:700;color:var(--accent)">IAST</td>
+          <td>Testing — inside running app during QA</td>
+          <td>Full internal data flow, call stacks, taint propagation</td>
+          <td style="color:var(--green)">Very low — sees actual execution</td>
+          <td>SQLi, XSS, SSRF, path traversal, insecure deserialization — confirmed with full stack trace</td>
+          <td>Vulnerabilities not exercised by tests</td>
+        </tr>
+        <tr>
+          <td style="font-weight:700;color:var(--accent2)">RASP</td>
+          <td>Production — inside running app</td>
+          <td>Full runtime context, decoded data, actual attack payloads</td>
+          <td style="color:var(--green)">Very low — sees decoded, actual data</td>
+          <td>Live attacks: SQLi, command injection, path traversal, XXE, deserialization</td>
+          <td>Logic flaws not triggering dangerous operations</td>
+        </tr>
+      </table>
+
+      <div class="callout cl-teal" style="margin-top:1rem;">
+        <div class="cl-icon">&#x1F3AF;</div>
+        <div class="cl-text"><strong>Interview answer on IAST vs DAST:</strong> "DAST sends attack payloads from outside and infers vulnerability from the HTTP response. IAST instruments the application from inside and observes the actual data flow — it sees exactly which line of code received tainted input and passed it to a dangerous sink without sanitization. IAST finds the same vulnerabilities as DAST but with far lower false positive rates and a precise line number for the fix."</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- What instrumentation means -->
+  <div class="panel" id="pan-instrument">
+    <div class="panel-h" onclick="tp('pan-instrument')">
+      <div class="panel-dot" style="background:var(--accent)"></div>
+      <div class="panel-title">How instrumentation works — bytecode injection explained</div>
+      <div class="panel-sub">The technical mechanism behind both IAST and RASP agents</div>
+      <div class="panel-tog">&#x25BC;</div>
+    </div>
+    <div class="panel-body">
+      <p>When your application starts with an IAST or RASP agent enabled, the agent hooks into the language runtime <em>before</em> your code runs. In Java, this uses a Java Agent (JVM TI). In Python, it patches modules at import time using monkey-patching. In Node.js, it uses VM hooks. The agent rewrites or wraps functions of interest — database drivers, HTTP clients, file system calls, template engines — so that every call passes through agent code first.</p>
+
+      <h4>The 3 types of instrumentation hooks</h4>
+      <table>
+        <tr><th>Hook type</th><th>What it intercepts</th><th>Example in Python</th><th>Why it matters</th></tr>
+        <tr>
+          <td style="font-weight:700;color:var(--accent)">Source hooks</td>
+          <td>Where untrusted data enters the app</td>
+          <td><code>flask.request.args</code>, <code>request.get_json()</code>, file uploads</td>
+          <td>Tags data as "tainted" the moment it arrives. Agent marks it with metadata: origin, timestamp, request ID.</td>
+        </tr>
+        <tr>
+          <td style="font-weight:700;color:var(--yellow)">Propagation hooks</td>
+          <td>String operations that carry taint forward</td>
+          <td>String concatenation, <code>format()</code>, <code>join()</code>, template rendering</td>
+          <td>Keeps taint metadata attached to derived strings. If tainted string is concatenated into another, the result is also tainted.</td>
+        </tr>
+        <tr>
+          <td style="font-weight:700;color:var(--red)">Sink hooks</td>
+          <td>Dangerous operations that receive data</td>
+          <td><code>cursor.execute()</code>, <code>os.system()</code>, <code>open()</code>, <code>requests.get()</code></td>
+          <td>Checks whether the data passed to the sink is tainted. If yes and no sanitizer cleared the taint: IAST reports a vulnerability / RASP blocks the call.</td>
+        </tr>
+      </table>
+
+<pre>
+<span class="cm"># How an IAST/RASP agent hooks Python's sqlite3 module at startup</span>
+<span class="cf">import</span> sqlite3
+
+<span class="cm"># Agent patches the execute method at import time:</span>
+_original_execute = sqlite3.Cursor.execute
+
+<span class="cf">def</span> <span class="cg">_instrumented_execute</span>(self, sql, parameters=()):
+    <span class="lp">  <span class="cm"># IAST: check if sql string contains tainted data</span></span>
+    <span class="lp">  <span class="cf">if</span> agent.is_tainted(sql):</span>
+    <span class="lp">      agent.report_vulnerability(</span>
+    <span class="lp">          vuln_type=<span class="cs">"SQL_INJECTION"</span>,</span>
+    <span class="lp">          tainted_value=sql,</span>
+    <span class="lp">          stack_trace=traceback.extract_stack(),</span>
+    <span class="lp">          <span class="cm"># IAST: report only (don't block — running in test env)</span></span>
+    <span class="lp">          <span class="cm"># RASP: block by raising SecurityException</span></span>
+    <span class="lp">      )</span>
+    <span class="cf">return</span> _original_execute(self, sql, parameters)
+
+sqlite3.Cursor.execute = _instrumented_execute
+<span class="cm"># Now every db.execute() call is monitored — zero code changes needed</span>
+</pre>
+
+      <div class="callout cl-tip">
+        <div class="cl-icon">&#x1F4A1;</div>
+        <div class="cl-text"><strong>Zero code changes required:</strong> This is the most important operational property of IAST and RASP. You do not modify your application code. You add one line to your startup command: <code>java -javaagent:contrast.jar -jar myapp.jar</code> or <code>CONTRAST_AGENT=1 python app.py</code>. The agent does everything else automatically. This makes deployment fast and rollback trivial.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════ BEGINNER: IAST vs RASP SIDE BY SIDE -->
+<div class="section">
+  <div class="eyebrow">&#x1F7E2; Beginner &mdash; Level 2</div>
+  <div class="sec-title">IAST vs RASP &mdash; same technology, different purpose</div>
+  <div class="sec-sub">IAST and RASP both use in-app instrumentation. The critical difference is <em>when</em> they run and <em>what</em> they do when they find something.</div>
+
+  <div class="compare-grid">
+    <div class="ccard ccard-iast">
+      <div class="ccard-label">IAST</div>
+      <div class="ccard-title">Interactive Application Security Testing</div>
+      <p style="font-size:13px;color:var(--ink2);line-height:1.65;margin-bottom:.85rem;">Runs during your QA or integration testing phase. An agent instruments the app while your test suite or testers exercise it. Every test case becomes a security test. When tainted data reaches a dangerous sink, IAST records the vulnerability with full context &mdash; exact file, line, call stack, and the tainted value &mdash; and <strong>reports it</strong>. It does not block anything. The app keeps running normally.</p>
+      <ul style="list-style:none;font-size:13px;color:var(--ink2);">
+        <li style="padding:3px 0;border-bottom:1px solid var(--border);">&#x2705; Runs in test/staging environment</li>
+        <li style="padding:3px 0;border-bottom:1px solid var(--border);">&#x2705; Passive &mdash; reports only, never blocks</li>
+        <li style="padding:3px 0;border-bottom:1px solid var(--border);">&#x2705; Near-zero false positives</li>
+        <li style="padding:3px 0;border-bottom:1px solid var(--border);">&#x2705; Full stack trace to the exact line</li>
+        <li style="padding:3px 0;border-bottom:1px solid var(--border);">&#x2705; Finds vulns only in exercised code paths</li>
+        <li style="padding:3px 0;">&#x26A0;&#xFE0F; Performance overhead: ~5-15% (acceptable for testing)</li>
+      </ul>
+    </div>
+    <div class="ccard ccard-rasp">
+      <div class="ccard-label">RASP</div>
+      <div class="ccard-title">Runtime Application Self-Protection</div>
+      <p style="font-size:13px;color:var(--ink2);line-height:1.65;margin-bottom:.85rem;">Runs in production alongside your live application. Same agent technology, but instead of reporting vulnerabilities, it <strong>blocks attacks</strong> in real time. When it detects an active exploit attempt (SQLi payload reaching a DB call, command injection reaching os.system), it can terminate the request, log the attack, alert the SOC, and let normal requests through &mdash; all without the developer writing a single rule.</p>
+      <ul style="list-style:none;font-size:13px;color:var(--ink2);">
+        <li style="padding:3px 0;border-bottom:1px solid var(--border);">&#x2705; Runs in production</li>
+        <li style="padding:3px 0;border-bottom:1px solid var(--border);">&#x2705; Active &mdash; detects and blocks live attacks</li>
+        <li style="padding:3px 0;border-bottom:1px solid var(--border);">&#x2705; Works on decoded data &mdash; bypasses WAF evasion</li>
+        <li style="padding:3px 0;border-bottom:1px solid var(--border);">&#x2705; Protects unpatched vulnerabilities (virtual patching)</li>
+        <li style="padding:3px 0;border-bottom:1px solid var(--border);">&#x2705; Context-aware &mdash; no blocking of legitimate traffic</li>
+        <li style="padding:3px 0;">&#x26A0;&#xFE0F; Performance overhead: ~3-5% in production</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="callout cl-info">
+    <div class="cl-icon">&#x2139;&#xFE0F;</div>
+    <div class="cl-text"><strong>The same agent, two modes:</strong> Many vendors (Contrast Security, Hdiv, Sqreen) ship a single agent that can run in both IAST mode (test environments) and RASP mode (production). You configure the mode via environment variable. This means teams can use IAST findings in QA to find and fix vulnerabilities before deployment, and RASP in production as a safety net for anything that slips through.</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════ INTERMEDIATE: IAST IN DEPTH -->
+<div class="section">
+  <div class="eyebrow">&#x1F7E1; Intermediate &mdash; IAST Deep Dive</div>
+  <div class="sec-title">IAST taint tracking &mdash; how it finds vulnerabilities with zero false positives</div>
+  <div class="sec-sub">The technical mechanism that makes IAST so accurate is taint propagation. Understanding it makes you a better AppSec engineer and helps you explain IAST findings to developers.</div>
+
+  <!-- Taint tracking walkthrough -->
+  <div class="panel" id="pan-taint">
+    <div class="panel-h" onclick="tp('pan-taint')">
+      <div class="panel-dot" style="background:var(--accent)"></div>
+      <div class="panel-title">Full taint propagation walkthrough &mdash; SQLi in 5 steps</div>
+      <div class="panel-sub">How the IAST agent tracks data from HTTP request to database call</div>
+      <div class="panel-tog">&#x25BC;</div>
+    </div>
+    <div class="panel-body">
+      <p>The IAST agent assigns a "taint label" to every piece of data that enters the application from an external source. It then tracks this label through every assignment, function call, and string operation. When tainted data reaches a dangerous sink function, the agent fires an alert with the complete provenance of the data.</p>
+
+<pre>
+<span class="cm"># Flask application — IAST agent running inside</span>
+
+<span class="cf">from</span> flask <span class="cf">import</span> Flask, request
+<span class="cf">import</span> sqlite3
+
+app = Flask(__name__)
+
+<span class="cf">@app.route</span>(<span class="cs">'/products'</span>)
+<span class="cf">def</span> <span class="cg">search_products</span>():
+
+    <span class="cm"># STEP 1: IAST agent hooks request.args.get()</span>
+    <span class="cm">#         Marks return value as TAINTED[source=HTTP_PARAM, param="name"]</span>
+    <ts>name = request.args.get(<span class="cs">'name'</span>)    <span class="cm"># ← TAINTED &#x1F534;</span></ts>
+
+    <span class="cm"># STEP 2: Agent hooks string formatting</span>
+    <span class="cm">#         Result is also TAINTED (derived from tainted input)</span>
+    <ti>query = <span class="cs">"SELECT * FROM products WHERE name LIKE '%"</span> + name + <span class="cs">"%'"</span>
+                                     <span class="cm"># ← TAINTED &#x1F534; (propagated)</span></ti>
+
+    <span class="cm"># STEP 3: Agent intercepts cursor.execute()</span>
+    <span class="cm">#         Checks: is first argument (query) tainted?</span>
+    <span class="cm">#         Answer: YES → no sanitizer cleared the taint</span>
+    conn = sqlite3.connect(<span class="cs">'products.db'</span>)
+    <tsink>cursor = conn.execute(query)           <span class="cm"># ← SINK reached with TAINTED data &#x26A0;&#xFE0F;</span></tsink>
+
+    <span class="cm"># IAST FIRES FINDING:</span>
+    <span class="cm"># ┌─────────────────────────────────────────────────────────┐</span>
+    <span class="cm"># │ VULNERABILITY: SQL_INJECTION (CONFIRMED)                 │</span>
+    <span class="cm"># │ Confidence: HIGH (tainted data confirmed at sink)        │</span>
+    <span class="cm"># │ File: app.py  Line: 18  Function: search_products()      │</span>
+    <span class="cm"># │ Source: request.args['name'] (HTTP GET parameter)        │</span>
+    <span class="cm"># │ Sink: sqlite3.Cursor.execute()                           │</span>
+    <span class="cm"># │ Taint path: request.args → string concat → execute()     │</span>
+    <span class="cm"># └─────────────────────────────────────────────────────────┘</span>
+
+    <span class="cf">return</span> list(cursor.fetchall())
+</pre>
+
+      <h4>Why IAST has near-zero false positives</h4>
+      <table>
+        <tr><th>SAST/DAST approach</th><th>IAST approach</th><th>Why IAST wins</th></tr>
+        <tr>
+          <td>Pattern-match: "string concatenation near db.execute" → flag</td>
+          <td>Verify: tainted data actually reaches db.execute at runtime</td>
+          <td>SAST flags any concatenation near execute, even with constants. IAST only fires when the actual tainted value flows there.</td>
+        </tr>
+        <tr>
+          <td>DAST infers SQLi from DB error in response</td>
+          <td>Observes the exact query string being passed to the driver</td>
+          <td>DAST can miss blind SQLi or get confused by WAF. IAST sees the raw query — no inference needed.</td>
+        </tr>
+        <tr>
+          <td>Cannot tell if sanitizer actually ran</td>
+          <td>Clears taint when data passes through a registered sanitizer</td>
+          <td>SAST sees <code>escape(val)</code> and assumes safe. IAST hooks escape() and only clears taint if the function actually ran and returned clean data.</td>
+        </tr>
+      </table>
+
+      <h4>Taint cleared by sanitizer &mdash; no finding</h4>
+<pre>
+<span class="cf">@app.route</span>(<span class="cs">'/products'</span>)
+<span class="cf">def</span> <span class="cg">search_safe</span>():
+    <ts>name = request.args.get(<span class="cs">'name'</span>)           <span class="cm"># ← TAINTED &#x1F534;</span></ts>
+
+    <span class="cm"># IAST agent hooks cursor.execute() with parameters arg</span>
+    conn = sqlite3.connect(<span class="cs">'products.db'</span>)
+    <tsan>cursor = conn.execute(                         <span class="cm"># ← SINK: but taint is CLEARED &#x2705;</span>
+        <span class="cs">"SELECT * FROM products WHERE name LIKE ?"</span>,
+        (<span class="cs">f'%{name}%'</span>,)                             <span class="cm"># name passed as PARAMETER, not in query string</span>
+    )                                               <span class="cm"># Agent sees: parameterized → taint cleared → NO FINDING</span></tsan>
+
+    <span class="cf">return</span> list(cursor.fetchall())
+</pre>
+    </div>
+  </div>
+
+  <!-- What IAST finds -->
+  <div class="panel" id="pan-iast-finds">
+    <div class="panel-h" onclick="tp('pan-iast-finds')">
+      <div class="panel-dot" style="background:var(--yellow)"></div>
+      <div class="panel-title">What IAST finds that SAST and DAST miss</div>
+      <div class="panel-sub">The unique value-add of IAST over the tools you already have</div>
+      <div class="panel-tog">&#x25BC;</div>
+    </div>
+    <div class="panel-body">
+      <table>
+        <tr><th>Vulnerability</th><th>Why SAST misses it</th><th>Why DAST misses it</th><th>How IAST finds it</th></tr>
+        <tr>
+          <td style="font-weight:700;color:var(--red)">Multi-hop SQLi</td>
+          <td>Taint crosses 3 function boundaries &mdash; SAST loses track in complex OOP chains</td>
+          <td>App returns generic error &mdash; DAST can't confirm injection from response</td>
+          <td>Agent follows taint through all 3 hops. Sees tainted value in execute() regardless of response.</td>
+        </tr>
+        <tr>
+          <td style="font-weight:700;color:var(--red)">Second-order injection</td>
+          <td>Taint stored to DB, retrieved later &mdash; SAST only sees linear flows</td>
+          <td>Payload stored in step 1, triggered in step 2 &mdash; DAST can't correlate across requests</td>
+          <td>Agent marks data as tainted when read from DB if it was originally user-supplied. Fires when that data reaches a sink.</td>
+        </tr>
+        <tr>
+          <td style="font-weight:700;color:var(--orange)">Path traversal in complex apps</td>
+          <td>File path built through many string operations &mdash; SAST can't prove the path reaches open()</td>
+          <td>Attacker must guess the exact path traversal that works for your file structure</td>
+          <td>Agent watches open() call and checks if the path contains tainted segments pointing outside the allowed directory.</td>
+        </tr>
+        <tr>
+          <td style="font-weight:700;color:var(--orange)">SSRF through helper functions</td>
+          <td>URL passed through 2 helper classes before requests.get() &mdash; SAST loses the taint chain</td>
+          <td>DAST sends payloads but can't always confirm SSRF unless it controls an external server</td>
+          <td>Agent hooks requests.get() and checks if the URL is tainted and points to an internal address.</td>
+        </tr>
+        <tr>
+          <td style="font-weight:700;color:var(--yellow)">Insecure deserialization</td>
+          <td>Dangerous only if attacker controls the serialized object &mdash; SAST can't know if pickle.loads() receives user data</td>
+          <td>DAST needs to craft valid serialized payloads &mdash; hard without knowing the framework</td>
+          <td>Agent hooks pickle.loads(), yaml.load() etc. and checks if the input is tainted. Confirms exploitability without guessing.</td>
+        </tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- IAST tools -->
+  <div class="section">
+    <div class="eyebrow">&#x1F7E1; Intermediate &mdash; IAST Tools</div>
+    <div class="sec-title">IAST tools you will encounter</div>
+    <div class="sec-sub">Three vendors dominate the IAST market. Know each one, when to choose it, and how to read its output.</div>
+
+    <div class="tool-tabs">
+      <div class="tool-tab-bar">
+        <div class="ttab active" onclick="switchTab(this,'iast-contrast')">Contrast Security</div>
+        <div class="ttab" onclick="switchTab(this,'iast-seeker')">Synopsys Seeker</div>
+        <div class="ttab" onclick="switchTab(this,'iast-hdiv')">Hdiv Security</div>
+        <div class="ttab" onclick="switchTab(this,'iast-semgrep')">Semgrep Pro</div>
+      </div>
+
+      <div class="tool-pane active" id="iast-contrast">
+        <p style="font-size:13.5px;color:var(--ink2);line-height:1.75;margin-bottom:1rem;">Contrast Security is the market leader in IAST and RASP. A single agent runs in both modes &mdash; IAST during testing, RASP in production. Supports Java, .NET, Python, Node.js, Ruby, Go. The Contrast UI shows a real-time dashboard of vulnerabilities found during test runs, with full stack traces and one-click Jira ticket creation.</p>
+<pre>
+<span class="cm"># Java application with Contrast agent</span>
+$ java -javaagent:/opt/contrast/contrast.jar \
+       -Dcontrast.dir=/etc/contrast \
+       -jar myapp.jar
+
+<span class="cm"># Python application</span>
+$ pip install contrast-agent
+$ CONTRAST__API__URL=https://app.contrastsecurity.com \
+  CONTRAST__API__API_KEY=your_key \
+  CONTRAST__API__SERVICE_KEY=your_service_key \
+  python app.py
+
+<span class="cm"># The agent auto-instruments all frameworks:</span>
+<span class="cm"># Django, Flask, FastAPI, SQLAlchemy, Requests, etc.</span>
+<span class="cm"># No code changes needed — just environment variables</span>
+
+<span class="cm"># View findings: Contrast UI → Applications → [App Name] → Vulnerabilities</span>
+<span class="cm"># Each finding shows:</span>
+<span class="cm">#   - Vulnerability type (SQL_INJECTION, XSS, PATH_TRAVERSAL...)</span>
+<span class="cm">#   - Confidence: HIGH/MEDIUM</span>
+<span class="cm">#   - Exact file + line number</span>
+<span class="cm">#   - Full call stack at time of finding</span>
+<span class="cm">#   - The tainted value that triggered it</span>
+<span class="cm">#   - Remediation guidance</span>
+</pre>
+      </div>
+
+      <div class="tool-pane" id="iast-seeker">
+        <p style="font-size:13.5px;color:var(--ink2);line-height:1.75;margin-bottom:1rem;">Synopsys Seeker focuses on accurate vulnerability detection with built-in verification. It actively re-tests suspected vulnerabilities by sending verification requests to confirm they are real &mdash; reducing false positives to near zero. Strong integration with Jenkins, Bamboo, and Azure DevOps. Best for large enterprise Java and .NET environments.</p>
+<pre>
+<span class="cm"># Seeker agent for Java (add to JVM startup)</span>
+$ java -javaagent:/path/to/seeker-agent.jar \
+       -Dseeker.server.url=https://seeker-server:8443 \
+       -jar myapp.jar
+
+<span class="cm"># Seeker's verification feature:</span>
+<span class="cm"># When Seeker detects a potential SQLi, it automatically</span>
+<span class="cm"># sends a second verification request to confirm it.</span>
+<span class="cm"># Only after confirmation does it create a finding.</span>
+<span class="cm"># This is why Seeker has essentially 0% false positives.</span>
+
+<span class="cm"># Jenkins integration:</span>
+<span class="cm"># Seeker plugin reads finding counts after test run</span>
+<span class="cm"># Build fails if HIGH/CRITICAL findings > threshold</span>
+<span class="cm"># Use as a quality gate before staging promotion</span>
+</pre>
+      </div>
+
+      <div class="tool-pane" id="iast-hdiv">
+        <p style="font-size:13.5px;color:var(--ink2);line-height:1.75;margin-bottom:1rem;">Hdiv Security (now part of Datadog) offers both IAST and RASP as a combined product. Unique feature: it can operate in "RASP-only mode" without IAST overhead, making it a popular choice for teams that want production protection without a separate testing phase. Strong Python and Node.js support.</p>
+<pre>
+<span class="cm"># Hdiv for Python (Django/Flask)</span>
+$ pip install hdiv
+
+<span class="cm"># settings.py (Django integration)</span>
+INSTALLED_APPS = [
+    <span class="cs">'hdiv'</span>,        <span class="cm"># add to installed apps</span>
+    <span class="cm"># ... other apps</span>
+]
+MIDDLEWARE = [
+    <span class="cs">'hdiv.middleware.HdivMiddleware'</span>,   <span class="cm"># first in list</span>
+    <span class="cm"># ... other middleware</span>
+]
+HDIV_CONFIG = {
+    <span class="cs">'mode'</span>: <span class="cs">'IAST'</span>,           <span class="cm"># or 'RASP' for production</span>
+    <span class="cs">'server_url'</span>: <span class="cs">'https://hdiv.mycompany.com'</span>,
+    <span class="cs">'api_key'</span>: os.environ[<span class="cs">'HDIV_API_KEY'</span>],
+}
+</pre>
+      </div>
+
+      <div class="tool-pane" id="iast-semgrep">
+        <p style="font-size:13.5px;color:var(--ink2);line-height:1.75;margin-bottom:1rem;">Semgrep Pro includes a form of IAST through its "Supply Chain" and "Code" analysis with dataflow tracking across function boundaries. It bridges the gap between SAST and true IAST &mdash; more accurate than pure pattern matching, available without an agent deployment. Good for teams already using Semgrep for SAST who want improved taint tracking without a full IAST agent.</p>
+<pre>
+<span class="cm"># Semgrep Pro with taint analysis</span>
+$ semgrep --pro --config=p/python \
+           --dataflow-traces \           <span class="cm"># show full taint path</span>
+           --json > semgrep-results.json
+
+<span class="cm"># Semgrep Pro rule with taint sources and sinks:</span>
+rules:
+  - id: flask-sqli-taint
+    mode: taint               <span class="cm"># enables inter-procedural taint tracking</span>
+    pattern-sources:
+      - pattern: flask.request.args.get(...)
+      - pattern: flask.request.form.get(...)
+      - pattern: flask.request.json
+    pattern-sinks:
+      - pattern: $DB.execute(...)
+      - pattern: $CURSOR.execute(...)
+    pattern-sanitizers:
+      - pattern: $DB.execute("...", (...))  <span class="cm"># parameterized is a sanitizer</span>
+    message: SQL injection via tainted HTTP input
+    languages: [python]
+    severity: ERROR
+</pre>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════ INTERMEDIATE: IAST FINDINGS -->
+<div class="section">
+  <div class="eyebrow">&#x1F7E1; Intermediate &mdash; Real IAST Findings</div>
+  <div class="sec-title">Reading and acting on IAST output</div>
+  <div class="sec-sub">IAST findings are different from SAST or DAST findings &mdash; they come with a confirmed taint path, a call stack, and the actual tainted value. Here is how to read and triage them.</div>
+
+  <!-- Finding 1: SQLi -->
+  <div class="finding f-crit" id="if1" onclick="toggleF('if1')">
+    <div class="f-top">
+      <div>
+        <div class="f-title">SQL_INJECTION &mdash; Confirmed &mdash; search_products() line 18</div>
+        <div class="f-meta">Contrast Security &bull; app/views/products.py:18 &bull; CWE-89 &bull; CVSS 9.1</div>
+      </div>
+      <span class="f-sev sc">CRITICAL</span>
+    </div>
+    <div class="f-body" id="if1-b">
+      <h5>IAST Finding Detail</h5>
+<pre>
+Finding Type:    SQL_INJECTION
+Confidence:      HIGH (tainted value confirmed at sink at runtime)
+Taint Source:    HTTP GET parameter "name" at /products
+Taint Path:      request.args['name'] → string concat → cursor.execute()
+Sink:            sqlite3.Cursor.execute() at app/views/products.py:18
+Tainted Value:   "' OR 1=1 --"  (value present during test run)
+Stack Trace:
+  File app/views/products.py, line 18, in search_products
+    cursor = conn.execute(query)
+  File app/views/products.py, line 15, in search_products
+    query = "SELECT * FROM products WHERE name LIKE '%" + name + "%'"
+  File app/views/products.py, line 12, in search_products
+    name = request.args.get('name')
+</pre>
+      <h5>Why this is unambiguously real</h5>
+      <p>Unlike a SAST finding that <em>suspects</em> SQLi from code patterns, this IAST finding <em>confirmed</em> it: the agent observed the actual string <code>' OR 1=1 --</code> (from a test case) reaching <code>cursor.execute()</code> without sanitization at runtime. The taint path shows exactly which three lines created the vulnerability. No manual verification needed &mdash; this is a confirmed exploit path.</p>
+      <h5>Fix</h5>
+<pre>
+<span class="cf">@app.route</span>(<span class="cs">'/products'</span>)
+<span class="cf">def</span> <span class="cg">search_products</span>():
+    name = request.args.get(<span class="cs">'name'</span>, <span class="cs">''</span>)
+<span class="lg">    conn   = sqlite3.connect(<span class="cs">'products.db'</span>)</span>
+<span class="lg">    cursor = conn.execute(                          <span class="cm"># parameterized query</span></span>
+<span class="lg">        <span class="cs">"SELECT * FROM products WHERE name LIKE ?"</span>,  <span class="cm"># SQL string has no user data</span></span>
+<span class="lg">        (<span class="cs">f'%{name}%'</span>,)                              <span class="cm"># value passed separately</span></span>
+<span class="lg">    )</span>
+    <span class="cf">return</span> list(cursor.fetchall())
+</pre>
+      <div class="pill-row"><span class="pill pr">CONFIRMED TP</span><span class="pill pr">P0 &mdash; Block release</span><span class="pill py">CWE-89</span><span class="pill py">OWASP A03</span></div>
+    </div>
+  </div>
+
+  <!-- Finding 2: XSS -->
+  <div class="finding f-high" id="if2" onclick="toggleF('if2')">
+    <div class="f-top">
+      <div>
+        <div class="f-title">REFLECTED_XSS &mdash; Confirmed &mdash; render_profile() line 44</div>
+        <div class="f-meta">Contrast Security &bull; app/views/profile.py:44 &bull; CWE-79 &bull; CVSS 6.1</div>
+      </div>
+      <span class="f-sev sh">HIGH</span>
+    </div>
+    <div class="f-body" id="if2-b">
+      <h5>IAST Finding Detail</h5>
+<pre>
+Finding Type:    REFLECTED_XSS
+Confidence:      HIGH
+Taint Source:    HTTP GET parameter "username" at /profile
+Taint Path:      request.args['username'] → template render → HTML response
+Sink:            Jinja2 render with | safe filter at templates/profile.html:8
+Tainted Value:   "&lt;script&gt;alert(1)&lt;/script&gt;"
+Stack Trace:
+  File templates/profile.html, line 8
+    Hello, {{ username | safe }}      &lt;-- | safe disables HTML escaping
+  File app/views/profile.py, line 44, in render_profile
+    return render_template('profile.html', username=request.args.get('username'))
+</pre>
+      <h5>The fix</h5>
+<pre>
+<span class="cm">{# templates/profile.html — BEFORE (vulnerable) #}</span>
+<span class="lb">Hello, {{ username | safe }}    {# | safe disables escaping — NEVER on user input #}</span>
+
+<span class="cm">{# templates/profile.html — AFTER (safe) #}</span>
+<span class="lg">Hello, {{ username }}           {# Jinja2 auto-escapes: &lt; becomes &amp;lt; #}</span>
+</pre>
+      <div class="pill-row"><span class="pill pr">CONFIRMED TP</span><span class="pill py">P1 &mdash; Fix this sprint</span><span class="pill py">CWE-79</span></div>
+    </div>
+  </div>
+
+  <!-- Finding 3: SSRF -->
+  <div class="finding f-high" id="if3" onclick="toggleF('if3')">
+    <div class="f-top">
+      <div>
+        <div class="f-title">SSRF &mdash; Confirmed &mdash; fetch_preview() line 91</div>
+        <div class="f-meta">Contrast Security &bull; app/views/preview.py:91 &bull; CWE-918 &bull; CVSS 8.6</div>
+      </div>
+      <span class="f-sev sh">HIGH</span>
+    </div>
+    <div class="f-body" id="if3-b">
+      <h5>IAST Finding Detail</h5>
+<pre>
+Finding Type:    SERVER_SIDE_REQUEST_FORGERY
+Confidence:      HIGH
+Taint Source:    HTTP POST body parameter "url" at /preview
+Taint Path:      request.json['url'] → requests.get()
+Sink:            requests.get() at app/views/preview.py:91
+Tainted Value:   "http://169.254.169.254/latest/meta-data/"
+Stack Trace:
+  File app/views/preview.py, line 91, in fetch_preview
+    response = requests.get(url)
+  File app/views/preview.py, line 88, in fetch_preview
+    url = request.json.get('url')
+</pre>
+      <h5>Why this is severe in cloud environments</h5>
+      <p>The IAST agent detected that a tainted URL (one containing <code>169.254.169.254</code> &mdash; the AWS metadata endpoint) reached <code>requests.get()</code> directly. In production on AWS, this would return IAM credentials. The fix requires validating the URL against an allowlist of permitted domains before making the request.</p>
+<pre>
+<span class="cf">import</span> ipaddress, socket
+<span class="cf">from</span> urllib.parse <span class="cf">import</span> urlparse
+
+ALLOWED_DOMAINS = {<span class="cs">'api.trusted-partner.com'</span>, <span class="cs">'cdn.myapp.com'</span>}
+BLOCKED_RANGES  = [<span class="cs">'169.254.0.0/16'</span>, <span class="cs">'10.0.0.0/8'</span>, <span class="cs">'172.16.0.0/12'</span>, <span class="cs">'192.168.0.0/16'</span>]
+
+<span class="cf">def</span> <span class="cg">safe_fetch</span>(url):
+    parsed = urlparse(url)
+<span class="lg">    <span class="cf">if</span> parsed.hostname <span class="cf">not in</span> ALLOWED_DOMAINS:</span>
+<span class="lg">        <span class="cf">raise</span> ValueError(<span class="cs">"Domain not in allowlist"</span>)</span>
+    ip = ipaddress.ip_address(socket.gethostbyname(parsed.hostname))
+<span class="lg">    <span class="cf">if</span> any(ip <span class="cf">in</span> ipaddress.ip_network(r) <span class="cf">for</span> r <span class="cf">in</span> BLOCKED_RANGES):</span>
+<span class="lg">        <span class="cf">raise</span> ValueError(<span class="cs">"Internal addresses are blocked"</span>)</span>
+    <span class="cf">return</span> requests.get(url, timeout=<span class="ce">5</span>)
+</pre>
+      <div class="pill-row"><span class="pill pr">CONFIRMED TP</span><span class="pill pr">P1 &mdash; Cloud credential risk</span><span class="pill py">CWE-918</span><span class="pill py">OWASP A10</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════ ADVANCED: RASP -->
+<div class="section">
+  <div class="eyebrow">&#x1F534; Advanced &mdash; RASP in Production</div>
+  <div class="sec-title">RASP &mdash; Runtime Application Self-Protection</div>
+  <div class="sec-sub">RASP is the last line of defence. When every other security layer has been bypassed &mdash; WAF evaded, input validation circumvented, SAST/DAST findings missed &mdash; RASP intercepts the attack at the exact moment it would execute, inside your application process.</div>
+
+  <div class="rw-box">
+    <div class="rw-label">&#x1F7E5; Real-world scenario: Capital One breach (2019)</div>
+    <p>A SSRF vulnerability in a misconfigured WAF allowed an attacker to reach the AWS metadata service and steal IAM credentials. A RASP agent would have intercepted the <code>requests.get("http://169.254.169.254/...")</code> call inside the application &mdash; seeing that the URL contained a tainted value pointing to an internal range &mdash; and blocked it before the request was sent. The WAF was bypassed. RASP would not have been.</p>
+  </div>
+
+  <!-- How RASP blocks attacks -->
+  <div class="panel" id="pan-rasp-block">
+    <div class="panel-h" onclick="tp('pan-rasp-block')">
+      <div class="panel-dot" style="background:var(--accent2)"></div>
+      <div class="panel-title">How RASP blocks attacks &mdash; the decision engine</div>
+      <div class="panel-sub">From intercepted call to block decision in microseconds</div>
+      <div class="panel-tog">&#x25BC;</div>
+    </div>
+    <div class="panel-body">
+      <p>When a RASP agent intercepts a call to a dangerous sink (e.g., <code>cursor.execute()</code>), it runs a decision engine in microseconds before allowing the call to proceed. The engine evaluates multiple signals to decide: allow, alert, or block.</p>
+
+      <div class="flow-wrap">
+        <div class="flow-title">RASP decision engine &mdash; cursor.execute() intercepted</div>
+        <div class="flow-row">
+          <div class="flow-node fn-normal"><strong>cursor.execute()</strong><br><span style="font-size:10px;">called by app</span></div>
+          <div class="flow-arrow">&#x2192;</div>
+          <div class="flow-node fn-rasp"><strong>RASP intercepts</strong><br><span style="font-size:10px;">hooks the call</span></div>
+          <div class="flow-arrow">&#x2192;</div>
+          <div class="flow-node fn-normal"><strong>Is sql tainted?</strong><br><span style="font-size:10px;">check taint label</span></div>
+          <div class="flow-arrow">&#x2192;</div>
+          <div class="flow-node fn-bad"><strong>SQLi pattern?</strong><br><span style="font-size:10px;">analyse sql string</span></div>
+          <div class="flow-arrow">&#x2192;</div>
+          <div class="flow-node fn-bad"><strong>BLOCK</strong><br><span style="font-size:10px;">raise SecurityException</span></div>
+        </div>
+        <div style="margin-top:.75rem;font-size:12px;color:var(--ink3);">If sql is not tainted &rarr; allow immediately (normal requests have zero overhead)</div>
+      </div>
+
+<pre>
+<span class="cm"># What RASP does internally when cursor.execute() is called:</span>
+
+<span class="cf">def</span> <span class="cg">_rasp_execute_hook</span>(self, sql, parameters=()):
+    <span class="cm"># Step 1: Is the SQL string tainted at all?</span>
+    <span class="cf">if not</span> rasp_agent.is_tainted(sql):
+<span class="lg">        <span class="cf">return</span> _original_execute(self, sql, parameters)  <span class="cm"># ← ALLOW immediately</span></span>
+
+    <span class="cm"># Step 2: Tainted — analyse for SQLi patterns</span>
+    risk_score = rasp_agent.analyse_sql(sql, parameters)
+
+    <span class="cf">if</span> risk_score &gt; THRESHOLD_BLOCK:
+<span class="lb">        rasp_agent.log_attack(<span class="cs">"SQL_INJECTION_BLOCKED"</span>, sql, request.context)</span>
+<span class="lb">        <span class="cf">raise</span> SecurityException(<span class="cs">"SQL injection attempt blocked by RASP"</span>)  <span class="cm"># ← BLOCK</span></span>
+
+    <span class="cf">elif</span> risk_score &gt; THRESHOLD_ALERT:
+<span class="lw">        rasp_agent.log_attack(<span class="cs">"SQL_INJECTION_SUSPICIOUS"</span>, sql, request.context)  <span class="cm"># ← ALERT</span></span>
+        <span class="cf">return</span> _original_execute(self, sql, parameters)   <span class="cm"># allow but alert SOC</span>
+
+    <span class="cf">else</span>:
+        <span class="cf">return</span> _original_execute(self, sql, parameters)   <span class="cm"># ← ALLOW</span>
+
+<span class="cm"># The entire decision runs in ~100 microseconds</span>
+<span class="cm"># Only tainted SQL strings reach Step 2 — clean traffic has zero overhead</span>
+</pre>
+    </div>
+  </div>
+
+  <!-- RASP vs WAF -->
+  <div class="panel" id="pan-rasp-waf">
+    <div class="panel-h" onclick="tp('pan-rasp-waf')">
+      <div class="panel-dot" style="background:var(--red)"></div>
+      <div class="panel-title">RASP vs WAF &mdash; why RASP catches what WAF misses</div>
+      <div class="panel-sub">The most important distinction for an AppSec engineer to understand and explain</div>
+      <div class="panel-tog">&#x25BC;</div>
+    </div>
+    <div class="panel-body">
+      <p>A WAF sits in front of your application and analyses raw HTTP traffic &mdash; looking for known attack signatures in request headers, bodies, and URLs. It sees data as it arrives from the network. RASP sits inside your application and analyses the data after your application has processed it &mdash; after URL decoding, after JSON parsing, after base64 decoding, after any custom transforms. This is the key difference.</p>
+
+      <h4>WAF bypass &mdash; how attackers evade WAF but not RASP</h4>
+<pre>
+<span class="cm"># Attacker sends a SQL injection payload encoded to bypass WAF signature matching:</span>
+
+<span class="cm"># Original payload (WAF would block this):</span>
+<span class="cr">GET /products?name=' OR 1=1 --</span>
+
+<span class="cm"># Double URL-encoded (WAF often misses this):</span>
+<span class="cr">GET /products?name=%2527%20OR%201%3D1%20--</span>
+<span class="cm"># WAF sees: %2527... → not in signature database → ALLOWED !</span>
+
+<span class="cm"># App server URL-decodes twice: %2527 → %27 → '</span>
+<span class="cm"># App receives: name = "' OR 1=1 --"</span>
+
+<span class="cm"># WAF: analysed encoded string → missed it</span>
+<span class="cm"># RASP: analyses DECODED string inside the app → catches it</span>
+
+<span class="cm"># Why: RASP hooks cursor.execute() — it sees the final decoded value</span>
+<span class="cm"># No encoding tricks work because RASP operates after all decoding</span>
+</pre>
+
+      <table>
+        <tr><th>Dimension</th><th>WAF</th><th>RASP</th></tr>
+        <tr><td style="font-weight:700">Position</td><td>Outside the app — network/HTTP layer</td><td>Inside the app — runtime layer</td></tr>
+        <tr><td style="font-weight:700">What it analyses</td><td>Raw HTTP request (encoded, as-sent by client)</td><td>Decoded, processed data (as app actually uses it)</td></tr>
+        <tr><td style="font-weight:700">Encoding bypass</td><td style="color:var(--red)">Vulnerable — double encoding, Unicode, chunked encoding bypass WAF rules</td><td style="color:var(--green)">Immune — sees data after all decoding by app framework</td></tr>
+        <tr><td style="font-weight:700">App context</td><td>No — treats all requests identically</td><td>Full — knows if user is authenticated, what the request is doing</td></tr>
+        <tr><td style="font-weight:700">False positives</td><td style="color:var(--red)">High — pattern matching on raw traffic</td><td style="color:var(--green)">Very low — taint-based, context-aware</td></tr>
+        <tr><td style="font-weight:700">Virtual patching</td><td>Yes — blocks known CVE payloads</td><td>Yes — blocks exploitation regardless of vulnerability</td></tr>
+        <tr><td style="font-weight:700">Encrypted traffic</td><td style="color:var(--red)">Cannot inspect TLS without termination</td><td style="color:var(--green)">Sees plaintext inside app</td></tr>
+        <tr><td style="font-weight:700">Performance</td><td>~1-2ms per request</td><td>~0.1ms for clean traffic, ~1ms for tainted checks</td></tr>
+        <tr><td style="font-weight:700">Best used as</td><td>First line of defence — blocks bulk attacks and bots</td><td>Last line of defence — catches what WAF misses</td></tr>
+      </table>
+
+      <div class="callout cl-teal">
+        <div class="cl-icon">&#x1F4CC;</div>
+        <div class="cl-text"><strong>Defence in depth &mdash; WAF AND RASP:</strong> These are complementary, not alternatives. WAF handles volume &mdash; it blocks 99% of automated attacks (scanners, bots, commodity exploits) before they reach your app, protecting your servers from load. RASP handles the 1% that are targeted, sophisticated, or use WAF evasion techniques. An AppSec engineer deploys both.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RASP operating modes -->
+  <div class="panel" id="pan-rasp-modes">
+    <div class="panel-h" onclick="tp('pan-rasp-modes')">
+      <div class="panel-dot" style="background:var(--yellow)"></div>
+      <div class="panel-title">RASP operating modes &mdash; monitoring vs blocking</div>
+      <div class="panel-sub">Never deploy straight to blocking mode &mdash; here is the safe rollout strategy</div>
+      <div class="panel-tog">&#x25BC;</div>
+    </div>
+    <div class="panel-body">
+      <p>RASP has three operating modes. Deploying directly to blocking mode in production is dangerous &mdash; if a legitimate user's request triggers a false positive, they get a 403 error. Always follow the staged rollout.</p>
+
+      <table>
+        <tr><th>Mode</th><th>What it does</th><th>When to use</th><th>Risk</th></tr>
+        <tr>
+          <td style="font-weight:700;color:var(--blue)">Monitor</td>
+          <td>Observes attacks and logs them. Does NOT block. App behaves normally.</td>
+          <td>First 2-4 weeks after deployment. Tune false positives. Build a baseline of what "normal" tainted data looks like in your app.</td>
+          <td style="color:var(--green)">Zero risk. Attacks succeed but are logged &mdash; same as before RASP.</td>
+        </tr>
+        <tr>
+          <td style="font-weight:700;color:var(--yellow)">Alert</td>
+          <td>Logs attacks AND sends real-time alerts to SOC/Slack. Still does NOT block.</td>
+          <td>After baselining. SOC reviews alerts to confirm RASP accuracy before enabling blocking.</td>
+          <td style="color:var(--yellow)">Low risk. Attacks still succeed but security team gets immediate notification.</td>
+        </tr>
+        <tr>
+          <td style="font-weight:700;color:var(--red)">Block</td>
+          <td>Terminates the request immediately. Returns 403. Logs attack with full context.</td>
+          <td>After 4+ weeks of monitoring with confirmed low false positive rate. Enables for specific attack types first (SQLi, CMDi) before enabling all.</td>
+          <td style="color:var(--red)">False positives block legitimate users. Test thoroughly in staging with block mode first.</td>
+        </tr>
+      </table>
+
+<pre>
+<span class="cm"># Contrast Security: configure mode per attack type</span>
+<span class="cm"># contrast_security.yaml:</span>
+
+protect:
+  rules:
+    sql-injection:
+      mode: <span class="cs">BLOCK</span>          <span class="cm"># fully confident — block SQLi</span>
+    cmd-injection:
+      mode: <span class="cs">BLOCK</span>          <span class="cm"># fully confident — block command injection</span>
+    xss:
+      mode: <span class="cs">BLOCK_AT_PERIMETER</span>  <span class="cm"># block reflected XSS before reaching app</span>
+    path-traversal:
+      mode: <span class="cs">MONITOR</span>        <span class="cm"># still tuning — only monitor for now</span>
+    ssrf:
+      mode: <span class="cs">MONITOR</span>        <span class="cm"># still tuning</span>
+
+<span class="cm"># This granularity is critical: block only what you're confident about</span>
+<span class="cm"># Monitor everything else until false positive rate is verified to be zero</span>
+</pre>
+    </div>
+  </div>
+
+  <!-- RASP virtual patching -->
+  <div class="panel" id="pan-virtual-patch">
+    <div class="panel-h" onclick="tp('pan-virtual-patch')">
+      <div class="panel-dot" style="background:var(--accent)"></div>
+      <div class="panel-title">Virtual patching &mdash; protecting unpatched vulnerabilities with RASP</div>
+      <div class="panel-sub">How RASP buys you time when a critical CVE drops and you can't patch immediately</div>
+      <div class="panel-tog">&#x25BC;</div>
+    </div>
+    <div class="panel-body">
+      <p>When a critical CVE is published (like Log4Shell), teams often need hours or days to patch and deploy a fix. During that window, the application is exposed. RASP can implement a "virtual patch" &mdash; a RASP rule that blocks exploitation of the specific vulnerability without changing application code &mdash; in minutes, buying the team time to deploy the real patch.</p>
+
+<pre>
+<span class="cm"># Scenario: Log4Shell (CVE-2021-44228) just dropped</span>
+<span class="cm"># Your Java app uses Log4j 2.14.1 — vulnerable</span>
+<span class="cm"># Real patch (upgrade to 2.17.1) requires full release pipeline: 4+ hours</span>
+
+<span class="cm"># Virtual patch with Contrast RASP — deploy in 5 minutes:</span>
+<span class="cm"># contrast_security.yaml:</span>
+
+protect:
+  rules:
+    custom-rule-log4shell:
+      mode: <span class="cs">BLOCK</span>
+      pattern: <span class="cs">"\\$\\{jndi:"</span>    <span class="cm"># block any string containing ${jndi: in any parameter</span>
+      scope: all_input         <span class="cm"># applies to all HTTP input</span>
+      cve: <span class="cs">"CVE-2021-44228"</span>
+
+<span class="cm"># RASP now blocks all Log4Shell payloads at the application layer</span>
+<span class="cm"># Result: exploitation attempts blocked in &lt; 5 minutes after CVE disclosure</span>
+<span class="cm"># Real patch deployed 4 hours later — virtual patch retired</span>
+
+<span class="cm"># This is why RASP is called a "virtual patch" capability:</span>
+<span class="cm"># One config line = application-layer protection without code change</span>
+</pre>
+
+      <div class="callout cl-tip">
+        <div class="cl-icon">&#x1F4A1;</div>
+        <div class="cl-text"><strong>Virtual patching vs WAF virtual patching:</strong> WAFs also offer virtual patching (blocking known CVE payloads in HTTP traffic). But WAF virtual patches can be bypassed with encoding tricks. RASP virtual patches run after all decoding &mdash; you can not bypass a RASP rule with URL encoding, Unicode escaping, or chunked transfer encoding. This is why RASP virtual patching is more robust for application-layer vulnerabilities.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════ ADVANCED: RASP DEPLOYMENT -->
+<div class="section">
+  <div class="eyebrow">&#x1F534; Advanced &mdash; RASP Deployment</div>
+  <div class="sec-title">Deploying RASP in production &mdash; full configuration</div>
+  <div class="sec-sub">A complete production RASP deployment with Contrast Security, covering agent config, Kubernetes sidecar pattern, CI/CD integration, and alerting.</div>
+
+  <div class="panel" id="pan-rasp-deploy">
+    <div class="panel-h" onclick="tp('pan-rasp-deploy')">
+      <div class="panel-dot" style="background:var(--accent2)"></div>
+      <div class="panel-title">Python / Django deployment &mdash; Contrast Security agent</div>
+      <div class="panel-sub">Step-by-step production setup</div>
+      <div class="panel-tog">&#x25BC;</div>
+    </div>
+    <div class="panel-body">
+<pre>
+<span class="cm"># Step 1: Install the agent</span>
+$ pip install contrast-agent
+
+<span class="cm"># Step 2: contrast_security.yaml (add to project root)</span>
+api:
+  url: https://app.contrastsecurity.com/Contrast
+  api_key: <span class="cs">${CONTRAST_API_KEY}</span>        <span class="cm"># from environment — never hardcode</span>
+  service_key: <span class="cs">${CONTRAST_SERVICE_KEY}</span>
+  user_name: <span class="cs">${CONTRAST_USER_NAME}</span>
+
+agent:
+  service:
+    host: localhost
+    port: 30555
+
+application:
+  name: myapp-production
+  environment: production        <span class="cm"># tells Contrast this is prod, not test</span>
+
+protect:
+  enable: <span class="ck">true</span>                    <span class="cm"># RASP mode (production)</span>
+  rules:
+    sql-injection:
+      mode: <span class="cs">BLOCK</span>
+    cmd-injection:
+      mode: <span class="cs">BLOCK</span>
+    path-traversal:
+      mode: <span class="cs">BLOCK</span>
+    xss:
+      mode: <span class="cs">BLOCK</span>
+    ssrf:
+      mode: <span class="cs">MONITOR</span>             <span class="cm"># still tuning — alert only</span>
+    xxe:
+      mode: <span class="cs">BLOCK</span>
+    deserialization:
+      mode: <span class="cs">BLOCK</span>
+
+<span class="cm"># Step 3: Add to Django settings.py</span>
+INSTALLED_APPS = [<span class="cs">'contrast_agent'</span>, ...]  <span class="cm"># must be FIRST app</span>
+MIDDLEWARE = [
+    <span class="cs">'contrast_agent.middlewares.DjangoMiddleware'</span>,  <span class="cm"># must be FIRST middleware</span>
+    ...
+]
+
+<span class="cm"># Step 4: Run your app (agent activates automatically)</span>
+$ gunicorn myapp.wsgi:application \
+    --workers 4 \
+    --bind 0.0.0.0:8000
+</pre>
+    </div>
+  </div>
+
+  <div class="panel" id="pan-k8s">
+    <div class="panel-h" onclick="tp('pan-k8s')">
+      <div class="panel-dot" style="background:var(--blue)"></div>
+      <div class="panel-title">Kubernetes deployment &mdash; init container pattern</div>
+      <div class="panel-sub">The standard pattern for injecting RASP agents in containerised environments</div>
+      <div class="panel-tog">&#x25BC;</div>
+    </div>
+    <div class="panel-body">
+      <p>In Kubernetes, the recommended pattern is an init container that copies the RASP agent into a shared volume before the application container starts. This keeps the agent out of your application Docker image (separation of concerns) and allows updating the agent without rebuilding your app image.</p>
+<pre>
+<span class="ctag">kubernetes</span>
+<span class="cm"># deployment.yaml — RASP agent via init container</span>
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: myapp
+spec:
+  template:
+    spec:
+      <span class="cg">initContainers:</span>
+        - name: contrast-init
+          image: contrast/agent-python:latest   <span class="cm"># agent image from Contrast registry</span>
+          command: [<span class="cs">"cp"</span>, <span class="cs">"-r"</span>, <span class="cs">"/contrast/."</span>, <span class="cs">"/contrast-agent"</span>]
+          volumeMounts:
+            - name: contrast-agent
+              mountPath: /contrast-agent
+
+      containers:
+        - name: myapp
+          image: myapp:latest
+          env:
+            - name: CONTRAST__API__API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: contrast-secrets
+                  key: api-key
+            - name: CONTRAST__APPLICATION__NAME
+              value: myapp-production
+            - name: CONTRAST__PROTECT__ENABLE
+              value: <span class="cs">"true"</span>
+          volumeMounts:
+            - name: contrast-agent
+              mountPath: /contrast-agent
+              readOnly: true
+
+      volumes:
+        - name: contrast-agent
+          emptyDir: {}
+
+<span class="cm">---</span>
+<span class="cm"># Kubernetes Secret for API keys</span>
+apiVersion: v1
+kind: Secret
+metadata:
+  name: contrast-secrets
+type: Opaque
+data:
+  api-key: <span class="ce">&lt;base64-encoded-key&gt;</span>     <span class="cm"># NEVER plaintext in manifests</span>
+</pre>
+    </div>
+  </div>
+
+  <!-- RASP CI/CD gate -->
+  <div class="panel" id="pan-rasp-ci">
+    <div class="panel-h" onclick="tp('pan-rasp-ci')">
+      <div class="panel-dot" style="background:var(--accent)"></div>
+      <div class="panel-title">IAST in CI/CD &mdash; blocking releases on confirmed vulnerabilities</div>
+      <div class="panel-sub">Using IAST findings as a quality gate in GitHub Actions</div>
+      <div class="panel-tog">&#x25BC;</div>
+    </div>
+    <div class="panel-body">
+<pre>
+<span class="ctag">github-actions</span>
+<span class="cm"># .github/workflows/iast.yml</span>
+name: IAST Security Gate
+
+on:
+  push: { branches: [main, staging] }
+
+jobs:
+  iast-scan:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env: { POSTGRES_PASSWORD: testpass, POSTGRES_DB: testdb }
+        options: --health-cmd pg_isready --health-interval 10s
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install app and Contrast agent
+        run: |
+          pip install -r requirements.txt
+          pip install contrast-agent
+
+      - name: Start app with IAST agent enabled
+        run: |
+          python manage.py migrate
+          python manage.py loaddata test_fixtures.json
+          CONTRAST__API__API_KEY=${{ secrets.CONTRAST_API_KEY }} \
+          CONTRAST__API__SERVICE_KEY=${{ secrets.CONTRAST_SERVICE_KEY }} \
+          CONTRAST__ASSESS__ENABLE=true \       <span class="cm"># IAST mode (assess = find vulns)</span>
+          CONTRAST__PROTECT__ENABLE=false \     <span class="cm"># RASP disabled in test env</span>
+          CONTRAST__APPLICATION__NAME=myapp-ci \
+          python manage.py runserver 0.0.0.0:8000 &
+          sleep 5
+
+      - name: Run test suite (IAST observes)
+        run: |
+          pytest tests/ -v --tb=short
+          <span class="cm"># Every test case exercises app code with IAST agent watching</span>
+          <span class="cm"># SQLi in any test flow → IAST records a HIGH finding</span>
+
+      - name: Query IAST findings and enforce gate
+        run: |
+          FINDINGS=$(curl -s \
+            -H "API-Key: ${{ secrets.CONTRAST_API_KEY }}" \
+            "https://app.contrastsecurity.com/Contrast/api/ng/${{ secrets.CONTRAST_ORG_ID }}/applications/myapp-ci/vulns?severities=CRITICAL,HIGH&status=Reported" \
+            | jq '.vulnerabilities | length')
+          echo "IAST High/Critical findings: $FINDINGS"
+          if [ "$FINDINGS" -gt "0" ]; then
+            echo "::error::IAST gate failed — $FINDINGS confirmed High/Critical vulnerabilities"
+            exit 1
+          fi
+</pre>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════ ADVANCED: PERFORMANCE -->
+<div class="section">
+  <div class="eyebrow">&#x1F534; Advanced &mdash; Performance &amp; Tuning</div>
+  <div class="sec-title">Performance overhead &mdash; the real numbers</div>
+  <div class="sec-sub">Performance is the most common objection to RASP adoption. Here are the actual benchmarks and how to minimise overhead.</div>
+
+  <table>
+    <tr><th>Scenario</th><th>Overhead</th><th>Why</th><th>Mitigation</th></tr>
+    <tr>
+      <td>Clean request (no tainted data reaching sinks)</td>
+      <td style="color:var(--green)">0.1&ndash;0.5ms (&lt;1%)</td>
+      <td>Only source hooks fire (tagging request data). No sink analysis needed.</td>
+      <td>Most production traffic. Essentially free.</td>
+    </tr>
+    <tr>
+      <td>Request with DB query (tainted parameter)</td>
+      <td style="color:var(--yellow)">1&ndash;3ms (2&ndash;5%)</td>
+      <td>Sink hook fires on execute(). Taint analysis runs. Parameterized query → cleared quickly.</td>
+      <td>Acceptable for most applications. Sub-5% overhead.</td>
+    </tr>
+    <tr>
+      <td>IAST during test run</td>
+      <td style="color:var(--orange)">5&ndash;15%</td>
+      <td>Full taint propagation tracking through all string ops. More instrumentation hooks active.</td>
+      <td>Only runs in test/staging. Not a production concern.</td>
+    </tr>
+    <tr>
+      <td>Large file upload through taint tracking</td>
+      <td style="color:var(--red)">Significant if not excluded</td>
+      <td>Every byte of a 100MB upload is taint-tagged. Memory and CPU spike.</td>
+      <td>Configure agent to not taint file upload content (files stored, not injected into queries).</td>
+    </tr>
+  </table>
+
+<pre>
+<span class="cm"># Contrast agent performance tuning — contrast_security.yaml:</span>
+
+agent:
+  java:
+    standalone_app_name: myapp
+
+assess:
+  tags:
+    <span class="cm"># Exclude large binary data from taint tracking</span>
+    limit_char_display: <span class="ce">256</span>     <span class="cm"># truncate taint values to 256 chars in reports</span>
+
+  <span class="cm"># Skip taint tracking on file upload fields (they go to S3, not DB)</span>
+  sampling:
+    enable: <span class="ck">true</span>
+    baseline: <span class="ce">5</span>               <span class="cm"># after 5 identical requests, sample 1 in N</span>
+    request_frequency: <span class="ce">10</span>    <span class="cm"># sample every 10th identical request for IAST</span>
+    window_ms: <span class="ce">180000</span>         <span class="cm"># 3-minute window for frequency calculation</span>
+
+protect:
+  rules:
+    <span class="cm"># Exclude internal health check endpoints from RASP analysis</span>
+    bot-blocker:
+      mode: <span class="cs">DISABLED</span>         <span class="cm"># disable bot detection if you have a CDN doing it</span>
+</pre>
+</div>
+
+<!-- ═══════════════════════════════════ QUIZ -->
+<div class="section">
+  <div class="eyebrow">Knowledge Check</div>
+  <div class="sec-title">IAST &amp; RASP interview questions</div>
+  <div class="sec-sub">These questions appear in AppSec engineer interviews at companies using Contrast, Datadog, or building their own security programs.</div>
+
+  <div class="quiz-block">
+    <div class="quiz-q">Q1. A SAST scan flags a potential SQL injection in your code. Your IAST agent ran the same code path during the test suite and found nothing. Which tool is correct, and what does this tell you?</div>
+    <div class="quiz-opts" id="q1">
+      <div class="qo" onclick="doQ('q1',this,'wrong')">SAST is correct &mdash; it has access to the full code and is always more accurate</div>
+      <div class="qo" onclick="doQ('q1',this,'wrong')">IAST is wrong &mdash; it must have missed the vulnerable code path</div>
+      <div class="qo" onclick="doQ('q1',this,'correct')">Trust IAST over SAST in this case. IAST confirmed at runtime that the tainted value never reached the sink without sanitisation during actual execution. This is likely a SAST false positive &mdash; perhaps the concatenation is with a compile-time constant, or the code path is only reachable in configurations SAST doesn't know about.</div>
+      <div class="qo" onclick="doQ('q1',this,'wrong')">Both are wrong &mdash; run DAST to get a third opinion before deciding</div>
+    </div>
+    <div class="quiz-exp" id="q1-exp">IAST has a confirmed runtime observation &mdash; tainted data did not reach the sink during the test run. SAST sees a suspicious pattern but cannot know if it executes. When IAST says no finding and SAST says potential finding: (1) Verify the test suite actually exercises that code path. (2) Check if the string being concatenated is a compile-time constant (no user data). (3) If the test suite doesn't cover that path, SAST may be right &mdash; add a test case that exercises it and see if IAST fires. IAST finding &gt; SAST suspicion, but only if the code path was actually exercised.</div>
+  </div>
+
+  <div class="quiz-block">
+    <div class="quiz-q">Q2. An attacker sends a SQL injection payload URL-encoded three times: <code>%25252527%2520OR%25201%253D1</code>. Your WAF allows it through. Your RASP blocks it. Explain why, step by step.</div>
+    <div class="quiz-opts" id="q2">
+      <div class="qo" onclick="doQ('q2',this,'wrong')">RASP uses a different signature database that includes triple-encoded payloads</div>
+      <div class="qo" onclick="doQ('q2',this,'wrong')">The WAF failed &mdash; it should be reconfigured to decode three times before matching</div>
+      <div class="qo" onclick="doQ('q2',this,'correct')">WAF analyses encoded string &mdash; no known signature matches the triple-encoded form. App framework URL-decodes three times, producing the raw payload. RASP intercepts cursor.execute() after decoding, seeing the plain SQLi string. RASP's taint analysis fires on the decoded value. WAF never saw the decoded form. RASP always does.</div>
+      <div class="qo" onclick="doQ('q2',this,'wrong')">RASP uses ML to recognise that triple encoding is suspicious behaviour regardless of content</div>
+    </div>
+    <div class="quiz-exp" id="q2-exp">Step by step: (1) Attacker sends triple-encoded string. (2) WAF receives it as raw HTTP &mdash; no signature matches this encoding &mdash; passes it through. (3) App server receives URL-decoded once: still partially encoded. (4) Flask/Django URL-decodes again. (5) Application code strips the remaining encoding. (6) Final decoded value: <code>' OR 1=1</code>. (7) RASP hooks cursor.execute() &mdash; sees the fully decoded tainted string &mdash; recognises SQLi pattern &mdash; blocks. The fundamental principle: WAF sees what attackers send. RASP sees what the application actually uses. You cannot bypass RASP with encoding tricks.</div>
+  </div>
+
+  <div class="quiz-block">
+    <div class="quiz-q">Q3. Your team wants to deploy RASP in blocking mode on day one. What is your response as AppSec engineer, and what is the safe rollout strategy?</div>
+    <div class="quiz-opts" id="q3">
+      <div class="qo" onclick="doQ('q3',this,'wrong')">Agree &mdash; blocking mode immediately provides maximum protection from day one</div>
+      <div class="qo" onclick="doQ('q3',this,'wrong')">Disagree &mdash; RASP should never be in blocking mode, only monitoring</div>
+      <div class="qo" onclick="doQ('q3',this,'correct')">Disagree with immediate blocking. Safe rollout: (1) Monitor mode 2-4 weeks &mdash; observe what fires, tune false positives. (2) Alert mode &mdash; real-time SOC alerts, review accuracy. (3) Block high-confidence attack types (SQLi, CMDi) first. (4) Expand to other types after verifying each has zero false positives in your app's traffic profile.</div>
+      <div class="qo" onclick="doQ('q3',this,'wrong')">Agree, but only for endpoints handling sensitive data &mdash; block those, monitor others</div>
+    </div>
+    <div class="quiz-exp" id="q3-exp">Every application has unique patterns that may look like attacks to a generic RASP rule. A legitimate GraphQL query might contain characters that a naive RASP SQLi rule misidentifies. A file path in a request might trigger a path traversal rule. Without baselining, you'll block legitimate users. The rollout: Monitor (observe, tune) &rarr; Alert (confirm accuracy with SOC) &rarr; Block one attack type at a time (SQLi first, then CMDi, then others). Monitor mode is not "doing nothing" &mdash; it's building the confidence to block safely. Most teams reach full blocking mode in 4-8 weeks.</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════ CHALLENGE -->
+<div class="challenge">
+  <div class="ch-ey">Capstone Challenge &mdash; Beginner to Advanced</div>
+  <div class="ch">
+    <h3>Design the IAST + RASP strategy for this system</h3>
+    <p class="ch-desc">You are the AppSec engineer for a healthcare SaaS company. The system handles patient medical records, doctor appointments, and prescription data. Below is the current security posture. Design the complete IAST and RASP deployment strategy.</p>
+    <div class="scenario">
+      <p><strong>Current stack:</strong> Python/Django backend, React frontend, PostgreSQL, Redis cache, AWS EC2. Current security tools: Bandit SAST on PRs, OWASP ZAP DAST weekly against staging, Snyk SCA on dependencies.<br><br>
+      <strong>Current problems:</strong> SAST produces 80 findings per week, 60% are false positives. DAST misses complex multi-step vulnerabilities. Last pentest found a second-order SQLi that SAST and DAST both missed. No runtime protection in production &mdash; last month a WAF was deployed but an attacker used double URL encoding to bypass it and reach an internal debug endpoint.<br><br>
+      <strong>Requirements:</strong> HIPAA compliance requires audit logging of all data access. Application handles patient PII and prescription data &mdash; a breach would be catastrophic. CI/CD pipeline uses GitHub Actions. Deployed on Kubernetes.</p>
+    </div>
+    <textarea id="ch-ans" placeholder="IAST Strategy:
+- When does IAST run in the pipeline?
+- Which tool would you choose and why?
+- How does IAST solve the false positive problem?
+- How does IAST catch the second-order SQLi that SAST/DAST missed?
+
+RASP Strategy:
+- Which attack types do you enable in blocking mode first?
+- What is your rollout timeline (monitoring → alerting → blocking)?
+- How does RASP address the WAF bypass problem?
+- How does RASP support HIPAA audit logging requirements?
+- How do you deploy on Kubernetes?
+
+Integration with existing tools:
+- How do IAST/RASP complement (not replace) SAST, DAST, SCA?"></textarea>
+    <div class="btn-row">
+      <button class="btn btn-p" onclick="checkCh()">Submit</button>
+      <button class="btn btn-g" onclick="revealCh()">Reveal model answer</button>
+    </div>
+    <div class="ch-fb" id="ch-fb"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════ SUMMARY -->
+<div class="section">
+  <div class="eyebrow">Quick Reference</div>
+  <div class="sec-title">IAST &amp; RASP cheat sheet</div>
+  <table>
+    <tr><th>Concept</th><th>Definition</th><th>Key detail</th></tr>
+    <tr><td style="font-weight:700;color:var(--accent)">IAST</td><td>Interactive AST &mdash; agent inside app during testing, reports vulnerabilities</td><td>Passive: never blocks. Near-zero false positives. Runs during QA/integration tests.</td></tr>
+    <tr><td style="font-weight:700;color:var(--accent2)">RASP</td><td>Runtime Application Self-Protection &mdash; agent inside app in production, blocks attacks</td><td>Active: can block live attacks. Same tech as IAST, different mode. Production only.</td></tr>
+    <tr><td style="font-weight:700;color:var(--blue)">Instrumentation</td><td>Injecting hooks into the runtime without changing application code</td><td>Java: javaagent. Python: module monkey-patching. Node.js: VM hooks.</td></tr>
+    <tr><td style="font-weight:700;color:var(--red)">Taint source</td><td>Where untrusted data enters: request.args, POST body, file uploads</td><td>Agent marks this data with a taint label at the moment it enters.</td></tr>
+    <tr><td style="font-weight:700;color:var(--yellow)">Taint propagation</td><td>Taint label follows the data through string operations and function calls</td><td>String concat, format(), join() &mdash; all carry taint to derived strings.</td></tr>
+    <tr><td style="font-weight:700;color:var(--orange)">Taint sink</td><td>Dangerous operation that receives the data: cursor.execute(), os.system(), open()</td><td>Agent checks taint at sink. Tainted + no sanitizer = IAST finding / RASP block.</td></tr>
+    <tr><td style="font-weight:700;color:var(--green)">Sanitizer</td><td>Function that clears taint: parameterized query, html.escape(), allowlist validation</td><td>Once taint is cleared, the data can safely reach a sink &mdash; no finding.</td></tr>
+    <tr><td style="font-weight:700;color:var(--accent)">Second-order injection</td><td>Tainted data stored to DB, retrieved later, then reaches a sink</td><td>SAST and DAST both miss this. IAST agent tracks taint across storage boundaries.</td></tr>
+    <tr><td style="font-weight:700;color:var(--blue)">Monitor mode</td><td>RASP observes and logs attacks but does not block</td><td>Start here. Run 2-4 weeks to baseline and tune false positives before blocking.</td></tr>
+    <tr><td style="font-weight:700;color:var(--red)">Block mode</td><td>RASP terminates the request immediately when attack detected</td><td>Enable per attack type, starting with highest confidence (SQLi, CMDi).</td></tr>
+    <tr><td style="font-weight:700;color:var(--accent2)">Virtual patching</td><td>RASP rule blocks exploitation of a vulnerability without a code fix</td><td>Deploy in minutes. Buys time for real patch. More robust than WAF virtual patching.</td></tr>
+    <tr><td style="font-weight:700;color:var(--yellow)">WAF vs RASP</td><td>WAF sees encoded HTTP traffic. RASP sees decoded data inside the app.</td><td>WAF = first line of defence. RASP = last line. Use both. They are complementary.</td></tr>
+  </table>
+</div>
+
+<!-- NAV FOOTER -->
+<div class="nav-footer">
+  <a class="nf-btn" href="#">
+    <span class="nf-dir">&larr; Previous</span>
+    <span class="nf-title">06 &mdash; SCA (Software Composition Analysis)</span>
+  </a>
+  <a class="nf-btn next" href="#">
+    <span class="nf-dir">Next Lesson &rarr;</span>
+    <span class="nf-title">08 &mdash; OWASP API Security Top 10</span>
+  </a>
+</div>
+
+</div>
+</div>
+
+<!-- ═══════ HIDDEN DOM CONTENT for challenge reveal (no HTML in JS strings) ═══════ -->
+<div id="reveal-html" style="display:none">
+<strong>Model Answer &mdash; IAST + RASP Strategy for Healthcare SaaS</strong><br><br>
+<strong>IAST Strategy:</strong><br>
+Run Contrast Security in Assess (IAST) mode during the CI/CD integration test stage. In GitHub Actions: after the app starts with the Contrast agent, run the full pytest suite. The IAST agent instruments every DB query, template render, and HTTP client call. When a test case exercises the second-order SQLi path (write tainted data to DB in step 1, retrieve and use in query in step 2), the agent tracks the taint across the storage boundary and fires a confirmed HIGH finding. This is exactly what SAST and DAST missed. The CI gate queries the Contrast API after the test run and fails the build if any HIGH or CRITICAL IAST findings are present.<br><br>
+The false positive problem is solved structurally: IAST only reports a finding when tainted data actually reaches a dangerous sink at runtime. The 60% SAST false positive rate came from pattern-matching on code. IAST has zero false positives on code paths that were actually exercised.<br><br>
+<strong>RASP Strategy &mdash; Rollout Timeline:</strong><br>
+Week 1-2: Deploy Contrast agent in Monitor mode via Kubernetes init container. Observe all alerts. Establish baseline of legitimate traffic patterns. Identify any legitimate requests that resemble attack patterns (e.g., admin SQL exports, internal tool URLs).<br>
+Week 3: Switch to Alert mode. SOC receives real-time Slack/PagerDuty alerts on RASP detections. Review each alert. Confirm false positive rate for SQL injection and command injection is zero in your app's traffic profile.<br>
+Week 4: Enable BLOCK mode for SQL injection and command injection only. These are the highest-confidence categories and directly relevant to prescription data. Continue monitoring path traversal and SSRF in Alert mode.<br>
+Week 6-8: Enable BLOCK for path traversal, XXE, and deserialization after confirming zero false positives. SSRF moved to BLOCK mode last because app has legitimate server-side HTTP calls (third-party API integrations) that need allowlisting first.<br><br>
+<strong>WAF bypass problem:</strong> The double URL-encoding bypass is addressed directly by RASP. The WAF saw the encoded string and found no signature match. The app framework decoded it before the RASP agent evaluated it. RASP sees the decoded value pointing to the internal debug endpoint and blocks it. No encoding technique can bypass RASP because it operates after all decoding by the framework.<br><br>
+<strong>HIPAA audit logging:</strong> Configure the Contrast agent to emit security events to your SIEM (Splunk/DataDog). Every blocked attack includes: timestamp, requesting user ID (from session context), source IP, target endpoint, attack type, and the full tainted value. This is HIPAA-compliant audit logging of access attempts to patient data &mdash; both successful (from normal app logs) and blocked (from RASP logs). The combination satisfies the requirement to log all data access and all security events.<br><br>
+<strong>Kubernetes deployment:</strong> Use the init container pattern. A Contrast init container copies the Python agent into a shared emptyDir volume. The application container mounts this volume and the Contrast agent activates on startup. Contrast API credentials come from a Kubernetes Secret referenced as environment variables &mdash; never hardcoded in the deployment manifest or Docker image.<br><br>
+<strong>Integration with existing tools:</strong> IAST does NOT replace SAST, DAST, or SCA. SAST still runs on every PR for fast feedback on obvious issues (hardcoded secrets, weak crypto patterns). DAST still runs weekly for perimeter checks and header misconfiguration. SCA still monitors dependencies for CVEs. IAST adds confirmed vulnerability detection with zero false positives for code paths exercised by tests. RASP adds production runtime protection. The full stack is: SAST (fast feedback) &rarr; DAST (perimeter) &rarr; SCA (dependencies) &rarr; IAST (confirmed vulns in CI) &rarr; RASP (production protection).
+</div>
+
+<!-- ═══════ SAFE JAVASCRIPT &mdash; zero HTML inside JS strings ═══════ -->
+<script>
+function tp(id) {
+  document.getElementById(id).classList.toggle('open');
+}
+document.getElementById('pan-landscape').classList.add('open');
+document.getElementById('pan-taint').classList.add('open');
+
+function toggleF(id) {
+  document.getElementById(id + '-b').classList.toggle('show');
+}
+
+function switchTab(btn, paneId) {
+  var bar = btn.parentElement;
+  bar.querySelectorAll('.ttab').forEach(function(t) { t.classList.remove('active'); });
+  btn.classList.add('active');
+  var wrap = bar.parentElement;
+  wrap.querySelectorAll('.tool-pane').forEach(function(p) { p.classList.remove('active'); });
+  var pane = document.getElementById(paneId);
+  if (pane) { pane.classList.add('active'); }
+}
+
+function doQ(qid, el, result) {
+  var container = document.getElementById(qid);
+  container.querySelectorAll('.qo').forEach(function(o) { o.onclick = null; });
+  el.classList.add(result === 'correct' ? 'correct' : 'wrong');
+  var exp = document.getElementById(qid + '-exp');
+  if (exp) { exp.classList.add('show'); }
+}
+
+function checkCh() {
+  var ans = document.getElementById('ch-ans').value.toLowerCase();
+  var fb  = document.getElementById('ch-fb');
+  var checks = [
+    ans.includes('iast') && (ans.includes('test') || ans.includes('ci') || ans.includes('assess')),
+    ans.includes('false positive') || ans.includes('false-positive') || ans.includes('zero false'),
+    ans.includes('second-order') || ans.includes('second order') || ans.includes('taint'),
+    ans.includes('monitor') && (ans.includes('week') || ans.includes('rollout') || ans.includes('baseline')),
+    ans.includes('block') && (ans.includes('sql') || ans.includes('command') || ans.includes('injection')),
+    ans.includes('rasp') && (ans.includes('bypass') || ans.includes('encod') || ans.includes('waf')),
+    ans.includes('kubernetes') || ans.includes('k8s') || ans.includes('init container') || ans.includes('container'),
+    ans.includes('hipaa') || ans.includes('audit') || ans.includes('log')
+  ];
+  var score = checks.filter(Boolean).length;
+  fb.className = 'ch-fb show ' + (score >= 6 ? 'good' : 'hint');
+  if (score >= 6) {
+    fb.textContent = 'Excellent — ' + score + '/8 key areas covered. You have thought through IAST and RASP deployment as a complete security engineering problem, not just a tool selection. The HIPAA audit logging point is often missed: RASP produces structured security events (attacker IP, user ID, attack type, timestamp) that are exactly what compliance frameworks require as evidence of monitoring.';
+  } else if (score >= 4) {
+    fb.textContent = 'Good work — ' + score + '/8 areas covered. Key points you may have missed: (1) The second-order SQLi is found by IAST because it tracks taint across DB storage boundaries — SAST and DAST both failed to find it. (2) The WAF bypass is addressed by RASP because RASP operates after URL decoding inside the app. (3) Never start RASP in blocking mode — the 2-4 week monitoring phase is essential for safety.';
+  } else {
+    fb.textContent = 'Keep going. Think through each problem separately: (1) How does IAST solve false positives? (2) How does it catch second-order injection? (3) What is the safe RASP rollout order? (4) Why does RASP catch what the WAF missed?';
+  }
+}
+
+function revealCh() {
+  var fb  = document.getElementById('ch-fb');
+  var src = document.getElementById('reveal-html');
+  fb.className = 'ch-fb show reveal';
+  fb.innerHTML = src ? src.innerHTML : 'Model answer unavailable.';
+}
+</script>
+</body>
+</html>

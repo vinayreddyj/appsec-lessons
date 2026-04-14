@@ -1,0 +1,1463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AppSec Engineer — Lesson 10: GraphQL Security</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#06080f;--surface:#0b0e19;--surface2:#111525;--surface3:#161c2e;
+  --border:#1e2540;--border2:#273060;--ink:#dce4f5;--ink2:#8896b8;--ink3:#3d4d70;
+  --accent:#e8527a;--accent-bg:rgba(232,82,122,0.08);
+  --red:#f87171;--red-bg:rgba(248,113,113,0.08);
+  --orange:#fb923c;--orange-bg:rgba(251,146,60,0.08);
+  --yellow:#fbbf24;--yellow-bg:rgba(251,191,36,0.08);
+  --green:#34d399;--green-bg:rgba(52,211,153,0.08);
+  --blue:#60a5fa;--blue-bg:rgba(96,165,250,0.08);
+  --purple:#a78bfa;--purple-bg:rgba(167,139,250,0.08);
+  --teal:#2dd4bf;--teal-bg:rgba(45,212,191,0.08);
+  --code-bg:#050710;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--ink);font-family:'DM Sans',sans-serif;font-size:15px;line-height:1.8;}
+.sidebar{position:fixed;left:0;top:0;bottom:0;width:252px;background:var(--surface);border-right:1px solid var(--border);overflow-y:auto;z-index:100;}
+.sb-brand{padding:1.4rem 1.2rem 1rem;border-bottom:1px solid var(--border);}
+.sb-badge{font-family:'JetBrains Mono',monospace;font-size:9px;background:var(--accent);color:#fff;padding:2px 8px;border-radius:2px;letter-spacing:.12em;display:inline-block;margin-bottom:7px;text-transform:uppercase;font-weight:700;}
+.sb-brand h2{font-size:13px;font-weight:400;color:var(--ink3);line-height:1.4;}
+.sb-sect{padding:.7rem 1.2rem .2rem;font-size:9px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--ink3);margin-top:.25rem;opacity:.55;}
+.nav-item{display:flex;align-items:center;gap:9px;padding:.38rem 1.2rem;cursor:pointer;border-left:2px solid transparent;font-size:12.5px;color:var(--ink3);text-decoration:none;transition:all .15s;}
+.nav-item:hover{color:var(--ink2);background:var(--surface2);}
+.nav-item.done{color:var(--ink3);}
+.nav-item.active{color:var(--accent);border-left-color:var(--accent);background:var(--accent-bg);}
+.nav-item .num{font-family:'JetBrains Mono',monospace;font-size:10px;min-width:22px;opacity:.3;}
+.nav-item.active .num{opacity:1;color:var(--accent);}
+.main{margin-left:252px;}
+.topbar{position:sticky;top:0;background:rgba(6,8,15,.96);backdrop-filter:blur(14px);border-bottom:1px solid var(--border);padding:.65rem 2.5rem;display:flex;align-items:center;justify-content:space-between;z-index:50;}
+.bc{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink3);}
+.bc span{color:var(--accent);}
+.top-badge{font-family:'JetBrains Mono',monospace;font-size:10px;padding:3px 10px;background:var(--surface2);border:1px solid var(--border);color:var(--ink2);border-radius:2px;}
+.content{padding:3rem 2.5rem 5rem;max-width:960px;}
+.hero{margin-bottom:3.5rem;padding-bottom:2.5rem;border-bottom:1px solid var(--border);}
+.hero-meta{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1rem;}
+.tag{font-family:'JetBrains Mono',monospace;font-size:10px;padding:3px 10px;border-radius:2px;font-weight:600;letter-spacing:.04em;}
+.t-beg{background:var(--green-bg);color:var(--green);border:1px solid rgba(52,211,153,.2);}
+.t-frm{background:var(--blue-bg);color:var(--blue);border:1px solid rgba(96,165,250,.2);}
+.t-time{background:var(--purple-bg);color:var(--purple);border:1px solid rgba(167,139,250,.2);}
+.hero h1{font-family:'DM Serif Display',serif;font-size:3.4rem;line-height:1.1;color:var(--ink);margin-bottom:.85rem;}
+.hero h1 .hl{color:var(--accent);}
+.hero-sub{font-size:14.5px;color:var(--ink2);max-width:660px;line-height:1.8;margin-bottom:1.75rem;}
+.level-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:6px;overflow:hidden;}
+.lv-cell{background:var(--surface);padding:.9rem 1rem;}
+.lv-pip{width:8px;height:8px;border-radius:50%;margin-bottom:7px;}
+.lv-label{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink3);margin-bottom:3px;}
+.lv-title{font-size:13px;font-weight:600;color:var(--ink);margin-bottom:2px;}
+.lv-desc{font-size:12px;color:var(--ink3);line-height:1.5;}
+.section{margin-bottom:3.5rem;}
+.eyebrow{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.15em;color:var(--accent);margin-bottom:5px;font-weight:600;}
+.sec-title{font-family:'DM Serif Display',serif;font-size:1.9rem;color:var(--ink);line-height:1.2;margin-bottom:.35rem;}
+.sec-sub{font-size:14px;color:var(--ink2);max-width:660px;line-height:1.75;margin-bottom:1.5rem;}
+.callout{border-radius:5px;padding:.9rem 1.1rem;margin:1rem 0;display:flex;gap:10px;align-items:flex-start;border-left:3px solid;}
+.cl-warn{background:var(--red-bg);border-color:var(--red);}
+.cl-info{background:var(--blue-bg);border-color:var(--blue);}
+.cl-tip{background:var(--green-bg);border-color:var(--green);}
+.cl-note{background:var(--yellow-bg);border-color:var(--yellow);}
+.cl-accent{background:var(--accent-bg);border-color:var(--accent);}
+.cl-teal{background:var(--teal-bg);border-color:var(--teal);}
+.cl-icon{font-size:15px;flex-shrink:0;margin-top:2px;}
+.cl-text{font-size:13.5px;color:var(--ink2);line-height:1.7;}
+.cl-text strong{color:var(--ink);}
+.cl-text code{font-family:'JetBrains Mono',monospace;font-size:11.5px;background:rgba(255,255,255,.06);padding:1px 5px;border-radius:3px;color:var(--accent);}
+pre{background:var(--code-bg);color:#dce4f5;border-radius:6px;padding:1.25rem;font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.8;overflow-x:auto;margin:.85rem 0;position:relative;border:1px solid var(--border);}
+.ctag{position:absolute;top:10px;right:12px;font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--ink3);text-transform:uppercase;letter-spacing:.1em;}
+.ck{color:#c084fc;}.cf{color:#7dd3fc;}.cs{color:#86efac;}.cm{color:#2a3550;}.cv{color:#fcd34d;}.ce{color:#fb923c;}.cr{color:#f87171;}.cg{color:#4ade80;}.ct{color:#2dd4bf;}.cw{color:#f9a8d4;}.cy{color:#fde68a;}
+.gql{color:#e879f9;}.gqlt{color:#34d399;}.gqla{color:#60a5fa;}.gqlv{color:#fbbf24;}
+.lb{display:block;background:rgba(248,113,113,.09);border-left:2px solid #ef4444;margin:0 -1.25rem;padding:0 1.25rem;}
+.lg{display:block;background:rgba(74,222,128,.07);border-left:2px solid #22c55e;margin:0 -1.25rem;padding:0 1.25rem;}
+.lw{display:block;background:rgba(252,211,77,.07);border-left:2px solid #f59e0b;margin:0 -1.25rem;padding:0 1.25rem;}
+table{width:100%;border-collapse:collapse;font-size:13px;margin:1rem 0;}
+th{padding:.55rem .9rem;text-align:left;background:var(--surface2);border:1px solid var(--border);font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink3);}
+td{padding:.55rem .9rem;border:1px solid var(--border);color:var(--ink2);line-height:1.5;vertical-align:top;}
+tr:hover td{background:var(--surface2);}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:6px;overflow:hidden;margin-bottom:.75rem;}
+.panel-h{display:flex;align-items:center;gap:10px;padding:.9rem 1.1rem;cursor:pointer;transition:background .15s;user-select:none;}
+.panel-h:hover{background:var(--surface2);}
+.panel-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.panel-title{font-size:13.5px;font-weight:600;flex:1;color:var(--ink);}
+.panel-sub{font-size:12px;color:var(--ink3);}
+.panel-tog{color:var(--ink3);font-size:13px;transition:transform .2s;}
+.panel.open .panel-tog{transform:rotate(180deg);}
+.panel-body{display:none;padding:0 1.1rem 1.1rem;border-top:1px solid var(--border);}
+.panel.open .panel-body{display:block;}
+.panel-body h4{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--ink3);margin:1rem 0 .5rem;font-weight:600;}
+.panel-body p{font-size:13.5px;color:var(--ink2);line-height:1.75;margin-top:.6rem;}
+.vuln-card{background:var(--surface);border:1px solid var(--border);border-left:4px solid;border-radius:0 6px 6px 0;padding:1rem 1.1rem;margin-bottom:.75rem;cursor:pointer;transition:background .15s;}
+.vuln-card:hover{background:var(--surface2);}
+.vc-crit{border-left-color:var(--red);}
+.vc-high{border-left-color:var(--orange);}
+.vc-med{border-left-color:var(--yellow);}
+.vc-top{display:flex;align-items:flex-start;gap:1rem;justify-content:space-between;}
+.vc-title{font-size:13.5px;font-weight:700;color:var(--ink);margin-bottom:3px;}
+.vc-meta{font-size:11px;color:var(--ink3);font-family:'JetBrains Mono',monospace;}
+.vc-sev{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;padding:3px 10px;border-radius:2px;flex-shrink:0;white-space:nowrap;}
+.sc{background:var(--red-bg);color:var(--red);border:1px solid rgba(248,113,113,.2);}
+.sh{background:var(--orange-bg);color:var(--orange);border:1px solid rgba(251,146,60,.2);}
+.sm{background:var(--yellow-bg);color:var(--yellow);border:1px solid rgba(251,191,36,.2);}
+.vc-body{display:none;margin-top:.85rem;padding-top:.85rem;border-top:1px solid var(--border);}
+.vc-body.show{display:block;}
+.vc-body h5{font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:var(--ink3);margin:.75rem 0 .35rem;font-weight:700;}
+.vc-body p{font-size:13.5px;color:var(--ink2);line-height:1.7;}
+.tool-tabs{border:1px solid var(--border);border-radius:6px;overflow:hidden;margin:1.25rem 0;}
+.tool-tab-bar{display:flex;background:var(--surface2);border-bottom:1px solid var(--border);flex-wrap:wrap;}
+.ttab{padding:.55rem 1rem;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;cursor:pointer;color:var(--ink3);border-right:1px solid var(--border);transition:all .15s;user-select:none;}
+.ttab:hover{color:var(--ink2);}
+.ttab.active{background:var(--surface);color:var(--accent);border-bottom:2px solid var(--accent);}
+.tool-pane{display:none;padding:1.25rem;}
+.tool-pane.active{display:block;}
+.rw-box{background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:1rem 1.1rem;margin:.85rem 0;}
+.rw-label{font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.12em;color:var(--red);margin-bottom:5px;font-weight:700;}
+.rw-box p{font-size:13px;color:var(--ink2);line-height:1.7;}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin:1rem 0;}
+.cb{background:var(--red-bg);border:1px solid rgba(248,113,113,.15);border-radius:6px;padding:1rem;}
+.cg-box{background:var(--green-bg);border:1px solid rgba(52,211,153,.15);border-radius:6px;padding:1rem;}
+.cmp-l{font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.12em;font-weight:700;margin-bottom:.6rem;}
+.cb .cmp-l{color:var(--red);}
+.cg-box .cmp-l{color:var(--green);}
+.pill{font-size:11px;padding:3px 9px;border-radius:2px;font-family:'JetBrains Mono',monospace;font-weight:600;}
+.pr{background:var(--red-bg);color:var(--red);border:1px solid rgba(248,113,113,.2);}
+.pg{background:var(--green-bg);color:var(--green);border:1px solid rgba(52,211,153,.2);}
+.py{background:var(--yellow-bg);color:var(--yellow);border:1px solid rgba(251,191,36,.2);}
+.pb{background:var(--blue-bg);color:var(--blue);border:1px solid rgba(96,165,250,.2);}
+.pp{background:var(--purple-bg);color:var(--purple);border:1px solid rgba(167,139,250,.2);}
+.pt{background:var(--teal-bg);color:var(--teal);border:1px solid rgba(45,212,191,.2);}
+.pa{background:var(--accent-bg);color:var(--accent);border:1px solid rgba(232,82,122,.2);}
+.pill-row{display:flex;flex-wrap:wrap;gap:6px;margin:.5rem 0;}
+.quiz-block{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:1.25rem;margin-bottom:1rem;}
+.quiz-q{font-size:14.5px;font-weight:600;color:var(--ink);margin-bottom:.85rem;line-height:1.55;}
+.quiz-opts{display:flex;flex-direction:column;gap:7px;margin-bottom:.75rem;}
+.qo{padding:.65rem 1rem;border:1px solid var(--border);border-radius:4px;cursor:pointer;font-size:13.5px;color:var(--ink2);background:var(--surface2);transition:all .15s;}
+.qo:hover{border-color:var(--accent);color:var(--ink);}
+.qo.correct{border-color:var(--green);color:var(--green);background:var(--green-bg);cursor:default;}
+.qo.wrong{border-color:var(--red);color:var(--red);background:var(--red-bg);cursor:default;}
+.quiz-exp{font-size:13px;color:var(--ink2);line-height:1.7;padding:.75rem 1rem;background:var(--surface2);border-radius:4px;border-left:3px solid var(--green);display:none;margin-top:.5rem;}
+.quiz-exp.show{display:block;}
+.challenge{background:var(--surface);border:1px solid var(--accent);border-radius:10px;padding:2rem;margin:3rem 0;position:relative;overflow:hidden;}
+.challenge::before{content:'';position:absolute;top:-60px;right:-60px;width:220px;height:220px;background:radial-gradient(circle,var(--accent-bg) 0%,transparent 70%);pointer-events:none;}
+.ch-ey{font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.15em;color:var(--accent);margin-bottom:.5rem;}
+.ch h3{font-family:'DM Serif Display',serif;font-size:1.5rem;color:var(--ink);margin-bottom:.7rem;}
+.ch-desc{font-size:13.5px;color:var(--ink2);line-height:1.75;margin-bottom:1.25rem;}
+.scenario{background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:1rem 1.1rem;margin-bottom:1.25rem;}
+.scenario p{font-size:13px;color:var(--ink2);line-height:1.75;}
+.scenario strong{color:var(--ink);}
+.challenge textarea{width:100%;min-height:180px;background:var(--code-bg);border:1px solid var(--border);border-radius:4px;padding:1rem;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--ink);resize:vertical;outline:none;transition:border-color .2s;margin-bottom:1rem;}
+.challenge textarea:focus{border-color:var(--accent);}
+.challenge textarea::placeholder{color:var(--ink3);}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap;}
+.btn{padding:9px 20px;border-radius:4px;font-size:13px;font-family:'DM Sans',sans-serif;font-weight:600;cursor:pointer;border:1px solid;transition:all .15s;}
+.btn-p{background:var(--accent);color:#fff;border-color:var(--accent);}
+.btn-p:hover{background:#c93d66;}
+.btn-g{background:transparent;color:var(--ink2);border-color:var(--border2);}
+.btn-g:hover{border-color:var(--accent);color:var(--ink);}
+.ch-fb{margin-top:1rem;padding:1rem 1.1rem;border-radius:5px;font-size:13.5px;line-height:1.7;display:none;}
+.ch-fb.show{display:block;}
+.ch-fb.good{background:var(--green-bg);border:1px solid rgba(52,211,153,.25);color:var(--green);}
+.ch-fb.hint{background:var(--yellow-bg);border:1px solid rgba(251,191,36,.25);color:var(--yellow);}
+.ch-fb.reveal{background:var(--surface2);border:1px solid var(--border);color:var(--ink2);}
+.nav-footer{display:flex;justify-content:space-between;margin-top:4rem;padding-top:2rem;border-top:1px solid var(--border);}
+.nf-btn{padding:.85rem 1.5rem;border:1px solid var(--border);border-radius:4px;font-size:13px;cursor:pointer;background:var(--surface);color:var(--ink2);text-align:left;transition:all .15s;text-decoration:none;display:block;}
+.nf-btn:hover{border-color:var(--accent);}
+.nf-btn.next{background:var(--accent);color:#fff;border-color:var(--accent);text-align:right;}
+.nf-btn.next:hover{background:#c93d66;}
+.nf-dir{font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:var(--ink3);display:block;margin-bottom:3px;}
+.nf-btn.next .nf-dir{color:rgba(255,255,255,.4);}
+.nf-title{font-weight:700;display:block;}
+code{font-family:'JetBrains Mono',monospace;font-size:12px;background:rgba(255,255,255,.06);padding:1px 5px;border-radius:3px;color:var(--accent);}
+pre code{background:none;padding:0;color:inherit;font-size:inherit;}
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+@media(max-width:860px){.sidebar{display:none;}.main{margin-left:0;}.content{padding:1.5rem 1.1rem 3rem;}.level-strip,.two-col{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+<!-- SIDEBAR -->
+<nav class="sidebar">
+  <div class="sb-brand"><div class="sb-badge">AppSec Engineer</div><h2>Application Security<br>Learning Path</h2></div>
+  <div class="sb-sect">Module 1 &mdash; Foundations</div>
+  <a class="nav-item done" href="#"><span class="num">01</span>OWASP Top 10 2021</a>
+  <a class="nav-item done" href="#"><span class="num">02</span>Secure SDLC</a>
+  <a class="nav-item done" href="#"><span class="num">03</span>Threat Modeling</a>
+  <div class="sb-sect">Module 2 &mdash; Testing Tools</div>
+  <a class="nav-item done" href="#"><span class="num">04</span>SAST</a>
+  <a class="nav-item done" href="#"><span class="num">05</span>DAST</a>
+  <a class="nav-item done" href="#"><span class="num">06</span>SCA</a>
+  <a class="nav-item done" href="#"><span class="num">07</span>IAST &amp; RASP</a>
+  <div class="sb-sect">Module 3 &mdash; API Security</div>
+  <a class="nav-item done" href="#"><span class="num">08</span>OWASP API Top 10</a>
+  <a class="nav-item done" href="#"><span class="num">09</span>API Security Testing</a>
+  <a class="nav-item active" href="#"><span class="num">10</span>GraphQL Security</a>
+  <div class="sb-sect">Module 4 &mdash; DevSecOps</div>
+  <a class="nav-item" href="#"><span class="num">11</span>DevSecOps Pipeline</a>
+  <a class="nav-item" href="#"><span class="num">12</span>Secrets Management</a>
+  <a class="nav-item" href="#"><span class="num">13</span>Container Security</a>
+  <a class="nav-item" href="#"><span class="num">14</span>Dependency Scanning</a>
+  <a class="nav-item" href="#"><span class="num">15</span>SBOM</a>
+  <div class="sb-sect">Module 5 &mdash; Architecture</div>
+  <a class="nav-item" href="#"><span class="num">16</span>Security Architecture</a>
+  <a class="nav-item" href="#"><span class="num">17</span>Supply Chain Security</a>
+  <a class="nav-item" href="#"><span class="num">18</span>WAF</a>
+  <a class="nav-item" href="#"><span class="num">19</span>Code Review</a>
+  <a class="nav-item" href="#"><span class="num">20</span>RASP</a>
+</nav>
+
+<div class="main">
+<div class="topbar">
+  <div class="bc">appsec-engineer / module-3 / <span>graphql-security</span></div>
+  <div class="top-badge">Lesson 10 / 20</div>
+</div>
+<div class="content">
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-meta">
+    <span class="tag t-beg">Beginner &rarr; Advanced</span>
+    <span class="tag t-frm">Framework</span>
+    <span class="tag t-time">~65 min</span>
+  </div>
+  <h1><span class="hl">GraphQL</span> Security</h1>
+  <p class="hero-sub">GraphQL is not just a different syntax for REST. It is a fundamentally different API paradigm with a completely different attack surface. One endpoint replaces hundreds of REST endpoints &mdash; and with that power comes unique vulnerabilities: introspection leaks the entire schema, unbounded queries collapse your database, batching bypasses rate limits, and per-resolver authorization is trivially forgotten. This lesson covers every major GraphQL attack from first principles to production hardening.</p>
+  <div class="level-strip">
+    <div class="lv-cell"><div class="lv-pip" style="background:var(--green)"></div><div class="lv-label">Beginner</div><div class="lv-title">Fundamentals &amp; attack surface</div><div class="lv-desc">Schema, queries, mutations, subscriptions, resolvers &mdash; how GraphQL differs from REST security-wise</div></div>
+    <div class="lv-cell"><div class="lv-pip" style="background:var(--yellow)"></div><div class="lv-label">Intermediate</div><div class="lv-title">All major attack classes</div><div class="lv-desc">Introspection, BOLA, DoS via deep nesting, batching attacks, injection, BFLA, CSRF, field suggestions</div></div>
+    <div class="lv-cell"><div class="lv-pip" style="background:var(--red)"></div><div class="lv-label">Advanced</div><div class="lv-title">Hardening &amp; testing</div><div class="lv-desc">Production config, depth limits, InQL, Clairvoyance, GraphQL Cop, CI/CD gate, secure schema design</div></div>
+  </div>
+</div>
+
+<!-- BEGINNER: FUNDAMENTALS -->
+<div class="section">
+  <div class="eyebrow">&#x1F7E2; Beginner &mdash; GraphQL from the ground up</div>
+  <div class="sec-title">What GraphQL is and why its security model is different</div>
+  <div class="sec-sub">Before you can secure GraphQL, you must understand it. REST has many endpoints. GraphQL has one &mdash; and that changes everything about how you think about security.</div>
+
+  <p style="font-size:14.5px;color:var(--ink2);line-height:1.8;margin-bottom:1rem;">A REST API exposes many URLs: <code>GET /users</code>, <code>POST /orders</code>, <code>GET /orders/{id}</code>. GraphQL exposes one URL: <code>POST /graphql</code>. The client sends a query specifying exactly which data it wants, and the server returns exactly that. This flexibility is powerful for developers but creates security challenges that REST simply does not have.</p>
+
+  <div class="callout cl-accent">
+    <div class="cl-icon">&#x26A0;&#xFE0F;</div>
+    <div class="cl-text"><strong>The single endpoint fallacy:</strong> Many developers assume "one endpoint is easier to secure than 200 REST endpoints." This is wrong. That one endpoint exposes your entire data model and every operation simultaneously. REST has natural compartmentalization &mdash; a bug in <code>/orders</code> doesn't affect <code>/users</code>. In GraphQL the entire graph is reachable through one surface, so a missing authorization check anywhere leaks everything connected to it.</div>
+  </div>
+
+  <div class="panel" id="pan-concepts">
+    <div class="panel-h" onclick="tp('pan-concepts')">
+      <div class="panel-dot" style="background:var(--blue)"></div>
+      <div class="panel-title">GraphQL core concepts &mdash; what each means for security</div>
+      <div class="panel-sub">Schema, Query, Mutation, Subscription, Resolver, Introspection</div>
+      <div class="panel-tog">&#x25BC;</div>
+    </div>
+    <div class="panel-body">
+      <table>
+        <tr><th>Concept</th><th>What it is</th><th>Security relevance</th></tr>
+        <tr><td style="font-weight:700;color:var(--teal)">Schema</td><td>Type definitions describing all available data and operations. Analogous to an OpenAPI spec but richer.</td><td>Introspection exposes the full schema instantly. Disabling introspection in production is the first hardening step.</td></tr>
+        <tr><td style="font-weight:700;color:var(--blue)">Query</td><td>Read operation. Client specifies exactly which fields to fetch, including deeply nested relations.</td><td>Deep nesting triggers exponential DB calls (DoS). Clients can over-fetch sensitive fields if resolvers don't enforce authorization per field.</td></tr>
+        <tr><td style="font-weight:700;color:var(--orange)">Mutation</td><td>Write operation: create, update, delete. Equivalent to POST/PUT/DELETE in REST.</td><td>Mass assignment if input types aren't restricted. CSRF if cookie-authenticated: mutations change state just like POST requests.</td></tr>
+        <tr><td style="font-weight:700;color:var(--purple)">Subscription</td><td>Real-time push over WebSocket. Server pushes data when events occur.</td><td>Subscriptions bypass per-HTTP rate limiting. Authorization must be checked at setup AND on every pushed event, not just connection time.</td></tr>
+        <tr><td style="font-weight:700;color:var(--accent)">Resolver</td><td>The function that fetches data for a specific field. Every field in the schema has a resolver.</td><td>Authorization must live in EVERY resolver. One forgotten check leaks data even if the parent type is protected.</td></tr>
+        <tr><td style="font-weight:700;color:var(--yellow)">Introspection</td><td>Built-in meta-query that returns the complete schema: all types, fields, mutations, enums, descriptions.</td><td>Enabled by default in every library. Hands attackers a complete map of your entire API. Must be disabled in production.</td></tr>
+      </table>
+      <h4>REST vs GraphQL &mdash; the same data, different exposure</h4>
+      <div class="two-col">
+        <div class="cb">
+          <div class="cmp-l">REST &mdash; 3 separate requests, server controls fields</div>
+<pre style="margin:0;font-size:11.5px;background:transparent;border:none;padding:0;color:var(--ink2);">
+GET /api/users/42         &rarr; {id, name, email}
+GET /api/users/42/orders  &rarr; [{id, total}]
+GET /api/orders/101/items &rarr; [{name, price}]
+
+Each endpoint has its own auth check.
+Server decides exactly what fields return.
+Attacker must discover each endpoint.</pre>
+        </div>
+        <div class="cg-box">
+          <div class="cmp-l">GraphQL &mdash; 1 request, client controls fields</div>
+<pre style="margin:0;font-size:11.5px;background:transparent;border:none;padding:0;color:var(--ink2);">
+query {
+  user(id: "42") {
+    name email
+    orders {
+      id total
+      items { name price }
+    }
+  }
+}
+
+Auth must be checked in EVERY resolver.
+Client requests any field &mdash; server must filter.
+Introspection reveals full attack surface.</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel" id="pan-rest-vs-gql">
+    <div class="panel-h" onclick="tp('pan-rest-vs-gql')">
+      <div class="panel-dot" style="background:var(--accent)"></div>
+      <div class="panel-title">REST vs GraphQL &mdash; complete security comparison</div>
+      <div class="panel-sub">Every dimension where GraphQL requires different security thinking</div>
+      <div class="panel-tog">&#x25BC;</div>
+    </div>
+    <div class="panel-body">
+      <table>
+        <tr><th>Dimension</th><th>REST</th><th>GraphQL</th></tr>
+        <tr><td style="font-weight:600">Attack surface discovery</td><td>Must enumerate endpoints via brute-force or find leaked spec</td><td>One introspection query reveals 100% of the attack surface instantly</td></tr>
+        <tr><td style="font-weight:600">Rate limiting</td><td>Per-endpoint: limit POST /login to 5/min</td><td>Single endpoint: one request can do the work of thousands via aliases or batching</td></tr>
+        <tr><td style="font-weight:600">Authorization model</td><td>Per-endpoint: protect GET /admin/users with IsAdminUser middleware</td><td>Per-field/per-resolver: every resolver must independently enforce auth</td></tr>
+        <tr><td style="font-weight:600">Data exposure</td><td>Each endpoint returns a fixed, server-defined set of fields</td><td>Client requests any field combination. If resolver doesn't filter: returns everything in the type</td></tr>
+        <tr><td style="font-weight:600">DoS vector</td><td>Must send many requests to cause load</td><td>One deeply nested query triggers millions of DB calls</td></tr>
+        <tr><td style="font-weight:600">CSRF</td><td>POST endpoints protected by CSRF tokens or SameSite cookies</td><td>Mutations need identical CSRF protection, often forgotten because it "feels like an API"</td></tr>
+        <tr><td style="font-weight:600">Logging/monitoring</td><td>URL in logs tells you exactly what was accessed</td><td>Every request hits the same URL &mdash; must parse query body to know what was accessed and what data was returned</td></tr>
+        <tr><td style="font-weight:600">Versioning</td><td>v1/v2 in URL, explicit deprecation</td><td>Fields deprecated in-schema but rarely removed &mdash; old fields silently accessible to anyone who knows to ask</td></tr>
+      </table>
+    </div>
+  </div>
+</div>
+<!-- INTERMEDIATE: ATTACK CLASSES -->
+<div class="section">
+  <div class="eyebrow">&#x1F7E1; Intermediate &mdash; GraphQL Attack Classes</div>
+  <div class="sec-title">Every major GraphQL vulnerability in depth</div>
+  <div class="sec-sub">Click each card to expand the full attack, why it works, and the exact fix.</div>
+
+  <!-- V1: INTROSPECTION -->
+  <div class="vuln-card vc-high" id="v1" onclick="toggleVC('v1')">
+    <div class="vc-top">
+      <div><div class="vc-title">Introspection Enabled in Production</div><div class="vc-meta">GraphQL-specific &bull; Schema disclosure &bull; Enables all further attacks</div></div>
+      <span class="vc-sev sh">HIGH</span>
+    </div>
+    <div class="vc-body" id="v1-b">
+      <h5>What introspection reveals</h5>
+      <p>GraphQL has a built-in meta-query system. Any client can send one query to discover every type, field, mutation, enum, and description in your entire schema. This is enabled by default in every GraphQL library. In development it is invaluable. In production it hands attackers a complete roadmap of your entire data model &mdash; including fields like <code>passwordHash</code>, mutations like <code>deleteAllUsers</code>, and types like <code>AdminPanel</code> that you may not have intended to advertise.</p>
+      <h5>The introspection query attackers send first</h5>
+<pre>
+<span class="gql">query</span> IntrospectionQuery {
+  __schema {
+    <span class="gqlt">types</span> { name kind
+      <span class="gqlt">fields</span> { name
+        <span class="gqlt">type</span> { name kind ofType { name } }
+        args { name <span class="gqlt">type</span> { name } }
+      }
+    }
+    <span class="gqlt">mutationType</span> {
+      <span class="gqlt">fields</span> { name description
+        args { name description <span class="gqlt">type</span> { name kind } }
+      }
+    }
+  }
+}
+<span class="cm"># Attacker gets back: every Type, every field on every type,
+# every Mutation and its arguments, field descriptions (often
+# contain internal notes like "INTERNAL USE ONLY &mdash; not for clients")</span>
+</pre>
+      <h5>Fix &mdash; disable in production, allow in development</h5>
+<pre>
+<span class="cm"># Apollo Server (Node.js)</span>
+<span class="cf">const</span> server = <span class="ck">new</span> ApolloServer({
+  typeDefs, resolvers,
+<span class="lg">  introspection: process.env.NODE_ENV !== <span class="cs">'production'</span>,</span>
+<span class="lg">  playground: process.env.NODE_ENV !== <span class="cs">'production'</span>,</span>
+});
+
+<span class="cm"># Strawberry (Python) &mdash; via extension</span>
+<span class="cf">from</span> strawberry.extensions <span class="cf">import</span> SchemaExtension
+<span class="cf">from</span> graphql <span class="cf">import</span> GraphQLError
+
+<span class="cf">class</span> <span class="ck">DisableIntrospection</span>(SchemaExtension):
+    <span class="cf">def</span> <span class="cg">on_executing_start</span>(self):
+        query = self.execution_context.query <span class="cf">or</span> <span class="cs">""</span>
+<span class="lg">        <span class="cf">if</span> <span class="cs">"__schema"</span> <span class="cf">in</span> query <span class="cf">or</span> <span class="cs">"__type"</span> <span class="cf">in</span> query:</span>
+<span class="lg">            <span class="cf">raise</span> GraphQLError(<span class="cs">"Introspection disabled"</span>)</span>
+
+schema = strawberry.Schema(
+    query=Query, mutation=Mutation,
+<span class="lg">    extensions=[DisableIntrospection] <span class="cf">if</span> IS_PRODUCTION <span class="cf">else</span> []</span>
+)
+
+<span class="cm"># Graphene-Django &mdash; via middleware</span>
+GRAPHENE = {
+<span class="lg">    <span class="cs">"MIDDLEWARE"</span>: [<span class="cs">"graphene_django.debug.DjangoDebugMiddleware"</span>],</span>
+<span class="lg">    <span class="cs">"INTROSPECTION"</span>: <span class="cf">not</span> DEBUG,   <span class="cm"># False in production</span></span>
+}
+</pre>
+      <div class="pill-row"><span class="pill py">HIGH</span><span class="pill py">Default enabled in all libraries</span><span class="pill pg">Fix: disable in prod</span></div>
+    </div>
+  </div>
+
+  <!-- V2: BOLA -->
+  <div class="vuln-card vc-crit" id="v2" onclick="toggleVC('v2')">
+    <div class="vc-top">
+      <div><div class="vc-title">BOLA &mdash; Missing Resolver-Level Authorization</div><div class="vc-meta">OWASP API1 &bull; Most critical GraphQL flaw &bull; Per-field auth required</div></div>
+      <span class="vc-sev sc">CRITICAL</span>
+    </div>
+    <div class="vc-body" id="v2-b">
+      <h5>Why BOLA is uniquely dangerous in GraphQL</h5>
+      <p>In REST you protect an endpoint once: add <code>@permission_classes([IsOwner])</code> to <code>GET /orders/{id}</code> and every call to that endpoint is protected. In GraphQL you must protect every resolver for every field individually. If you protect the top-level <code>user</code> query but forget the <code>orders</code> field on the User type, an attacker reaches orders through the user query with no ownership check.</p>
+<pre>
+<span class="cm"># VULNERABLE: orders field resolver has no ownership check</span>
+<span class="cf">@strawberry.type</span>
+<span class="cf">class</span> <span class="ck">User</span>:
+    id: str
+    email: str
+
+    <span class="cf">@strawberry.field</span>
+    <span class="cf">def</span> <span class="cg">orders</span>(self, info) -&gt; list[<span class="cs">"Order"</span>]:
+<span class="lb">        <span class="cf">return</span> Order.objects.filter(user_id=self.id)  <span class="cm"># ← returns ANY user's orders</span></span>
+
+<span class="cf">@strawberry.type</span>
+<span class="cf">class</span> <span class="ck">Query</span>:
+    <span class="cf">@strawberry.field</span>
+    <span class="cf">def</span> <span class="cg">user</span>(self, info, id: str) -&gt; User:
+<span class="lb">        <span class="cf">return</span> User.objects.get(id=id)  <span class="cm"># ← fetches any user, no ownership check</span></span>
+
+<span class="cm"># Attack &mdash; Alice reads Bob's orders:</span>
+<span class="gql">query</span> {
+  user(id: <span class="gqlv">"bob-uuid"</span>) {
+    email
+    orders { id total items { name price } }
+  }
+}
+<span class="cm"># Response: Bob's full order history returned to Alice</span>
+</pre>
+      <h5>Fixed &mdash; ownership check in every resolver that handles sensitive data</h5>
+<pre>
+<span class="cf">@strawberry.type</span>
+<span class="cf">class</span> <span class="ck">Query</span>:
+    <span class="cf">@strawberry.field</span>
+    <span class="cf">def</span> <span class="cg">user</span>(self, info, id: str) -&gt; User:
+        requester = info.context.request.user
+<span class="lg">        <span class="cf">if</span> str(id) != str(requester.id) <span class="cf">and not</span> requester.is_staff:</span>
+<span class="lg">            <span class="cf">raise</span> PermissionError(<span class="cs">"Not authorized"</span>)</span>
+        <span class="cf">return</span> User.objects.get(id=id)
+
+<span class="cf">@strawberry.type</span>
+<span class="cf">class</span> <span class="ck">User</span>:
+    id: str
+    email: str
+
+    <span class="cf">@strawberry.field</span>
+    <span class="cf">def</span> <span class="cg">orders</span>(self, info) -&gt; list[<span class="cs">"Order"</span>]:
+        requester = info.context.request.user
+<span class="lg">        <span class="cm"># self is the User object &mdash; only show orders if self == requester</span></span>
+<span class="lg">        <span class="cf">if</span> str(self.id) != str(requester.id) <span class="cf">and not</span> requester.is_staff:</span>
+<span class="lg">            <span class="cf">raise</span> PermissionError(<span class="cs">"Not authorized to view these orders"</span>)</span>
+<span class="lg">        <span class="cf">return</span> Order.objects.filter(user_id=self.id)</span>
+</pre>
+      <div class="pill-row"><span class="pill pr">CRITICAL</span><span class="pill pr">Check auth in every resolver</span><span class="pill py">OWASP API1</span></div>
+    </div>
+  </div>
+
+  <!-- V3: DEEP QUERY DOS -->
+  <div class="vuln-card vc-high" id="v3" onclick="toggleVC('v3')">
+    <div class="vc-top">
+      <div><div class="vc-title">Unbounded Query Depth &mdash; Denial of Service</div><div class="vc-meta">GraphQL-specific DoS &bull; One query crashes the server &bull; OWASP API4</div></div>
+      <span class="vc-sev sh">HIGH</span>
+    </div>
+    <div class="vc-body" id="v3-b">
+      <h5>The exponential query problem</h5>
+      <p>GraphQL allows querying nested relations indefinitely. If your schema has deep or circular relations (User has Orders, Orders have User, User has Friends who have Orders...), one query can trigger an exponential number of database calls. This is not a bug in your resolver &mdash; it is an architectural property of GraphQL that must be explicitly constrained.</p>
+<pre>
+<span class="cm"># Attack query &mdash; exponential DB load from one HTTP request</span>
+<span class="gql">query</span> {
+  user(id: <span class="gqlv">"1"</span>) {           <span class="cm"># 1 DB call</span>
+    friends {              <span class="cm"># 100 DB calls (user has 100 friends)</span>
+      friends {            <span class="cm"># 10,000 DB calls</span>
+        friends {          <span class="cm"># 1,000,000 DB calls</span>
+          friends {        <span class="cm"># 100,000,000 DB calls &rarr; server OOM</span>
+            name email
+          }
+        }
+      }
+    }
+  }
+}
+
+<span class="cm"># Even without circular refs, wide queries are expensive:</span>
+<span class="gql">query</span> {
+  allUsers {               <span class="cm"># 10,000 users</span>
+    orders {               <span class="cm"># 10,000 x 50 = 500,000 queries</span>
+      lineItems {          <span class="cm"># 500,000 x 10 = 5,000,000 queries</span>
+        product { reviews { author { name } } }
+      }
+    }
+  }
+}
+</pre>
+      <h5>Fix &mdash; depth limit, complexity limit, and DataLoader</h5>
+<pre>
+<span class="cm"># Strawberry &mdash; depth and token limits via extensions</span>
+<span class="cf">from</span> strawberry.extensions <span class="cf">import</span> QueryDepthLimiter, MaxTokensLimiter
+
+schema = strawberry.Schema(
+    query=Query,
+    extensions=[
+<span class="lg">        QueryDepthLimiter(max_depth=<span class="ce">7</span>),         <span class="cm"># reject queries deeper than 7 levels</span></span>
+<span class="lg">        MaxTokensLimiter(max_token_count=<span class="ce">1000</span>),  <span class="cm"># reject huge query documents</span></span>
+    ]
+)
+
+<span class="cm"># Apollo Server &mdash; depth limiting</span>
+<span class="cf">const</span> depthLimit = require(<span class="cs">'graphql-depth-limit'</span>)
+<span class="cf">const</span> server = <span class="ck">new</span> ApolloServer({
+  typeDefs, resolvers,
+<span class="lg">  validationRules: [depthLimit(<span class="ce">7</span>)],</span>
+})
+
+<span class="cm"># DataLoader &mdash; batch N+1 queries into one</span>
+<span class="cm"># Instead of 10,000 separate "SELECT * FROM orders WHERE user_id=?" queries,</span>
+<span class="cm"># DataLoader batches them: "SELECT * FROM orders WHERE user_id IN (?,...,?)"</span>
+<span class="cf">from</span> strawberry.dataloader <span class="cf">import</span> DataLoader
+
+<span class="cf">async def</span> <span class="cg">batch_load_orders</span>(user_ids: list[str]) -&gt; list:
+<span class="lg">    all_orders = <span class="cf">await</span> sync_to_async(list)(Order.objects.filter(user_id__in=user_ids))</span>
+<span class="lg">    lookup = {uid: [] <span class="cf">for</span> uid <span class="cf">in</span> user_ids}</span>
+<span class="lg">    <span class="cf">for</span> o <span class="cf">in</span> all_orders: lookup[str(o.user_id)].append(o)</span>
+<span class="lg">    <span class="cf">return</span> [lookup[uid] <span class="cf">for</span> uid <span class="cf">in</span> user_ids]</span>
+
+orders_loader = DataLoader(load_fn=batch_load_orders)
+</pre>
+      <div class="pill-row"><span class="pill py">HIGH</span><span class="pill pg">max_depth=7</span><span class="pill py">OWASP API4</span><span class="pill pt">Use DataLoader</span></div>
+    </div>
+  </div>
+
+  <!-- V4: BATCHING -->
+  <div class="vuln-card vc-high" id="v4" onclick="toggleVC('v4')">
+    <div class="vc-top">
+      <div><div class="vc-title">Batching Attacks &mdash; Rate Limit Bypass</div><div class="vc-meta">GraphQL-specific &bull; Credential stuffing &bull; 100 attempts in 1 HTTP request</div></div>
+      <span class="vc-sev sh">HIGH</span>
+    </div>
+    <div class="vc-body" id="v4-b">
+      <h5>Two batching mechanisms attackers exploit</h5>
+      <p>GraphQL supports <strong>query aliasing</strong> (multiple operations in one query using different names) and <strong>array batching</strong> (sending an array of operations in one HTTP request). Your rate limiter sees one HTTP request. But your server executes hundreds of operations. Classic credential stuffing protection fails entirely.</p>
+      <h5>Attack 1 &mdash; alias-based credential stuffing</h5>
+<pre>
+<span class="cm"># Rate limit: 5 login attempts per minute per IP
+# With aliases, 100 attempts = 1 HTTP request &rarr; 1 rate limit count</span>
+<span class="gql">mutation</span> {
+  <span class="gqlt">a1</span>: login(email: <span class="gqlv">"victim@test.com"</span>, password: <span class="gqlv">"password123"</span>) { token }
+  <span class="gqlt">a2</span>: login(email: <span class="gqlv">"victim@test.com"</span>, password: <span class="gqlv">"qwerty"</span>)       { token }
+  <span class="gqlt">a3</span>: login(email: <span class="gqlv">"victim@test.com"</span>, password: <span class="gqlv">"letmein"</span>)      { token }
+  <span class="cm"># ... 97 more password attempts</span>
+}
+<span class="cm"># Server executes all 100 login attempts
+# Rate limiter increments by 1, not 100</span>
+</pre>
+      <h5>Attack 2 &mdash; array batch enumeration</h5>
+<pre>
+<span class="cm"># POST /graphql with array body &mdash; one HTTP request, 1000 operations</span>
+[
+  { <span class="cs">"query"</span>: <span class="cs">"query { user(id: \"1\") { email } }"</span> },
+  { <span class="cs">"query"</span>: <span class="cs">"query { user(id: \"2\") { email } }"</span> },
+  <span class="cm">// ... 998 more</span>
+]
+<span class="cm"># Enumerates 1000 users while rate limiter records 1 request</span>
+</pre>
+      <h5>Fix &mdash; disable batching, rate limit per-resolver</h5>
+<pre>
+<span class="cm"># Apollo Server &mdash; disable array batching</span>
+<span class="cf">const</span> server = <span class="ck">new</span> ApolloServer({
+  typeDefs, resolvers,
+<span class="lg">  allowBatchedHttpRequests: <span class="ck">false</span>,</span>
+})
+
+<span class="cm"># Limit aliases per query &mdash; custom Strawberry extension</span>
+<span class="cf">from</span> strawberry.extensions <span class="cf">import</span> SchemaExtension
+<span class="cf">from</span> graphql <span class="cf">import</span> GraphQLError
+
+<span class="cf">class</span> <span class="ck">LimitOperationAliases</span>(SchemaExtension):
+    MAX_ALIASES = <span class="ce">5</span>
+    <span class="cf">def</span> <span class="cg">on_executing_start</span>(self):
+        selections = self.execution_context.operation.selection_set.selections
+<span class="lg">        <span class="cf">if</span> len(selections) &gt; self.MAX_ALIASES:</span>
+<span class="lg">            <span class="cf">raise</span> GraphQLError(<span class="cs">f"Max {self.MAX_ALIASES} operations per request"</span>)</span>
+
+<span class="cm"># Also: rate limit by email/user in the resolver itself, not HTTP layer</span>
+<span class="cf">@strawberry.mutation</span>
+<span class="cf">def</span> <span class="cg">login</span>(self, info, email: str, password: str) -&gt; AuthPayload:
+<span class="lg">    key = <span class="cs">f"login:{email}"</span></span>
+<span class="lg">    <span class="cf">if</span> cache.get(key, <span class="ce">0</span>) &gt;= <span class="ce">5</span>:</span>
+<span class="lg">        <span class="cf">raise</span> GraphQLError(<span class="cs">"Too many login attempts"</span>)</span>
+<span class="lg">    cache.incr(key, timeout=<span class="ce">60</span>)</span>
+    <span class="cf">return</span> authenticate(email, password)
+</pre>
+      <div class="pill-row"><span class="pill py">HIGH</span><span class="pill pg">Disable array batching</span><span class="pill py">Per-resolver rate limit</span><span class="pill py">Alias limit</span></div>
+    </div>
+  </div>
+
+  <!-- V5: INJECTION -->
+  <div class="vuln-card vc-crit" id="v5" onclick="toggleVC('v5')">
+    <div class="vc-top">
+      <div><div class="vc-title">Injection via GraphQL Arguments</div><div class="vc-meta">SQLi &amp; NoSQL Injection &bull; Type system doesn't sanitize values &bull; OWASP API3</div></div>
+      <span class="vc-sev sc">CRITICAL</span>
+    </div>
+    <div class="vc-body" id="v5-b">
+      <h5>The type system myth</h5>
+      <p>A common misconception: "GraphQL's type system prevents injection." It does not. The type system validates the shape of the query (is this a String? is this an Int?) but it does not sanitize the <em>value</em>. A String argument containing a SQL injection payload is still a valid String. If your resolver passes that value to a raw SQL query or MongoDB filter, you have injection.</p>
+<pre>
+<span class="cm"># VULNERABLE: GraphQL argument passed to raw SQL</span>
+<span class="cf">@strawberry.field</span>
+<span class="cf">def</span> <span class="cg">search_products</span>(self, info, name: str) -&gt; list[Product]:
+<span class="lb">    sql = <span class="cs">f"SELECT * FROM products WHERE name LIKE '%{name}%'"</span></span>
+<span class="lb">    <span class="cf">return</span> db.execute(sql).fetchall()  <span class="cm"># &larr; SQLi via GraphQL argument</span></span>
+
+<span class="cm"># Attack query:</span>
+<span class="gql">query</span> {
+  searchProducts(name: <span class="gqlv">"' UNION SELECT username,password_hash,null FROM users--"</span>) {
+    name
+  }
+}
+<span class="cm"># Returns: all usernames and password hashes in the "name" field</span>
+</pre>
+      <h5>NoSQL injection in MongoDB-backed GraphQL</h5>
+<pre>
+<span class="cm"># VULNERABLE: raw MongoDB filter from GraphQL argument</span>
+<span class="cf">@strawberry.field</span>
+<span class="cf">def</span> <span class="cg">find_user</span>(self, info, filter: JSON) -&gt; User:
+<span class="lb">    <span class="cf">return</span> db.users.find_one(filter)  <span class="cm"># &larr; attacker controls entire filter object</span></span>
+
+<span class="cm"># Attack:</span>
+<span class="gql">query</span> {
+  findUser(filter: { password: { <span class="gqla">$gt</span>: <span class="gqlv">""</span> } }) {
+    email password
+  }
+}
+<span class="cm"># $gt:"" matches ANY non-empty password &rarr; returns first user in collection</span>
+
+<span class="cm"># FIXED: use ORM (handles escaping automatically)</span>
+<span class="cf">@strawberry.field</span>
+<span class="cf">def</span> <span class="cg">search_products_fixed</span>(self, info, name: str) -&gt; list[Product]:
+<span class="lg">    <span class="cf">return</span> list(Product.objects.filter(name__icontains=name))  <span class="cm"># ORM parameterizes</span></span>
+
+<span class="cm"># FIXED: sanitize MongoDB operator keys from user input</span>
+<span class="cf">def</span> <span class="cg">sanitize_mongo_filter</span>(f: dict) -&gt; dict:
+<span class="lg">    <span class="cf">return</span> {k: v <span class="cf">for</span> k, v <span class="cf">in</span> f.items() <span class="cf">if not</span> k.startswith(<span class="cs">'$'</span>)}</span>
+</pre>
+      <div class="pill-row"><span class="pill pr">CRITICAL</span><span class="pill pr">Type system does NOT sanitize values</span><span class="pill py">Use ORM</span><span class="pill py">CWE-89</span></div>
+    </div>
+  </div>
+
+  <!-- V6: BFLA HIDDEN MUTATIONS -->
+  <div class="vuln-card vc-high" id="v6" onclick="toggleVC('v6')">
+    <div class="vc-top">
+      <div><div class="vc-title">Hidden Admin Mutations &mdash; Broken Function Level Authorization</div><div class="vc-meta">OWASP API5 &bull; Introspection reveals admin mutations &bull; No role check on resolvers</div></div>
+      <span class="vc-sev sh">HIGH</span>
+    </div>
+    <div class="vc-body" id="v6-b">
+      <h5>The hidden mutation problem</h5>
+      <p>GraphQL schemas commonly contain admin mutations that developers intended as "internal-only" but never actually protected with authorization. After running introspection, an attacker sees <code>makeUserAdmin</code>, <code>exportAllData</code>, or <code>deleteAccount</code> in the schema. If the resolver has no role check, any authenticated user can call them.</p>
+<pre>
+<span class="cm"># Introspection reveals these mutations to any authenticated user:</span>
+<span class="gql">type</span> <span class="gqlt">Mutation</span> {
+  updateProfile(input: ProfileInput): User
+  <span class="cr">makeUserAdmin(userId: ID!): User      # &larr; no auth check on resolver</span>
+  <span class="cr">exportAllUserData: ExportJob           # &larr; no auth check</span>
+  <span class="cr">deleteAccount(userId: ID!): Boolean   # &larr; no auth check</span>
+}
+
+<span class="cm"># Attacker calls immediately after reading introspection:</span>
+<span class="gql">mutation</span> {
+  makeUserAdmin(userId: <span class="gqlv">"attacker-uuid"</span>) { id role }
+}
+<span class="cm"># If no role check &rarr; attacker is now admin</span>
+</pre>
+      <h5>Fix &mdash; separate schema or permissions on every admin resolver</h5>
+<pre>
+<span class="cm"># Best practice: separate admin schema at /graphql/admin
+# Admin mutations NEVER appear in the public /graphql schema
+# /graphql/admin requires: IsAuthenticated + IsAdminUser + VPN network policy</span>
+
+<span class="cm"># If single schema: permission class on every admin mutation</span>
+<span class="cf">from</span> strawberry.permission <span class="cf">import</span> BasePermission
+
+<span class="cf">class</span> <span class="ck">IsAdmin</span>(BasePermission):
+    message = <span class="cs">"Admin role required"</span>
+    <span class="cf">def</span> <span class="cg">has_permission</span>(self, source, info, **kwargs) -&gt; bool:
+<span class="lg">        <span class="cf">return</span> info.context.request.user.is_staff</span>
+
+<span class="cf">@strawberry.type</span>
+<span class="cf">class</span> <span class="ck">Mutation</span>:
+    <span class="cf">@strawberry.mutation</span>
+    <span class="cf">def</span> <span class="cg">update_profile</span>(self, info, input: ProfileInput) -&gt; User: ...
+
+<span class="lg">    @strawberry.mutation(permission_classes=[IsAdmin])</span>
+<span class="lg">    <span class="cf">def</span> <span class="cg">make_user_admin</span>(self, info, user_id: str) -&gt; User:</span>
+<span class="lg">        user = User.objects.get(id=user_id)</span>
+<span class="lg">        user.is_staff = True; user.save(); <span class="cf">return</span> user</span>
+</pre>
+      <div class="pill-row"><span class="pill py">HIGH</span><span class="pill py">OWASP API5</span><span class="pill pg">Separate admin schema</span></div>
+    </div>
+  </div>
+
+  <!-- V7: CSRF -->
+  <div class="vuln-card vc-high" id="v7" onclick="toggleVC('v7')">
+    <div class="vc-top">
+      <div><div class="vc-title">CSRF via GraphQL Mutations</div><div class="vc-meta">CWE-352 &bull; Cookie-authenticated APIs &bull; Often forgotten because it "feels like an API"</div></div>
+      <span class="vc-sev sh">HIGH</span>
+    </div>
+    <div class="vc-body" id="v7-b">
+      <h5>Why GraphQL mutations are vulnerable to CSRF</h5>
+      <p>CSRF affects any state-changing request that uses cookie-based authentication &mdash; including GraphQL mutations. When a victim visits an attacker's page, the attacker's JavaScript can POST to your GraphQL endpoint and the victim's browser will automatically include their session cookie. The mutation executes as the victim.</p>
+<pre>
+<span class="cm">&lt;!-- attacker.com &mdash; victim visits while logged into targetapp.com --&gt;</span>
+&lt;script&gt;
+  fetch(<span class="cs">'https://targetapp.com/graphql'</span>, {
+    method: <span class="cs">'POST'</span>,
+    credentials: <span class="cs">'include'</span>,    <span class="cm">// &larr; sends victim's session cookie</span>
+    headers: { <span class="cs">'Content-Type'</span>: <span class="cs">'application/json'</span> },
+    body: JSON.stringify({
+      query: <span class="cs">'mutation { updateEmail(email: "attacker@evil.com") { id } }'</span>
+    })
+  });
+&lt;/script&gt;
+<span class="cm">// Victim's email is now changed to attacker-controlled address</span>
+<span class="cm">// Next password reset goes to attacker &rarr; full account takeover</span>
+</pre>
+      <h5>Fix options</h5>
+<pre>
+<span class="cm"># Option 1 (best): Use Bearer token auth instead of cookies
+# Authorization: Bearer TOKEN is never sent automatically by browsers
+# Cross-origin JS cannot read/set the Authorization header without CORS approval</span>
+
+<span class="cm"># Option 2: SameSite=Strict on session cookie</span>
+<span class="cm"># Django setting:</span>
+<span class="lg">SESSION_COOKIE_SAMESITE = <span class="cs">'Strict'</span>  <span class="cm"># never sent in cross-origin requests</span></span>
+<span class="lg">CSRF_COOKIE_SAMESITE    = <span class="cs">'Strict'</span></span>
+
+<span class="cm"># Option 3: Enforce Content-Type: application/json</span>
+<span class="cm"># Simple HTML forms cannot send application/json (they use text/plain or multipart)
+# This blocks naive CSRF attacks but not fetch-based ones</span>
+<span class="cf">class</span> <span class="ck">JsonOnlyGraphQLView</span>(GraphQLView):
+    <span class="cf">def</span> <span class="cg">dispatch</span>(self, request, *args, **kwargs):
+<span class="lg">        ct = request.META.get(<span class="cs">'CONTENT_TYPE'</span>, <span class="cs">''</span>)</span>
+<span class="lg">        <span class="cf">if</span> request.method == <span class="cs">'POST'</span> <span class="cf">and</span> <span class="cs">'application/json'</span> <span class="cf">not in</span> ct:</span>
+<span class="lg">            <span class="cf">return</span> HttpResponseBadRequest(<span class="cs">"Content-Type must be application/json"</span>)</span>
+        <span class="cf">return</span> super().dispatch(request, *args, **kwargs)
+</pre>
+      <div class="pill-row"><span class="pill py">HIGH</span><span class="pill pg">Use Bearer auth</span><span class="pill py">SameSite=Strict</span><span class="pill py">CWE-352</span></div>
+    </div>
+  </div>
+
+  <!-- V8: FIELD SUGGESTIONS -->
+  <div class="vuln-card vc-med" id="v8" onclick="toggleVC('v8')">
+    <div class="vc-top">
+      <div><div class="vc-title">Field Suggestions &mdash; Schema Reconstruction Without Introspection</div><div class="vc-meta">Information leakage &bull; Bypasses disabled introspection &bull; Tool: Clairvoyance</div></div>
+      <span class="vc-sev sm">MEDIUM</span>
+    </div>
+    <div class="vc-body" id="v8-b">
+      <h5>The "Did you mean?" bypass</h5>
+      <p>GraphQL engines return helpful spelling suggestions in error messages: <em>"Cannot query field 'emailAdress'. Did you mean 'emailAddress'?"</em>. Even with introspection fully disabled, an attacker can reconstruct your schema by guessing field names and reading these suggestions. The tool Clairvoyance automates this completely.</p>
+<pre>
+<span class="cm"># Introspection disabled &mdash; but field suggestions still reveal the schema</span>
+<span class="gql">query</span> { user(id: <span class="gqlv">"1"</span>) { passwordhash } }
+
+<span class="cm"># Response:</span>
+{
+  <span class="cs">"errors"</span>: [{
+    <span class="cs">"message"</span>: <span class="cs">"Cannot query field 'passwordhash'. Did you mean 'passwordHash'?"</span>
+  }]
+}
+<span class="cm"># Attacker now knows the exact field name is 'passwordHash'
+
+# Clairvoyance automates this reconstruction:</span>
+$ python3 -m clairvoyance \
+    https://api.target.com/graphql \
+    -H <span class="cs">"Authorization: Bearer TOKEN"</span> \
+    -w /usr/share/wordlists/graphql-fields.txt \
+    -o recovered-schema.json
+<span class="cm"># Reconstructs full schema by iterating suggestions
+# Works even when introspection is disabled</span>
+
+<span class="cm"># Fix: disable field suggestions</span>
+<span class="cm"># Apollo Server:</span>
+<span class="cf">const</span> server = <span class="ck">new</span> ApolloServer({
+  typeDefs, resolvers,
+<span class="lg">  hideSchemaDetailsFromClientErrors: <span class="ck">true</span>,  <span class="cm">// removes "Did you mean...?" messages</span></span>
+})
+</pre>
+      <div class="pill-row"><span class="pill py">MEDIUM</span><span class="pill pg">Disable field suggestions in prod</span><span class="pill pt">Tool: Clairvoyance</span></div>
+    </div>
+  </div>
+
+  <!-- V9: SUBSCRIPTION AUTH -->
+  <div class="vuln-card vc-high" id="v9" onclick="toggleVC('v9')">
+    <div class="vc-top">
+      <div><div class="vc-title">Subscription Authorization Bypass</div><div class="vc-meta">WebSocket &bull; Auth at connection only &bull; Real-time data leak</div></div>
+      <span class="vc-sev sh">HIGH</span>
+    </div>
+    <div class="vc-body" id="v9-b">
+      <h5>Two-phase authorization for subscriptions</h5>
+      <p>GraphQL subscriptions open a persistent WebSocket that pushes events over time. Many implementations check authorization only at connection time &mdash; not on each event push. If permissions are revoked after subscription, the user continues receiving data. Worse: if there is no ownership check on the subscription argument, any user can subscribe to any other user's event stream.</p>
+<pre>
+<span class="cm"># VULNERABLE: ownership check missing on subscription argument</span>
+<span class="cf">@strawberry.subscription</span>
+<span class="cf">async def</span> <span class="cg">order_updates</span>(self, info, order_id: str):
+<span class="lb">    <span class="cf">async for</span> update <span class="cf">in</span> order_event_stream(order_id):</span>
+<span class="lb">        yield update  <span class="cm"># &larr; any user gets any order's events</span></span>
+
+<span class="cm"># Attack: subscribe to another user's order events</span>
+<span class="gql">subscription</span> {
+  orderUpdates(orderId: <span class="gqlv">"victim-order-uuid"</span>) { status totalAmount }
+}
+<span class="cm"># Attacker receives real-time payment and shipping updates for victim's order</span>
+
+<span class="cm"># FIXED: check ownership at setup AND filter per event</span>
+<span class="cf">@strawberry.subscription</span>
+<span class="cf">async def</span> <span class="cg">order_updates_fixed</span>(self, info, order_id: str):
+    requester = info.context.request.user
+<span class="lg">    order = <span class="cf">await</span> sync_to_async(Order.objects.get)(id=order_id)</span>
+<span class="lg">    <span class="cf">if</span> str(order.user_id) != str(requester.id) <span class="cf">and not</span> requester.is_staff:</span>
+<span class="lg">        <span class="cf">raise</span> PermissionError(<span class="cs">"Not your order"</span>)</span>
+    <span class="cf">async for</span> update <span class="cf">in</span> order_event_stream(order_id):
+<span class="lg">        <span class="cm"># Re-verify on each event: permissions may have changed</span></span>
+<span class="lg">        fresh_user = <span class="cf">await</span> sync_to_async(get_user)(requester.id)</span>
+<span class="lg">        <span class="cf">if</span> fresh_user.is_active:</span>
+<span class="lg">            yield update</span>
+</pre>
+      <div class="pill-row"><span class="pill py">HIGH</span><span class="pill pg">Check ownership at setup</span><span class="pill pg">Re-check per event</span></div>
+    </div>
+  </div>
+
+</div>
+<!-- INTERMEDIATE: TOOLS -->
+<div class="section">
+  <div class="eyebrow">&#x1F7E1; Intermediate &mdash; GraphQL Security Tools</div>
+  <div class="sec-title">The GraphQL security testing toolkit</div>
+  <div class="sec-sub">Generic web scanners don't understand GraphQL query structure. These four tools are the standard for GraphQL security testing.</div>
+
+  <div class="tool-tabs">
+    <div class="tool-tab-bar">
+      <div class="ttab active" onclick="switchTab(this,'t-inql')">InQL (Burp)</div>
+      <div class="ttab" onclick="switchTab(this,'t-clairvoyance')">Clairvoyance</div>
+      <div class="ttab" onclick="switchTab(this,'t-cop')">GraphQL Cop</div>
+      <div class="ttab" onclick="switchTab(this,'t-altair')">Altair</div>
+    </div>
+
+    <div class="tool-pane active" id="t-inql">
+      <p style="font-size:13.5px;color:var(--ink2);line-height:1.75;margin-bottom:1rem;">InQL is a Burp Suite extension built specifically for GraphQL. It sends the introspection query automatically, parses the schema, and generates a template query for every type and field. You get a complete, organised attack surface map inside Burp in seconds. Install from BApp Store &rarr; search "InQL".</p>
+<pre>
+<span class="cm"># InQL workflow</span>
+<span class="cm"># 1. Extensions &rarr; InQL &rarr; enter target URL</span>
+<span class="cm"># 2. InQL runs introspection, builds schema tree in sidebar</span>
+<span class="cm"># 3. Click Query &rarr; user &rarr; InQL generates template:</span>
+<span class="gql">query</span> {
+  user(id: <span class="gqlv">""</span>) {
+    id name email role passwordHash   <span class="cm"># &larr; ALL fields listed</span>
+    orders { id total }
+  }
+}
+<span class="cm"># 4. Send to Repeater, change id to another user's UUID &rarr; test BOLA
+# 5. Browse Mutations tab &rarr; find makeUserAdmin, exportData, etc.</span>
+
+<span class="cm"># InQL CLI mode:</span>
+$ pip install inql
+$ inql -t https://api.target.com/graphql \
+       -H <span class="cs">"Authorization: Bearer TOKEN"</span> \
+       -d ./inql-output/
+<span class="cm"># Outputs: queries/ mutations/ subscriptions/ schema.json</span>
+</pre>
+    </div>
+
+    <div class="tool-pane" id="t-clairvoyance">
+      <p style="font-size:13.5px;color:var(--ink2);line-height:1.75;margin-bottom:1rem;">Clairvoyance reconstructs a GraphQL schema even when introspection is disabled, by exploiting field suggestions in error messages. It uses a wordlist to guess field names, reading "Did you mean...?" responses to confirm each one. Essential when the target has disabled introspection.</p>
+<pre>
+$ pip install clairvoyance
+
+$ python3 -m clairvoyance \
+    https://api.target.com/graphql \
+    -H <span class="cs">"Authorization: Bearer TOKEN"</span> \
+    -w /usr/share/wordlists/graphql-fields.txt \
+    -o recovered-schema.json
+
+<span class="cm"># How it works internally:
+# 1. Sends: query { unknownField } &rarr; gets suggestion "Did you mean 'user'?"
+# 2. Confirms 'user' exists, queries user { unknownField }
+# 3. Gets suggestions for nested fields &rarr; builds tree
+# 4. Continues until full schema reconstructed
+#
+# Effective against: APIs with introspection disabled but suggestions enabled
+# Fix: disable BOTH introspection AND field suggestions in production</span>
+</pre>
+    </div>
+
+    <div class="tool-pane" id="t-cop">
+      <p style="font-size:13.5px;color:var(--ink2);line-height:1.75;margin-bottom:1rem;">GraphQL Cop audits a GraphQL endpoint for common security misconfigurations in seconds. It checks introspection, batching, depth limits, field suggestions, trace headers, GET mutations, and more. Run it first in any GraphQL security engagement &mdash; it gives you an instant baseline report.</p>
+<pre>
+$ pip install graphql-cop
+
+$ graphql-cop \
+    -t https://api.target.com/graphql \
+    -H <span class="cs">"Authorization: Bearer TOKEN"</span> \
+    --output json &gt; gql-cop-report.json
+
+<span class="cm"># Sample output:</span>
+[
+  { <span class="cs">"title"</span>: <span class="cs">"Introspection Enabled"</span>,         <span class="cs">"severity"</span>: <span class="cs">"HIGH"</span>    },
+  { <span class="cs">"title"</span>: <span class="cs">"Batch Query Attack"</span>,             <span class="cs">"severity"</span>: <span class="cs">"HIGH"</span>    },
+  { <span class="cs">"title"</span>: <span class="cs">"Field Suggestions Enabled"</span>,       <span class="cs">"severity"</span>: <span class="cs">"MEDIUM"</span>  },
+  { <span class="cs">"title"</span>: <span class="cs">"GET Method Mutation Allowed"</span>,     <span class="cs">"severity"</span>: <span class="cs">"MEDIUM"</span>  },
+  { <span class="cs">"title"</span>: <span class="cs">"No Query Depth Limit Detected"</span>,   <span class="cs">"severity"</span>: <span class="cs">"HIGH"</span>    }
+]
+
+<span class="cm"># Use in CI/CD: fail if any HIGH findings</span>
+$ graphql-cop -t https://staging.api.com/graphql | \
+  python3 -c "import sys,json; d=json.load(sys.stdin);
+  h=[x for x in d if x['severity']=='HIGH'];
+  sys.exit(1) if h else None"
+</pre>
+    </div>
+
+    <div class="tool-pane" id="t-altair">
+      <p style="font-size:13.5px;color:var(--ink2);line-height:1.75;margin-bottom:1rem;">Altair is a GraphQL-aware desktop client for manual testing. Unlike curl, it loads the schema via introspection and gives you autocomplete, query building, and subscription testing over WebSocket. Essential for manual BOLA testing, mutation exploration, and subscription authorization checks.</p>
+<pre>
+<span class="cm"># Altair desktop app: altairgraphql.dev
+# Also available as browser extension
+
+# BOLA test workflow in Altair:
+# 1. Set Authorization: Bearer USER_A_TOKEN in headers
+# 2. Run: query { me { id orders { id total } } } &rarr; note order IDs
+# 3. Change header to: Authorization: Bearer USER_B_TOKEN
+# 4. Run: query { order(id: "user-a-order-id") { id total items { name } } }
+# 5. 200 with data &rarr; BOLA confirmed
+
+# Subscription test workflow:
+# 1. Change transport to WebSocket in Altair settings
+# 2. Enter subscription endpoint: wss://api.target.com/graphql
+# 3. Run:</span>
+<span class="gql">subscription</span> {
+  orderUpdates(orderId: <span class="gqlv">"victim-order-uuid"</span>) {
+    status totalAmount
+  }
+}
+<span class="cm"># If events received &rarr; subscription authorization bypass
+# Fix: ownership check on order_id in the subscription resolver</span>
+</pre>
+    </div>
+  </div>
+</div>
+
+<!-- ADVANCED: HARDENING -->
+<div class="section">
+  <div class="eyebrow">&#x1F534; Advanced &mdash; Production Hardening</div>
+  <div class="sec-title">Production-safe GraphQL configuration</div>
+  <div class="sec-sub">Every security control that must be in place before a GraphQL API goes live. Each control maps directly to an attack class above.</div>
+
+  <div class="panel" id="pan-hardening">
+    <div class="panel-h" onclick="tp('pan-hardening')">
+      <div class="panel-dot" style="background:var(--green)"></div>
+      <div class="panel-title">Complete hardened configuration &mdash; Strawberry + Django</div>
+      <div class="panel-sub">A single schema.py showing every production security control applied together</div>
+      <div class="panel-tog">&#x25BC;</div>
+    </div>
+    <div class="panel-body">
+<pre>
+<span class="ctag">python / strawberry</span>
+<span class="cm"># graphql/security_extensions.py &mdash; custom extensions</span>
+<span class="cf">import</span> os
+<span class="cf">from</span> strawberry.extensions <span class="cf">import</span> SchemaExtension
+<span class="cf">from</span> graphql <span class="cf">import</span> GraphQLError
+
+<span class="cf">class</span> <span class="ck">DisableIntrospection</span>(SchemaExtension):
+    <span class="cf">def</span> <span class="cg">on_executing_start</span>(self):
+        q = self.execution_context.query <span class="cf">or</span> <span class="cs">""</span>
+<span class="lg">        <span class="cf">if</span> <span class="cs">"__schema"</span> <span class="cf">in</span> q <span class="cf">or</span> <span class="cs">"__type"</span> <span class="cf">in</span> q:</span>
+<span class="lg">            <span class="cf">raise</span> GraphQLError(<span class="cs">"Introspection is disabled"</span>)</span>
+
+<span class="cf">class</span> <span class="ck">LimitAliases</span>(SchemaExtension):
+    MAX = <span class="ce">5</span>
+    <span class="cf">def</span> <span class="cg">on_executing_start</span>(self):
+        n = len(self.execution_context.operation.selection_set.selections)
+<span class="lg">        <span class="cf">if</span> n &gt; self.MAX:</span>
+<span class="lg">            <span class="cf">raise</span> GraphQLError(<span class="cs">f"Max {self.MAX} aliases/operations per request"</span>)</span>
+
+<span class="cf">class</span> <span class="ck">MaskProductionErrors</span>(SchemaExtension):
+    <span class="cm"># Hide stack traces and field suggestions in production</span>
+    <span class="cf">def</span> <span class="cg">on_executing_end</span>(self):
+        <span class="cf">if</span> os.getenv(<span class="cs">"ENVIRONMENT"</span>) == <span class="cs">"production"</span>:
+            result = self.execution_context.result
+            <span class="cf">if</span> result <span class="cf">and</span> result.errors:
+                <span class="cf">for</span> err <span class="cf">in</span> result.errors:
+<span class="lg">                    <span class="cf">if</span> <span class="cs">"Did you mean"</span> <span class="cf">in</span> str(err.message):</span>
+<span class="lg">                        err.message = <span class="cs">"Unknown field"</span></span>
+
+<span class="cm"># graphql/schema.py &mdash; production schema assembly</span>
+<span class="cf">import</span> strawberry
+<span class="cf">from</span> strawberry.extensions <span class="cf">import</span> QueryDepthLimiter, MaxTokensLimiter
+<span class="cf">from</span> .security_extensions <span class="cf">import</span> DisableIntrospection, LimitAliases, MaskProductionErrors
+<span class="cf">from</span> strawberry_django.optimizer <span class="cf">import</span> DjangoOptimizerExtension
+
+IS_PROD = os.getenv(<span class="cs">"ENVIRONMENT"</span>) == <span class="cs">"production"</span>
+
+schema = strawberry.Schema(
+    query=Query,
+    mutation=Mutation,
+    subscription=Subscription,
+    extensions=[
+<span class="lg">        QueryDepthLimiter(max_depth=<span class="ce">7</span>),          <span class="cm"># prevents DoS via deep nesting</span></span>
+<span class="lg">        MaxTokensLimiter(max_token_count=<span class="ce">1000</span>),   <span class="cm"># prevents huge query documents</span></span>
+<span class="lg">        LimitAliases(),                           <span class="cm"># prevents batching attack</span></span>
+<span class="lg">        DjangoOptimizerExtension(),               <span class="cm"># solves N+1 via DataLoader</span></span>
+<span class="lg">        *([DisableIntrospection(), MaskProductionErrors()] <span class="cf">if</span> IS_PROD <span class="cf">else</span> []),</span>
+    ]
+)
+
+<span class="cm"># urls.py &mdash; separate endpoints for public and admin</span>
+urlpatterns = [
+<span class="lg">    path(<span class="cs">"graphql/"</span>,       JsonOnlyGraphQLView.as_view(schema=public_schema)),</span>
+<span class="lg">    path(<span class="cs">"graphql/admin/"</span>, AdminGraphQLView.as_view(schema=admin_schema)),  <span class="cm"># VPN only</span></span>
+]
+
+<span class="cm"># settings.py &mdash; CSRF &amp; cookie hardening</span>
+<span class="lg">SESSION_COOKIE_SAMESITE   = <span class="cs">'Strict'</span></span>
+<span class="lg">SESSION_COOKIE_HTTPONLY   = True</span>
+<span class="lg">SESSION_COOKIE_SECURE     = True   <span class="cm"># HTTPS only</span></span>
+<span class="lg">SECURE_BROWSER_XSS_FILTER = True</span>
+</pre>
+    </div>
+  </div>
+
+  <div class="panel" id="pan-apollo-hardening">
+    <div class="panel-h" onclick="tp('pan-apollo-hardening')">
+      <div class="panel-dot" style="background:var(--blue)"></div>
+      <div class="panel-title">Apollo Server (Node.js) &mdash; production configuration</div>
+      <div class="panel-sub">The same controls applied to the most common Node.js GraphQL stack</div>
+      <div class="panel-tog">&#x25BC;</div>
+    </div>
+    <div class="panel-body">
+<pre>
+<span class="ctag">Node.js / Apollo</span>
+<span class="cf">const</span> { ApolloServer } = require(<span class="cs">'@apollo/server'</span>)
+<span class="cf">const</span> depthLimit    = require(<span class="cs">'graphql-depth-limit'</span>)
+<span class="cf">const</span> costAnalysis  = require(<span class="cs">'graphql-cost-analysis'</span>)
+
+<span class="cf">const</span> IS_PROD = process.env.NODE_ENV === <span class="cs">'production'</span>
+
+<span class="cf">const</span> server = <span class="ck">new</span> ApolloServer({
+  typeDefs,
+  resolvers,
+
+  <span class="cm">// 1. Disable introspection &amp; playground in production</span>
+<span class="lg">  introspection: !IS_PROD,</span>
+<span class="lg">  plugins: IS_PROD ? [ApolloServerPluginLandingPageDisabled()] : [],</span>
+
+  <span class="cm">// 2. Hide schema details from error messages</span>
+<span class="lg">  hideSchemaDetailsFromClientErrors: IS_PROD,</span>
+
+  <span class="cm">// 3. Disable array batching</span>
+<span class="lg">  allowBatchedHttpRequests: <span class="ck">false</span>,</span>
+
+  <span class="cm">// 4. Depth limit + complexity limit</span>
+<span class="lg">  validationRules: [</span>
+<span class="lg">    depthLimit(<span class="ce">7</span>),</span>
+<span class="lg">    costAnalysis({ maximumCost: <span class="ce">1000</span>, defaultCost: <span class="ce">1</span> }),</span>
+<span class="lg">  ],</span>
+
+  <span class="cm">// 5. Request timeout (prevents long-running DoS queries)</span>
+<span class="lg">  context: async ({ req }) =&gt; {</span>
+<span class="lg">    <span class="cf">const</span> user = <span class="cf">await</span> authenticateRequest(req)</span>
+<span class="lg">    <span class="cf">return</span> { user, requestId: crypto.randomUUID() }</span>
+<span class="lg">  },</span>
+})
+
+<span class="cm">// 6. Persisted queries (only pre-approved queries accepted in prod)</span>
+<span class="cm">// Clients send a hash instead of the full query text</span>
+<span class="cm">// Server looks up the hash in its allowlist</span>
+<span class="cm">// Unknown hashes rejected &rarr; attackers can't run arbitrary queries</span>
+<span class="cf">const</span> server = <span class="ck">new</span> ApolloServer({
+  typeDefs, resolvers,
+<span class="lg">  persistedQueries: {</span>
+<span class="lg">    cache: <span class="ck">new</span> InMemoryLRUCache({ maxSize: Math.pow(<span class="ce">2</span>, <span class="ce">20</span>) }),</span>
+<span class="lg">  },</span>
+})
+</pre>
+    </div>
+  </div>
+
+  <!-- CI/CD pipeline for GraphQL -->
+  <div class="panel" id="pan-cicd">
+    <div class="panel-h" onclick="tp('pan-cicd')">
+      <div class="panel-dot" style="background:var(--purple)"></div>
+      <div class="panel-title">CI/CD security gate for GraphQL APIs</div>
+      <div class="panel-sub">GitHub Actions pipeline that runs GraphQL Cop and custom security tests on every PR</div>
+      <div class="panel-tog">&#x25BC;</div>
+    </div>
+    <div class="panel-body">
+<pre>
+<span class="ctag">github-actions</span>
+<span class="cm"># .github/workflows/graphql-security.yml</span>
+name: GraphQL Security
+
+on:
+  pull_request: { branches: [main, staging] }
+  push: { branches: [main] }
+
+jobs:
+  graphql-security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+
+      - name: Start application
+        run: |
+          pip install -r requirements.txt
+          python manage.py migrate
+          python manage.py runserver 0.0.0.0:8000 &amp;
+          sleep 5
+        env:
+          ENVIRONMENT: staging
+          SECRET_KEY: ci-only-key
+
+      - name: Get test token
+        id: auth
+        run: |
+          TOKEN=$(curl -s -X POST http://localhost:8000/api/auth/login \
+            -H "Content-Type: application/json" \
+            -d '{"email":"testuser@ci.com","password":"testpass"}' \
+            | python3 -c "import sys,json; print(json.load(sys.stdin)['token'])")
+          echo "token=$TOKEN" &gt;&gt; $GITHUB_OUTPUT
+
+      <span class="cm"># Gate 1: GraphQL Cop misconfiguration scan</span>
+      - name: GraphQL Cop scan
+        run: |
+          pip install graphql-cop
+          graphql-cop \
+            -t http://localhost:8000/graphql \
+            -H "Authorization: Bearer ${{ steps.auth.outputs.token }}" \
+            --output json &gt; cop-report.json
+          HIGH=$(cat cop-report.json | python3 -c \
+            "import sys,json; d=json.load(sys.stdin);
+            h=[x for x in d if x.get('severity')=='HIGH'];
+            print(len(h))")
+          echo "High severity findings: $HIGH"
+          [ "$HIGH" -eq "0" ] || { echo "GraphQL security gate FAILED"; exit 1; }
+
+      <span class="cm"># Gate 2: Custom pytest &mdash; BOLA, depth limit, batching</span>
+      - name: Run GraphQL security tests
+        run: |
+          pip install pytest requests
+          pytest tests/graphql_security/ -v --tb=short
+        env:
+          API_BASE: http://localhost:8000
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: graphql-security-reports
+          path: cop-report.json
+</pre>
+    </div>
+  </div>
+
+  <!-- SECURE SCHEMA DESIGN -->
+  <div class="panel" id="pan-schema-design">
+    <div class="panel-h" onclick="tp('pan-schema-design')">
+      <div class="panel-dot" style="background:var(--teal)"></div>
+      <div class="panel-title">Secure schema design principles</div>
+      <div class="panel-sub">Design choices at schema definition time that prevent entire vulnerability classes</div>
+      <div class="panel-tog">&#x25BC;</div>
+    </div>
+    <div class="panel-body">
+      <table>
+        <tr><th>Principle</th><th>Implementation</th><th>Prevents</th></tr>
+        <tr><td style="font-weight:600;color:var(--green)">Never expose internal types</td><td>Create separate public-facing types vs internal types. <code>UserPublic</code> has name and email. <code>UserInternal</code> has passwordHash and ssn. Public resolvers return only <code>UserPublic</code>.</td><td>Excessive data exposure (API3)</td></tr>
+        <tr><td style="font-weight:600;color:var(--green)">Restrict input types</td><td>Create separate input types for each operation. <code>UpdateProfileInput</code> only accepts name and bio. Never use the full User type as a mutation input.</td><td>Mass assignment (API3)</td></tr>
+        <tr><td style="font-weight:600;color:var(--green)">Use UUIDs in IDs</td><td>All object IDs exposed to the client should be UUID v4, not sequential integers. GraphQL ID scalar type should map to UUID in the backing store.</td><td>BOLA enumeration</td></tr>
+        <tr><td style="font-weight:600;color:var(--green)">Avoid nullable fields for sensitive data</td><td>Make sensitive fields explicitly non-nullable when they should always be present, so omission is visible in schema diffs during code review.</td><td>Accidental data omission bugs</td></tr>
+        <tr><td style="font-weight:600;color:var(--blue)">Paginate all list fields</td><td>Every list resolver must accept <code>first</code>/<code>after</code> arguments (cursor pagination) with a server-enforced maximum of 100. Reject requests for unlimited lists.</td><td>DoS via unbounded lists (API4)</td></tr>
+        <tr><td style="font-weight:600;color:var(--blue)">Add deprecation lifecycle</td><td>Mark fields deprecated before removing them. After 2 deprecation cycles, remove the field from the schema entirely. Monitor usage before removal.</td><td>API9 shadow/forgotten fields</td></tr>
+      </table>
+<pre>
+<span class="cm"># Good schema design in Strawberry</span>
+<span class="cf">@strawberry.input</span>
+<span class="cf">class</span> <span class="ck">UpdateProfileInput</span>:
+<span class="lg">    name: str                    <span class="cm"># only writable fields</span></span>
+<span class="lg">    bio: strawberry.auto</span>
+<span class="lg">    avatar_url: str | None = None</span>
+<span class="cm">    # role, is_admin, credit_balance are NOT here &rarr; mass assignment prevented</span>
+
+<span class="cf">@strawberry.type</span>
+<span class="cf">class</span> <span class="ck">UserPublic</span>:
+<span class="lg">    id: strawberry.ID            <span class="cm"># UUID in DB, exposed as opaque ID</span></span>
+<span class="lg">    name: str</span>
+<span class="lg">    bio: str | None</span>
+<span class="cm">    # password_hash, ssn, internal_note are NOT here &rarr; no accidental exposure</span>
+
+<span class="cf">@strawberry.type</span>
+<span class="cf">class</span> <span class="ck">UserConnection</span>:       <span class="cm"># cursor pagination wrapper</span>
+    edges: list[UserPublic]
+    page_info: PageInfo
+    total_count: int
+
+<span class="cf">@strawberry.type</span>
+<span class="cf">class</span> <span class="ck">Query</span>:
+    <span class="cf">@strawberry.field</span>
+    <span class="cf">def</span> <span class="cg">users</span>(self, info, first: int = <span class="ce">20</span>, after: str | None = None) -&gt; UserConnection:
+<span class="lg">        first = min(first, <span class="ce">100</span>)   <span class="cm"># server-enforced maximum</span></span>
+        <span class="cf">return</span> paginate(User.objects.all(), first, after)
+</pre>
+    </div>
+  </div>
+</div>
+<!-- QUIZ -->
+<div class="section">
+  <div class="eyebrow">Knowledge Check</div>
+  <div class="sec-title">GraphQL security interview questions</div>
+  <div class="sec-sub">These questions appear in AppSec engineer interviews at companies with GraphQL APIs.</div>
+
+  <div class="quiz-block">
+    <div class="quiz-q">Q1. A developer argues that "GraphQL's strong type system prevents SQL injection because all inputs are validated against the schema." Is this correct? Explain your answer.</div>
+    <div class="quiz-opts" id="q1">
+      <div class="qo" onclick="doQ('q1',this,'wrong')">Correct &mdash; the type system validates all inputs, so injection is not possible</div>
+      <div class="qo" onclick="doQ('q1',this,'wrong')">Partially correct &mdash; it prevents integer injection but not string injection</div>
+      <div class="qo" onclick="doQ('q1',this,'correct')">Incorrect. GraphQL's type system validates the SHAPE of input (is this a String? is this an Int?) but does NOT sanitize the VALUE. A String argument containing SQL injection payload &mdash; such as a single quote followed by OR 1=1 &mdash; is a perfectly valid String that passes type validation. If the resolver passes that value to a raw SQL query without parameterization, injection is fully exploitable. The fix is the same as REST: use an ORM, or parameterized queries.</div>
+      <div class="qo" onclick="doQ('q1',this,'wrong')">Incorrect in theory, but GraphQL resolvers always use ORMs so it's not a practical concern</div>
+    </div>
+    <div class="quiz-exp" id="q1-exp">This is one of the most common GraphQL security misconceptions. The type system is a syntactic validator, not a semantic sanitizer. It ensures that if a field is typed as Int, you cannot pass a string there. But it says nothing about the content of a String. An attacker can pass a valid GraphQL String that contains SQL metacharacters, SSTI payloads, path traversal sequences, or MongoDB operators. Protection from injection requires the same patterns as always: use ORM methods that parameterize automatically, never concatenate user input into query strings.</div>
+  </div>
+
+  <div class="quiz-block">
+    <div class="quiz-q">Q2. Your team disabled GraphQL introspection in production two months ago. A security researcher reports they were still able to reconstruct your full schema. How is this possible and what additional control should you have implemented?</div>
+    <div class="quiz-opts" id="q2">
+      <div class="qo" onclick="doQ('q2',this,'wrong')">Not possible &mdash; if introspection is disabled, the schema cannot be discovered</div>
+      <div class="qo" onclick="doQ('q2',this,'wrong')">The researcher found an old version of the API with introspection still enabled</div>
+      <div class="qo" onclick="doQ('q2',this,'correct')">Field suggestions were still enabled. When a field name is slightly misspelled, the GraphQL engine responds with "Did you mean fieldName?". A tool called Clairvoyance automates guessing field names and reading these suggestions to reconstruct the full schema without introspection. The fix: disable both introspection AND field suggestions in production. Apollo: hideSchemaDetailsFromClientErrors: true. Strawberry: custom extension that strips "Did you mean" from error messages.</div>
+      <div class="qo" onclick="doQ('q2',this,'wrong')">The researcher guessed the endpoint URL and then guessed all field names manually</div>
+    </div>
+    <div class="quiz-exp" id="q2-exp">Introspection and field suggestions are two independent schema disclosure mechanisms. Disabling introspection is necessary but not sufficient. Field suggestions (the "Did you mean...?" error messages) provide the same information incrementally. Clairvoyance iterates through a wordlist of common field names, confirms each hit from the error message, then probes nested types. It can reconstruct a full schema in minutes. The complete fix requires disabling both. In Apollo Server: <code>hideSchemaDetailsFromClientErrors: true</code>. In Strawberry: a custom extension that rewrites error messages containing "Did you mean" to a generic "Unknown field" message.</div>
+  </div>
+
+  <div class="quiz-block">
+    <div class="quiz-q">Q3. You are testing a GraphQL API that has a login mutation. The API uses per-request rate limiting: 5 requests per minute per IP. How would you conduct a credential stuffing attack that bypasses this rate limit, and what is the correct fix?</div>
+    <div class="quiz-opts" id="q3">
+      <div class="qo" onclick="doQ('q3',this,'wrong')">Use rotating proxies to change your IP address for each attempt</div>
+      <div class="qo" onclick="doQ('q3',this,'wrong')">Use a slow timing attack to stay under the 5/minute threshold</div>
+      <div class="qo" onclick="doQ('q3',this,'correct')">Use GraphQL query aliases: send a single HTTP request containing 100 aliased login mutations. The rate limiter counts 1 request; the server executes 100 login attempts. The correct fix has two parts: (1) limit the number of aliases per query at the schema level, and (2) implement per-resolver rate limiting by email/account, not just by HTTP request count. Account-level limiting is more important because it cannot be bypassed by any batching technique.</div>
+      <div class="qo" onclick="doQ('q3',this,'wrong')">Send the mutations as an array in the request body to trigger batching</div>
+    </div>
+    <div class="quiz-exp" id="q3-exp">The alias-based batch attack is the most effective: one HTTP request contains dozens of aliased mutations, each with a different password. The HTTP rate limiter increments by 1. The resolver executes each alias independently. Array batching also works if the server allows it. The fixes: (1) Alias limit: detect the number of operations in the query document and reject if above a threshold (e.g., 5). (2) Per-resolver rate limiting by the target account (email address), not by HTTP request count. An attacker can rotate aliases and change IPs, but they cannot change which email they are targeting. Rate limiting per email is the only control that actually works for credential stuffing on GraphQL.</div>
+  </div>
+
+  <div class="quiz-block">
+    <div class="quiz-q">Q4. What is the difference between authorization for a REST endpoint and authorization for a GraphQL resolver, and why does the GraphQL approach require more discipline to implement correctly?</div>
+    <div class="quiz-opts" id="q4">
+      <div class="qo" onclick="doQ('q4',this,'wrong')">There is no difference &mdash; both require authentication middleware at the request level</div>
+      <div class="qo" onclick="doQ('q4',this,'wrong')">GraphQL is simpler because there is only one endpoint to protect</div>
+      <div class="qo" onclick="doQ('q4',this,'correct')">REST: add one middleware or decorator to the endpoint function and every call is protected. GraphQL: every field in the schema has its own resolver function and each resolver must independently verify authorization. Protecting the top-level query resolver does not protect nested field resolvers. A missing check on one field resolver exposes everything reachable through that field to anyone who can reach the parent. This requires per-field permission classes or centralized authorization utilities that developers must consciously apply to every resolver.</div>
+      <div class="qo" onclick="doQ('q4',this,'wrong')">GraphQL has built-in authorization via the @auth directive which REST lacks</div>
+    </div>
+    <div class="quiz-exp" id="q4-exp">The key insight is that GraphQL's type system connects data in a graph. Protecting a node in the graph does not protect nodes reachable from it. Example: you add IsAuthenticated to the <code>user</code> query. That protects the query itself. But the <code>orders</code> field on the User type has its own resolver, and if that resolver lacks an ownership check, any authenticated user can call user(id: "anyone") to reach their orders. REST has natural compartmentalization: a permission check on GET /orders/{id} protects that endpoint only, and a separate check on GET /users/{id} protects that one. GraphQL requires discipline to apply checks at every level of the type graph, which is why automated permission classes (like Strawberry's BasePermission applied per-field) are important for consistency.</div>
+  </div>
+</div>
+
+<!-- CHALLENGE -->
+<div class="challenge">
+  <div class="ch-ey">Capstone Challenge &mdash; Full GraphQL Security Audit</div>
+  <div class="ch">
+    <h3>Audit and harden this GraphQL schema</h3>
+    <p class="ch-desc">Below is a GraphQL schema and resolver code for a social media API. It has multiple security vulnerabilities. For each one: name the vulnerability category, explain the attack, and write the exact fix. Then write the complete production hardening configuration.</p>
+    <div class="scenario">
+<pre style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:5px;padding:1rem;font-size:11.5px;color:rgba(255,255,255,.65);margin:0;">
+<span style="color:rgba(255,255,255,.35);"># schema (simplified)</span>
+type Query {
+  user(id: ID!): User
+  searchPosts(keyword: String!): [Post]
+  allUsers(limit: Int): [User]
+}
+type Mutation {
+  login(email: String!, password: String!): AuthPayload
+  updateUser(id: ID!, input: UserInput!): User
+  deleteUser(userId: ID!): Boolean
+  exportAllData: ExportJob
+}
+type User {
+  id: ID!
+  email: String!
+  passwordHash: String!
+  isAdmin: Boolean!
+  posts: [Post!]
+  friends: [User!]     # circular relation
+}
+input UserInput {
+  name: String
+  bio: String
+  isAdmin: Boolean     # writable!
+  passwordHash: String # writable!
+}
+
+<span style="color:rgba(255,255,255,.35);"># resolvers (Python/Strawberry, simplified)</span>
+def user(self, info, id: str) -&gt; User:
+    return User.objects.get(id=id)          # no ownership check
+
+def search_posts(self, info, keyword: str):
+    sql = f"SELECT * FROM posts WHERE content LIKE '%{keyword}%'"
+    return db.execute(sql).fetchall()       # raw SQL
+
+def all_users(self, info, limit: int = 100):
+    return User.objects.all()[:limit]       # no max enforced
+
+def update_user(self, info, id: str, input: UserInput):
+    return User.objects.filter(id=id).update(**input.__dict__)  # no ownership
+
+def delete_user(self, info, user_id: str):
+    User.objects.filter(id=user_id).delete()  # no role check
+
+def export_all_data(self, info):
+    return ExportJob.create_all()           # no role check</pre>
+    </div>
+    <textarea id="ch-ans" placeholder="Vulnerability 1 - Category: ... Attack: ... Fix: ...
+Vulnerability 2 - Category: ... Attack: ... Fix: ...
+...list all vulnerabilities...
+
+Production hardening config:
+- Extensions applied:
+- Schema changes:
+- Settings:"></textarea>
+    <div class="btn-row">
+      <button class="btn btn-p" onclick="checkCh()">Submit</button>
+      <button class="btn btn-g" onclick="revealCh()">Reveal model answer</button>
+    </div>
+    <div class="ch-fb" id="ch-fb"></div>
+  </div>
+</div>
+
+<!-- SUMMARY -->
+<div class="section">
+  <div class="eyebrow">Quick Reference</div>
+  <div class="sec-title">GraphQL security cheat sheet</div>
+  <table>
+    <tr><th>Vulnerability</th><th>Root Cause</th><th>Fix</th><th>Tool to detect</th></tr>
+    <tr><td style="font-weight:700;color:var(--orange)">Introspection enabled</td><td>Default on in all libraries</td><td>Disable in production via config flag</td><td>GraphQL Cop</td></tr>
+    <tr><td style="font-weight:700;color:var(--red)">BOLA in resolvers</td><td>Missing ownership check per resolver</td><td>Check <code>source.user_id == request.user.id</code> in every resolver</td><td>Altair manual, InQL</td></tr>
+    <tr><td style="font-weight:700;color:var(--orange)">DoS via deep nesting</td><td>No depth limit on query parsing</td><td><code>QueryDepthLimiter(max_depth=7)</code></td><td>GraphQL Cop, manual</td></tr>
+    <tr><td style="font-weight:700;color:var(--orange)">Batching rate limit bypass</td><td>Rate limit counts HTTP requests, not operations</td><td>Disable array batching; limit aliases per query; rate limit per-resolver</td><td>GraphQL Cop, manual</td></tr>
+    <tr><td style="font-weight:700;color:var(--red)">Injection via arguments</td><td>Type system validates shape, not values</td><td>Use ORM; never concatenate arguments into raw queries</td><td>Burp Scanner, manual</td></tr>
+    <tr><td style="font-weight:700;color:var(--orange)">Hidden admin mutations</td><td>No role check on admin resolver functions</td><td>Separate admin schema OR permission class on every admin mutation</td><td>InQL introspection review</td></tr>
+    <tr><td style="font-weight:700;color:var(--orange)">CSRF via mutations</td><td>Cookie auth + no SameSite policy</td><td>Use Bearer tokens OR set SameSite=Strict on session cookie</td><td>Manual</td></tr>
+    <tr><td style="font-weight:700;color:var(--yellow)">Field suggestions disclosure</td><td>Error messages contain "Did you mean?" with real field names</td><td><code>hideSchemaDetailsFromClientErrors: true</code></td><td>Clairvoyance</td></tr>
+    <tr><td style="font-weight:700;color:var(--orange)">Subscription auth bypass</td><td>Auth checked at connection, not per pushed event</td><td>Check ownership at setup AND filter events per push</td><td>Altair WebSocket test</td></tr>
+    <tr><td style="font-weight:700;color:var(--red)">Mass assignment via input types</td><td>Input type includes privileged fields like isAdmin</td><td>Create separate, restricted input types per operation</td><td>InQL + manual</td></tr>
+  </table>
+</div>
+
+<!-- NAV FOOTER -->
+<div class="nav-footer">
+  <a class="nf-btn" href="#"><span class="nf-dir">&larr; Previous</span><span class="nf-title">09 &mdash; API Security Testing</span></a>
+  <a class="nf-btn next" href="#"><span class="nf-dir">Next Lesson &rarr;</span><span class="nf-title">11 &mdash; DevSecOps Pipeline</span></a>
+</div>
+
+</div>
+</div>
+
+<!-- REVEAL HTML stored in hidden DOM - no HTML in JS strings -->
+<div id="reveal-html" style="display:none">
+<strong>Model Answer &mdash; Vulnerabilities Found:</strong><br><br>
+<strong>Vulnerability 1 &mdash; BOLA on user() resolver (CRITICAL, OWASP API1):</strong><br>
+Attack: Any authenticated user calls query { user(id: "victim-uuid") { email passwordHash isAdmin posts { ... } } } and gets full victim data including passwordHash. No ownership check exists.<br>
+Fix: Add ownership check: if str(id) != str(info.context.request.user.id) and not requester.is_staff: raise PermissionError("Not authorized"). Also: never expose passwordHash in the User type &mdash; remove it entirely from the schema (see Vuln 4).<br><br>
+<strong>Vulnerability 2 &mdash; SQL Injection in searchPosts() (CRITICAL, CWE-89):</strong><br>
+Attack: query { searchPosts(keyword: "' UNION SELECT email,password_hash,null FROM users--") { content } } &mdash; returns all email/password pairs in the content field. GraphQL String type validation does not prevent this because the type system validates shape, not value.<br>
+Fix: Replace raw SQL with ORM: return list(Post.objects.filter(content__icontains=keyword)). The ORM parameterizes automatically.<br><br>
+<strong>Vulnerability 3 &mdash; BOLA on updateUser() (CRITICAL, OWASP API1):</strong><br>
+Attack: Any user can PATCH any other user's profile by supplying a different id. No ownership check exists. Combined with Vulnerability 4 (mass assignment), this allows privilege escalation on any account.<br>
+Fix: Check str(id) == str(request.user.id) or request.user.is_staff before updating.<br><br>
+<strong>Vulnerability 4 &mdash; Mass Assignment via UserInput (HIGH, OWASP API3):</strong><br>
+Attack: mutation { updateUser(id: "my-uuid", input: { isAdmin: true, passwordHash: "attacker_hash" }) { isAdmin } } &mdash; UserInput accepts isAdmin and passwordHash as writable fields. Any user can make themselves admin or set an arbitrary password hash.<br>
+Fix: Remove isAdmin and passwordHash from UserInput entirely. Create a restricted input type: input UpdateProfileInput { name: String, bio: String } &mdash; privileged fields are not writable through the API.<br><br>
+<strong>Vulnerability 5 &mdash; BFLA on deleteUser() and exportAllData() (HIGH, OWASP API5):</strong><br>
+Attack: Any authenticated user can call mutation { deleteUser(userId: "victim-uuid") } to delete any account, or exportAllData to get all user data. No role check on either resolver.<br>
+Fix: Add IsAdmin permission class to both resolvers. Better: move deleteUser and exportAllData to a separate admin schema at /graphql/admin behind VPN, so they never appear in the public schema at all.<br><br>
+<strong>Vulnerability 6 &mdash; DoS via friends circular relation (HIGH, OWASP API4):</strong><br>
+Attack: query { user(id:"1") { friends { friends { friends { friends { name } } } } } } &mdash; exponential DB calls, server OOM. The User.friends field creates a circular relation with no depth limit.<br>
+Fix: Add QueryDepthLimiter(max_depth=7) extension to the schema. Also use DataLoader to batch friend queries.<br><br>
+<strong>Vulnerability 7 &mdash; Unbounded allUsers() list (HIGH, OWASP API4):</strong><br>
+Attack: query { allUsers(limit: 999999) { email passwordHash } } dumps entire user database. The limit parameter has no server-enforced maximum.<br>
+Fix: Enforce maximum: limit = min(limit, 100). Use cursor-based pagination with a UserConnection type instead of a plain list.<br><br>
+<strong>Vulnerability 8 &mdash; passwordHash exposed in User type (HIGH, OWASP API3):</strong><br>
+Attack: Even if BOLA were fixed on the user() resolver, passwordHash is in the schema. If any other resolver returns a User object (e.g., admin endpoints, friend list), the hash is automatically accessible through it.<br>
+Fix: Remove passwordHash from the User type entirely. Create a UserPublic type with only safe fields (id, name, bio, avatar). Internal types that include sensitive fields should never be returned from public resolvers.<br><br>
+<strong>Production hardening config:</strong><br>
+Extensions: QueryDepthLimiter(max_depth=7), MaxTokensLimiter(max_token_count=1000), LimitAliases(MAX=5), DisableIntrospection (production only), MaskProductionErrors (removes field suggestions from error messages).<br>
+Schema changes: Remove passwordHash from User type. Replace UserInput with UpdateProfileInput (name, bio only). Move deleteUser and exportAllData to admin schema. Add cursor pagination to allUsers.<br>
+Settings: SESSION_COOKIE_SAMESITE=Strict, SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SECURE=True. Require Content-Type: application/json on all GraphQL requests. Run GraphQL Cop in CI/CD and fail build on HIGH findings.
+</div>
+
+<!-- JAVASCRIPT - zero HTML in JS strings -->
+<script>
+function tp(id) {
+  document.getElementById(id).classList.toggle('open');
+}
+document.getElementById('pan-concepts').classList.add('open');
+
+function toggleVC(id) {
+  var card = document.getElementById(id);
+  var wasOpen = card.classList.contains('open');
+  document.querySelectorAll('.vuln-card').forEach(function(c) {
+    c.classList.remove('open');
+    var b = document.getElementById(c.id + '-b');
+    if (b) { b.classList.remove('show'); }
+  });
+  if (!wasOpen) {
+    card.classList.add('open');
+    var body = document.getElementById(id + '-b');
+    if (body) { body.classList.add('show'); }
+  }
+}
+toggleVC('v1');
+
+function switchTab(btn, paneId) {
+  var bar = btn.parentElement;
+  bar.querySelectorAll('.ttab').forEach(function(t) { t.classList.remove('active'); });
+  btn.classList.add('active');
+  var wrap = bar.parentElement;
+  wrap.querySelectorAll('.tool-pane').forEach(function(p) { p.classList.remove('active'); });
+  var pane = document.getElementById(paneId);
+  if (pane) { pane.classList.add('active'); }
+}
+
+function doQ(qid, el, result) {
+  var container = document.getElementById(qid);
+  container.querySelectorAll('.qo').forEach(function(o) { o.onclick = null; });
+  el.classList.add(result === 'correct' ? 'correct' : 'wrong');
+  var exp = document.getElementById(qid + '-exp');
+  if (exp) { exp.classList.add('show'); }
+}
+
+function checkCh() {
+  var ans = document.getElementById('ch-ans').value.toLowerCase();
+  var fb  = document.getElementById('ch-fb');
+  var checks = [
+    ans.includes('bola') || (ans.includes('ownership') && ans.includes('user')),
+    ans.includes('sql') || ans.includes('injection') || ans.includes('raw sql') || ans.includes('orm'),
+    ans.includes('mass') || ans.includes('isadmin') || ans.includes('passwordhash') || ans.includes('input type'),
+    ans.includes('deleteuser') || ans.includes('exportall') || (ans.includes('role') && ans.includes('check')),
+    ans.includes('depth') || ans.includes('friends') || ans.includes('circular') || ans.includes('dos'),
+    ans.includes('introspection') || ans.includes('field suggestion') || ans.includes('production'),
+    ans.includes('pagination') || ans.includes('limit') || ans.includes('alluser')
+  ];
+  var score = checks.filter(Boolean).length;
+  fb.className = 'ch-fb show ' + (score >= 6 ? 'good' : 'hint');
+  if (score >= 6) {
+    fb.textContent = 'Excellent — ' + score + '/7 vulnerability categories found. You are thinking about GraphQL security holistically. One point worth emphasising: the passwordHash field in the User type is dangerous not just because of BOLA on the user() resolver, but because ANY resolver that returns a User object automatically exposes it. Removing it from the public schema type is the only complete fix.';
+  } else if (score >= 3) {
+    fb.textContent = 'Good work — ' + score + '/7 areas covered. Key vulnerabilities to revisit: (1) The UserInput type accepts isAdmin and passwordHash as writable fields &mdash; mass assignment allows privilege escalation. (2) The friends field creates a circular relation with no depth limit &mdash; one nested query causes exponential DB load. (3) deleteUser and exportAllData have no role check at all &mdash; any authenticated user can delete any account.';
+  } else {
+    fb.textContent = 'Go through each resolver and ask: (1) Is there an ownership check? (2) Does the input type allow writing privileged fields? (3) Could this cause exponential DB load? (4) Is there a role check for admin operations? Then look at the User type itself: passwordHash should never be in a public-facing GraphQL type.';
+  }
+}
+
+function revealCh() {
+  var fb  = document.getElementById('ch-fb');
+  var src = document.getElementById('reveal-html');
+  fb.className = 'ch-fb show reveal';
+  fb.innerHTML = src ? src.innerHTML : 'Model answer unavailable.';
+}
+</script>
+</body>
+</html>

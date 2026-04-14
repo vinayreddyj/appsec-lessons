@@ -1,0 +1,1473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AppSec Engineer — Lesson 5: DAST</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f7f5f0;
+  --surface:#ffffff;
+  --surface2:#f0ede4;
+  --surface3:#e8e4d8;
+  --border:#ddd9cc;
+  --border2:#ccc8ba;
+  --ink:#1a1916;
+  --ink2:#4e4c45;
+  --ink3:#9c9888;
+  --accent:#0e5c3a;
+  --accent-light:rgba(14,92,58,0.08);
+  --red:#c0291f;
+  --red-bg:rgba(192,41,31,0.06);
+  --orange:#c05a0e;
+  --orange-bg:rgba(192,90,14,0.06);
+  --yellow:#9a7200;
+  --yellow-bg:rgba(154,114,0,0.07);
+  --blue:#1a3d7a;
+  --blue-bg:rgba(26,61,122,0.06);
+  --purple:#6b2580;
+  --purple-bg:rgba(107,37,128,0.06);
+  --teal:#0d6b5e;
+  --teal-bg:rgba(13,107,94,0.06);
+  --code-bg:#111210;
+  --code-text:#ddd9cc;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--ink);font-family:'Space Grotesk',sans-serif;font-size:15px;line-height:1.8;}
+
+/* SIDEBAR */
+.sidebar{position:fixed;left:0;top:0;bottom:0;width:250px;background:var(--ink);overflow-y:auto;z-index:100;}
+.sb-brand{padding:1.4rem 1.2rem 1rem;border-bottom:1px solid rgba(255,255,255,0.07);}
+.sb-badge{font-family:'Space Mono',monospace;font-size:9px;background:var(--accent);color:#fff;padding:2px 8px;border-radius:2px;letter-spacing:.12em;display:inline-block;margin-bottom:7px;text-transform:uppercase;font-weight:700;}
+.sb-brand h2{font-size:13px;font-weight:400;color:rgba(255,255,255,0.5);line-height:1.4;}
+.sb-sect{padding:.7rem 1.2rem .2rem;font-size:9px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:rgba(255,255,255,0.2);margin-top:.25rem;}
+.nav-item{display:flex;align-items:center;gap:9px;padding:.38rem 1.2rem;cursor:pointer;border-left:2px solid transparent;font-size:12.5px;color:rgba(255,255,255,0.28);text-decoration:none;transition:all .15s;}
+.nav-item:hover{color:rgba(255,255,255,0.65);background:rgba(255,255,255,0.04);}
+.nav-item.done{color:rgba(255,255,255,0.32);}
+.nav-item.active{color:#fff;border-left-color:var(--accent);background:rgba(14,92,58,0.15);}
+.nav-item .num{font-family:'Space Mono',monospace;font-size:10px;min-width:22px;opacity:.3;}
+.nav-item.active .num{opacity:1;color:var(--accent);}
+
+/* MAIN */
+.main{margin-left:250px;}
+.topbar{position:sticky;top:0;background:rgba(247,245,240,0.95);backdrop-filter:blur(14px);border-bottom:1px solid var(--border);padding:.65rem 2.5rem;display:flex;align-items:center;justify-content:space-between;z-index:50;}
+.bc{font-family:'Space Mono',monospace;font-size:11px;color:var(--ink3);}
+.bc span{color:var(--accent);font-weight:700;}
+.top-badge{font-family:'Space Mono',monospace;font-size:10px;padding:3px 10px;background:var(--ink);color:rgba(255,255,255,0.65);border-radius:2px;}
+
+.content{padding:3rem 2.5rem 5rem;max-width:940px;}
+
+/* HERO */
+.hero{margin-bottom:3.5rem;padding-bottom:2.5rem;border-bottom:2px solid var(--border);}
+.hero-meta{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1rem;}
+.tag{font-family:'Space Mono',monospace;font-size:10px;padding:3px 10px;border-radius:2px;font-weight:700;letter-spacing:.04em;}
+.t-beg{background:rgba(14,92,58,0.08);color:var(--accent);border:1px solid rgba(14,92,58,0.2);}
+.t-tool{background:var(--blue-bg);color:var(--blue);border:1px solid rgba(26,61,122,0.2);}
+.t-time{background:var(--purple-bg);color:var(--purple);border:1px solid rgba(107,37,128,0.2);}
+.hero h1{font-family:'Cormorant Garamond',serif;font-size:3.8rem;font-weight:700;line-height:1.05;color:var(--ink);margin-bottom:.85rem;letter-spacing:-.01em;}
+.hero h1 em{font-style:italic;color:var(--accent);}
+.hero-sub{font-size:14.5px;color:var(--ink2);max-width:640px;line-height:1.8;margin-bottom:1.75rem;}
+.level-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:6px;overflow:hidden;}
+.lv-cell{background:var(--surface);padding:.9rem 1rem;}
+.lv-pip{width:8px;height:8px;border-radius:50%;margin-bottom:7px;}
+.lv-label{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink3);margin-bottom:3px;}
+.lv-title{font-size:13px;font-weight:600;color:var(--ink);margin-bottom:2px;}
+.lv-desc{font-size:12px;color:var(--ink3);line-height:1.5;}
+
+/* SECTIONS */
+.section{margin-bottom:3.5rem;}
+.eyebrow{font-family:'Space Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.15em;color:var(--accent);margin-bottom:5px;font-weight:700;}
+.sec-title{font-family:'Cormorant Garamond',serif;font-size:2rem;font-weight:700;color:var(--ink);line-height:1.2;margin-bottom:.35rem;}
+.sec-sub{font-size:14px;color:var(--ink2);max-width:650px;line-height:1.75;margin-bottom:1.5rem;}
+
+/* CALLOUT */
+.callout{border-radius:4px;padding:.9rem 1.1rem;margin:1rem 0;display:flex;gap:10px;align-items:flex-start;border-left:3px solid;}
+.cl-warn{background:var(--red-bg);border-color:var(--red);}
+.cl-info{background:var(--blue-bg);border-color:var(--blue);}
+.cl-tip{background:var(--accent-light);border-color:var(--accent);}
+.cl-note{background:var(--yellow-bg);border-color:var(--yellow);}
+.cl-icon{font-size:15px;flex-shrink:0;margin-top:2px;}
+.cl-text{font-size:13.5px;color:var(--ink2);line-height:1.7;}
+.cl-text strong{color:var(--ink);}
+.cl-text code{font-family:'Space Mono',monospace;font-size:11.5px;background:rgba(0,0,0,0.06);padding:1px 5px;border-radius:2px;color:var(--accent);}
+
+/* CODE */
+pre{background:var(--code-bg);color:var(--code-text);border-radius:6px;padding:1.25rem;font-family:'Space Mono',monospace;font-size:12px;line-height:1.8;overflow-x:auto;margin:.85rem 0;position:relative;border:1px solid rgba(255,255,255,0.05);}
+.ctag{position:absolute;top:10px;right:12px;font-family:'Space Mono',monospace;font-size:9px;color:rgba(255,255,255,0.18);text-transform:uppercase;letter-spacing:.1em;}
+.ck{color:#c084fc;}.cf{color:#7dd3fc;}.cs{color:#86efac;}.cm{color:#3a3830;}.cv{color:#fcd34d;}.ce{color:#fb923c;}.cr{color:#f87171;}.cg{color:#4ade80;}.ct{color:#2dd4bf;}.cw{color:#f9a8d4;}.cy{color:#fde68a;}
+.lb{display:block;background:rgba(248,113,113,0.09);border-left:2px solid #ef4444;margin:0 -1.25rem;padding:0 1.25rem;}
+.lg{display:block;background:rgba(74,222,128,0.07);border-left:2px solid #22c55e;margin:0 -1.25rem;padding:0 1.25rem;}
+.lw{display:block;background:rgba(252,211,77,0.07);border-left:2px solid #f59e0b;margin:0 -1.25rem;padding:0 1.25rem;}
+.ln{display:block;background:rgba(125,211,252,0.06);border-left:2px solid #38bdf8;margin:0 -1.25rem;padding:0 1.25rem;}
+
+/* TABLE */
+table{width:100%;border-collapse:collapse;font-size:13px;margin:1rem 0;}
+th{padding:.55rem .9rem;text-align:left;background:var(--ink);color:rgba(255,255,255,0.7);font-family:'Space Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.08em;}
+th:first-child{border-radius:4px 0 0 0;}th:last-child{border-radius:0 4px 0 0;}
+td{padding:.55rem .9rem;border-bottom:1px solid var(--border);color:var(--ink2);line-height:1.5;vertical-align:top;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:var(--surface2);}
+
+/* PANELS */
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:6px;overflow:hidden;margin-bottom:.75rem;}
+.panel-h{display:flex;align-items:center;gap:10px;padding:.9rem 1.1rem;cursor:pointer;transition:background .15s;user-select:none;}
+.panel-h:hover{background:var(--surface2);}
+.panel-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.panel-title{font-size:13.5px;font-weight:600;flex:1;color:var(--ink);}
+.panel-sub{font-size:12px;color:var(--ink3);}
+.panel-tog{color:var(--ink3);font-size:13px;transition:transform .2s;}
+.panel.open .panel-tog{transform:rotate(180deg);}
+.panel-body{display:none;padding:0 1.1rem 1.1rem;border-top:1px solid var(--border);}
+.panel.open .panel-body{display:block;}
+.panel-body h4{font-family:'Space Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--ink3);margin:1rem 0 .5rem;font-weight:700;}
+.panel-body p{font-size:13.5px;color:var(--ink2);line-height:1.75;margin-top:.6rem;}
+
+/* ATTACK FLOW */
+.attack-flow{display:flex;align-items:stretch;gap:0;margin:1.25rem 0;overflow-x:auto;padding-bottom:.5rem;}
+.af-node{flex:1;min-width:110px;border:1px solid var(--border);padding:.7rem .75rem;background:var(--surface);text-align:center;transition:background .15s;}
+.af-node:first-child{border-radius:5px 0 0 5px;}
+.af-node:last-child{border-radius:0 5px 5px 0;}
+.af-node.attacker{border-color:rgba(192,41,31,0.35);background:var(--red-bg);}
+.af-node.target{border-color:rgba(14,92,58,0.35);background:var(--accent-light);}
+.af-node.vuln{border-color:rgba(192,90,14,0.35);background:var(--orange-bg);}
+.af-title{font-size:11px;font-weight:700;color:var(--ink);margin-bottom:2px;}
+.af-sub{font-size:10px;color:var(--ink3);line-height:1.4;}
+.af-arrow{display:flex;align-items:center;padding:0 6px;color:var(--ink3);font-size:14px;background:var(--bg);}
+
+/* SCAN PHASES */
+.scan-phase{background:var(--surface);border:1px solid var(--border);border-radius:6px;overflow:hidden;margin-bottom:.65rem;}
+.sp-header{display:flex;align-items:center;gap:12px;padding:.85rem 1rem;cursor:pointer;user-select:none;transition:background .15s;}
+.sp-header:hover{background:var(--surface2);}
+.sp-num{font-family:'Space Mono',monospace;font-size:11px;font-weight:700;width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.sp-title{font-size:13.5px;font-weight:600;flex:1;color:var(--ink);}
+.sp-tag{font-family:'Space Mono',monospace;font-size:10px;color:var(--ink3);}
+.sp-tog{color:var(--ink3);font-size:13px;transition:transform .2s;}
+.scan-phase.open .sp-tog{transform:rotate(180deg);}
+.sp-body{display:none;padding:.9rem 1rem 1rem;border-top:1px solid var(--border);}
+.scan-phase.open .sp-body{display:block;}
+.sp-body p{font-size:13.5px;color:var(--ink2);line-height:1.75;}
+.sp-body h5{font-family:'Space Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--ink3);margin:1rem 0 .4rem;font-weight:700;}
+
+/* ZAP CONFIG TABS */
+.tab-wrap{border:1px solid var(--border);border-radius:6px;overflow:hidden;margin:1.25rem 0;}
+.tab-bar{display:flex;background:var(--surface2);border-bottom:1px solid var(--border);}
+.tab-btn{padding:.6rem 1.1rem;font-family:'Space Mono',monospace;font-size:11px;font-weight:700;cursor:pointer;color:var(--ink3);border-right:1px solid var(--border);transition:all .15s;user-select:none;}
+.tab-btn:hover{color:var(--ink);}
+.tab-btn.active{background:var(--surface);color:var(--accent);border-bottom:2px solid var(--accent);}
+.tab-pane{display:none;padding:1.25rem;}
+.tab-pane.active{display:block;}
+
+/* FINDING CARDS */
+.finding{background:var(--surface);border:1px solid var(--border);border-left:4px solid;border-radius:0 6px 6px 0;padding:1rem 1.1rem;margin-bottom:.75rem;cursor:pointer;transition:background .15s;}
+.finding:hover{background:var(--surface2);}
+.f-crit{border-left-color:var(--red);}
+.f-high{border-left-color:var(--orange);}
+.f-med{border-left-color:var(--yellow);}
+.f-low{border-left-color:var(--accent);}
+.f-top{display:flex;align-items:flex-start;gap:1rem;justify-content:space-between;}
+.f-title{font-size:13.5px;font-weight:700;color:var(--ink);margin-bottom:3px;}
+.f-meta{font-size:11px;color:var(--ink3);font-family:'Space Mono',monospace;}
+.f-sev{font-family:'Space Mono',monospace;font-size:10px;font-weight:700;padding:3px 10px;border-radius:2px;flex-shrink:0;white-space:nowrap;}
+.sc{background:var(--red-bg);color:var(--red);border:1px solid rgba(192,41,31,0.2);}
+.sh{background:var(--orange-bg);color:var(--orange);border:1px solid rgba(192,90,14,0.2);}
+.sm{background:var(--yellow-bg);color:var(--yellow);border:1px solid rgba(154,114,0,0.2);}
+.sl{background:var(--accent-light);color:var(--accent);border:1px solid rgba(14,92,58,0.2);}
+.f-body{display:none;margin-top:.85rem;padding-top:.85rem;border-top:1px solid var(--border);}
+.f-body.show{display:block;}
+.f-body h5{font-family:'Space Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:var(--ink3);margin:.75rem 0 .35rem;font-weight:700;}
+.f-body p{font-size:13.5px;color:var(--ink2);line-height:1.7;}
+
+/* PAYLOAD TABLE */
+.payload-grid{display:flex;flex-direction:column;gap:.5rem;margin:1rem 0;}
+.payload-row{background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:.7rem 1rem;display:flex;gap:1rem;align-items:flex-start;}
+.payload-code{font-family:'Space Mono',monospace;font-size:11.5px;color:var(--accent);flex-shrink:0;min-width:200px;word-break:break-all;}
+.payload-desc{font-size:12.5px;color:var(--ink2);line-height:1.5;}
+
+/* TWO COL */
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin:1rem 0;}
+.cb{background:var(--red-bg);border:1px solid rgba(192,41,31,0.15);border-radius:6px;padding:1rem;}
+.cg{background:var(--accent-light);border:1px solid rgba(14,92,58,0.15);border-radius:6px;padding:1rem;}
+.cmp-l{font-family:'Space Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.12em;font-weight:700;margin-bottom:.6rem;}
+.cb .cmp-l{color:var(--red);}
+.cg .cmp-l{color:var(--accent);}
+
+/* QUIZ */
+.quiz-block{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:1.25rem;margin-bottom:1rem;}
+.quiz-q{font-size:14.5px;font-weight:600;color:var(--ink);margin-bottom:.85rem;line-height:1.55;}
+.quiz-opts{display:flex;flex-direction:column;gap:7px;margin-bottom:.75rem;}
+.qo{padding:.65rem 1rem;border:1px solid var(--border);border-radius:4px;cursor:pointer;font-size:13.5px;color:var(--ink2);background:var(--surface2);transition:all .15s;}
+.qo:hover{border-color:var(--ink);color:var(--ink);}
+.qo.correct{border-color:var(--accent);color:var(--accent);background:var(--accent-light);cursor:default;}
+.qo.wrong{border-color:var(--red);color:var(--red);background:var(--red-bg);cursor:default;}
+.quiz-exp{font-size:13px;color:var(--ink2);line-height:1.7;padding:.75rem 1rem;background:var(--surface2);border-radius:4px;border-left:3px solid var(--accent);display:none;margin-top:.5rem;}
+.quiz-exp.show{display:block;}
+.quiz-exp code{font-family:'Space Mono',monospace;font-size:11px;background:rgba(0,0,0,0.06);padding:1px 5px;border-radius:2px;color:var(--accent);}
+
+/* CHALLENGE */
+.challenge{background:var(--ink);border-radius:10px;padding:2rem;margin:3rem 0;position:relative;overflow:hidden;}
+.challenge::before{content:'';position:absolute;top:-60px;right:-60px;width:220px;height:220px;background:radial-gradient(circle,rgba(14,92,58,0.15) 0%,transparent 70%);pointer-events:none;}
+.ch-ey{font-family:'Space Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.15em;color:var(--accent);margin-bottom:.5rem;}
+.ch h3{font-family:'Cormorant Garamond',serif;font-size:1.7rem;font-weight:700;color:#fff;margin-bottom:.7rem;}
+.ch-desc{font-size:13.5px;color:rgba(255,255,255,0.45);line-height:1.75;margin-bottom:1.25rem;}
+.scenario{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:5px;padding:1rem 1.1rem;margin-bottom:1.25rem;}
+.scenario p{font-size:13px;color:rgba(255,255,255,0.55);line-height:1.75;}
+.scenario strong{color:rgba(255,255,255,0.9);}
+.challenge textarea{width:100%;min-height:160px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:4px;padding:1rem;font-family:'Space Mono',monospace;font-size:12px;color:rgba(255,255,255,0.85);resize:vertical;outline:none;transition:border-color .2s;margin-bottom:1rem;}
+.challenge textarea:focus{border-color:var(--accent);}
+.challenge textarea::placeholder{color:rgba(255,255,255,0.18);}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap;}
+.btn{padding:9px 20px;border-radius:4px;font-size:13px;font-family:'Space Grotesk',sans-serif;font-weight:700;cursor:pointer;border:1px solid;transition:all .15s;}
+.btn-p{background:var(--accent);color:#fff;border-color:var(--accent);}
+.btn-p:hover{background:#0a4a2e;}
+.btn-g{background:transparent;color:rgba(255,255,255,0.45);border-color:rgba(255,255,255,0.14);}
+.btn-g:hover{color:#fff;border-color:rgba(255,255,255,0.35);}
+.ch-fb{margin-top:1rem;padding:1rem 1.1rem;border-radius:5px;font-size:13.5px;line-height:1.7;display:none;}
+.ch-fb.show{display:block;}
+.ch-fb.good{background:rgba(14,92,58,0.15);border:1px solid rgba(14,92,58,0.3);color:#4ade80;}
+.ch-fb.hint{background:rgba(252,211,77,0.1);border:1px solid rgba(252,211,77,0.25);color:#fcd34d;}
+.ch-fb.reveal{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.75);}
+.ch-fb strong{color:#fff;}
+.ch-fb code{font-family:'Space Mono',monospace;font-size:11px;background:rgba(255,255,255,0.08);padding:1px 5px;border-radius:2px;}
+
+/* PILL */
+.pill{font-size:11px;padding:3px 9px;border-radius:2px;font-family:'Space Mono',monospace;font-weight:700;}
+.pr{background:var(--red-bg);color:var(--red);border:1px solid rgba(192,41,31,0.2);}
+.pg{background:var(--accent-light);color:var(--accent);border:1px solid rgba(14,92,58,0.2);}
+.py{background:var(--yellow-bg);color:var(--yellow);border:1px solid rgba(154,114,0,0.2);}
+.pb{background:var(--blue-bg);color:var(--blue);border:1px solid rgba(26,61,122,0.2);}
+.pp{background:var(--purple-bg);color:var(--purple);border:1px solid rgba(107,37,128,0.2);}
+.pill-row{display:flex;flex-wrap:wrap;gap:6px;margin:.5rem 0;}
+
+/* RW BOX */
+.rw-box{background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:1rem 1.1rem;margin:.85rem 0;}
+.rw-label{font-family:'Space Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.12em;color:var(--red);margin-bottom:5px;font-weight:700;}
+.rw-box p{font-size:13px;color:var(--ink2);line-height:1.7;}
+
+/* NAV FOOTER */
+.nav-footer{display:flex;justify-content:space-between;margin-top:4rem;padding-top:2rem;border-top:2px solid var(--border);}
+.nf-btn{padding:.85rem 1.5rem;border:1px solid var(--border);border-radius:4px;font-size:13px;cursor:pointer;background:var(--surface);color:var(--ink2);text-align:left;transition:all .15s;text-decoration:none;display:block;}
+.nf-btn:hover{border-color:var(--ink);}
+.nf-btn.next{background:var(--ink);color:#fff;border-color:var(--ink);text-align:right;}
+.nf-btn.next:hover{background:#2a2820;}
+.nf-dir{font-family:'Space Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:var(--ink3);display:block;margin-bottom:3px;}
+.nf-btn.next .nf-dir{color:rgba(255,255,255,0.3);}
+.nf-title{font-weight:700;display:block;}
+
+code{font-family:'Space Mono',monospace;font-size:12px;background:rgba(0,0,0,0.06);padding:1px 5px;border-radius:2px;color:var(--accent);}
+pre code{background:none;padding:0;color:inherit;font-size:inherit;}
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px;}
+
+@media(max-width:860px){
+  .sidebar{display:none;}.main{margin-left:0;}
+  .content{padding:1.5rem 1.1rem 3rem;}
+  .level-strip{grid-template-columns:1fr;}
+  .two-col{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<nav class="sidebar">
+  <div class="sb-brand">
+    <div class="sb-badge">AppSec Engineer</div>
+    <h2>Application Security<br>Learning Path</h2>
+  </div>
+  <div class="sb-sect">Module 1 — Foundations</div>
+  <a class="nav-item done" href="#"><span class="num">01</span>OWASP Top 10 2021</a>
+  <a class="nav-item done" href="#"><span class="num">02</span>Secure SDLC</a>
+  <a class="nav-item done" href="#"><span class="num">03</span>Threat Modeling</a>
+  <div class="sb-sect">Module 2 — Testing Tools</div>
+  <a class="nav-item done" href="#"><span class="num">04</span>SAST</a>
+  <a class="nav-item active" href="#"><span class="num">05</span>DAST</a>
+  <a class="nav-item" href="#"><span class="num">06</span>SCA</a>
+  <a class="nav-item" href="#"><span class="num">07</span>IAST &amp; RASP</a>
+  <div class="sb-sect">Module 3 — API Security</div>
+  <a class="nav-item" href="#"><span class="num">08</span>OWASP API Top 10</a>
+  <a class="nav-item" href="#"><span class="num">09</span>API Security Testing</a>
+  <a class="nav-item" href="#"><span class="num">10</span>GraphQL Security</a>
+  <div class="sb-sect">Module 4 — DevSecOps</div>
+  <a class="nav-item" href="#"><span class="num">11</span>DevSecOps Pipeline</a>
+  <a class="nav-item" href="#"><span class="num">12</span>Secrets Management</a>
+  <a class="nav-item" href="#"><span class="num">13</span>Container Security</a>
+  <a class="nav-item" href="#"><span class="num">14</span>Dependency Scanning</a>
+  <a class="nav-item" href="#"><span class="num">15</span>SBOM</a>
+  <div class="sb-sect">Module 5 — Architecture</div>
+  <a class="nav-item" href="#"><span class="num">16</span>Security Architecture</a>
+  <a class="nav-item" href="#"><span class="num">17</span>Supply Chain Security</a>
+  <a class="nav-item" href="#"><span class="num">18</span>WAF</a>
+  <a class="nav-item" href="#"><span class="num">19</span>Code Review</a>
+  <a class="nav-item" href="#"><span class="num">20</span>RASP</a>
+</nav>
+
+<div class="main">
+<div class="topbar">
+  <div class="bc">appsec-engineer / module-2 / <span>dast</span></div>
+  <div class="top-badge">Lesson 05 / 20</div>
+</div>
+<div class="content">
+
+<!-- ════════════════════ HERO ════════════════════ -->
+<div class="hero">
+  <div class="hero-meta">
+    <span class="tag t-beg">Beginner → Advanced</span>
+    <span class="tag t-tool">Tool</span>
+    <span class="tag t-time">~65 min</span>
+  </div>
+  <h1>DAST<br><em>Dynamic</em> Application<br>Security Testing</h1>
+  <p class="hero-sub">DAST attacks your running application exactly like a real attacker would — sending crafted HTTP requests and observing responses — without ever looking at your source code. It finds what SAST misses: runtime vulnerabilities, authentication flaws, live server misconfigurations, and business logic issues. This lesson takes you from "what is DAST?" all the way to configuring authenticated scans, building CI/CD pipelines, and interpreting real findings from OWASP ZAP and Burp Suite.</p>
+  <div class="level-strip">
+    <div class="lv-cell">
+      <div class="lv-pip" style="background:var(--accent)"></div>
+      <div class="lv-label">Beginner</div>
+      <div class="lv-title">How DAST works</div>
+      <div class="lv-desc">Black-box vs grey-box, crawling, active scanning, SAST vs DAST comparison, what DAST finds</div>
+    </div>
+    <div class="lv-cell">
+      <div class="lv-pip" style="background:var(--yellow)"></div>
+      <div class="lv-label">Intermediate</div>
+      <div class="lv-title">ZAP &amp; Burp in depth</div>
+      <div class="lv-desc">OWASP ZAP full setup, authenticated scans, Burp Suite proxy workflow, real findings with payloads</div>
+    </div>
+    <div class="lv-cell">
+      <div class="lv-pip" style="background:var(--red)"></div>
+      <div class="lv-label">Advanced</div>
+      <div class="lv-title">CI/CD &amp; API scanning</div>
+      <div class="lv-desc">ZAP in GitHub Actions, OpenAPI-driven API scans, custom scan policies, tuning false positives</div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════ BEGINNER: WHAT IS DAST ════════════════════ -->
+<div class="section">
+  <div class="eyebrow">🟢 Beginner — Level 1</div>
+  <div class="sec-title">What is DAST and how does it work?</div>
+  <div class="sec-sub">DAST is the closest thing to having an automated pentester probing your application 24/7. Understanding what it does — and how it differs from SAST — is foundational.</div>
+
+  <p style="font-size:14.5px;color:var(--ink2);line-height:1.8;margin-bottom:1rem;">SAST reads your source code. DAST interacts with your running application over HTTP — the same way a browser or an attacker would. It knows nothing about your code. It only knows what your server responds with. This means it tests the system as it actually behaves in production, catching runtime issues that code analysis can never see.</p>
+
+  <div class="callout cl-info">
+    <div class="cl-icon">ℹ️</div>
+    <div class="cl-text"><strong>The DAST mindset:</strong> DAST doesn't read code — it reads responses. It sends a payload, watches what comes back, and infers from the response whether a vulnerability exists. A reflected XSS is found when the payload appears unescaped in the response body. A SQL error is found when the DB error message leaks into a 500 response. A header misconfiguration is found by inspecting the response headers of every page.</div>
+  </div>
+
+  <!-- SAST vs DAST comparison -->
+  <div class="panel" id="pan-compare">
+    <div class="panel-h" onclick="tp('pan-compare')">
+      <div class="panel-dot" style="background:var(--blue)"></div>
+      <div class="panel-title">SAST vs DAST — the complete comparison</div>
+      <div class="panel-sub">Know both deeply — you need both in every security program</div>
+      <div class="panel-tog">▼</div>
+    </div>
+    <div class="panel-body">
+      <table>
+        <tr><th>Dimension</th><th>SAST</th><th>DAST</th></tr>
+        <tr><td style="font-weight:600">What it tests</td><td>Source code, bytecode, or binary</td><td>Running application via HTTP requests</td></tr>
+        <tr><td style="font-weight:600">Requires source code?</td><td>Yes — must access source</td><td>No — black-box, works on any app</td></tr>
+        <tr><td style="font-weight:600">Requires running app?</td><td>No — static analysis only</td><td>Yes — app must be live and reachable</td></tr>
+        <tr><td style="font-weight:600">When in SDLC</td><td>Development phase — on every commit</td><td>Testing/staging phase — against deployed app</td></tr>
+        <tr><td style="font-weight:600">Language coverage</td><td>Language-specific rules required</td><td>Language-agnostic — any HTTP app</td></tr>
+        <tr><td style="font-weight:600">What it finds well</td><td>Injection patterns, hardcoded secrets, weak crypto, insecure API usage</td><td>XSS, SQLi (confirmed), auth issues, header misconfigs, server-side misconfigs, IDOR (partially)</td></tr>
+        <tr><td style="font-weight:600">What it misses</td><td>Runtime flaws, auth bypass, server misconfigs, business logic</td><td>Code-level flaws not exposed via HTTP, multi-step logic, flaws in rarely-hit code paths</td></tr>
+        <tr><td style="font-weight:600">False positive rate</td><td>High — many pattern matches without context</td><td>Lower — confirms exploitability via real response</td></tr>
+        <tr><td style="font-weight:600">Speed</td><td>Fast (seconds to minutes)</td><td>Slow (minutes to hours depending on app size)</td></tr>
+        <tr><td style="font-weight:600">Primary tools</td><td>Bandit, Semgrep, SonarQube, CodeQL</td><td>OWASP ZAP, Burp Suite, Nikto, Nuclei</td></tr>
+      </table>
+      <div class="callout cl-tip" style="margin-top:1rem;">
+        <div class="cl-icon">💡</div>
+        <div class="cl-text"><strong>Interview answer on SAST vs DAST:</strong> "SAST finds vulnerabilities in code before it runs — fast feedback for developers, but high false positives. DAST confirms exploitability against a live app — slower, lower false positives, finds runtime issues SAST misses. A mature security program uses both: SAST on every commit for fast feedback, DAST against staging before every release."</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Black-box vs Grey-box -->
+  <div class="panel" id="pan-modes">
+    <div class="panel-h" onclick="tp('pan-modes')">
+      <div class="panel-dot" style="background:var(--accent)"></div>
+      <div class="panel-title">Black-box vs Grey-box DAST — know the difference</div>
+      <div class="panel-sub">The mode determines how much the scanner knows before it starts</div>
+      <div class="panel-tog">▼</div>
+    </div>
+    <div class="panel-body">
+      <table>
+        <tr><th>Mode</th><th>What the scanner knows</th><th>Pros</th><th>Cons</th><th>Best used for</th></tr>
+        <tr>
+          <td style="font-weight:700;color:var(--ink)">Black-box</td>
+          <td>Only the target URL. No credentials, no API spec, no source code.</td>
+          <td>Tests exactly what an external unauthenticated attacker sees. Most realistic threat model.</td>
+          <td>Misses all authenticated functionality. Scans only publicly accessible pages. Coverage is limited.</td>
+          <td>Initial perimeter scan. External attacker simulation.</td>
+        </tr>
+        <tr>
+          <td style="font-weight:700;color:var(--accent)">Grey-box</td>
+          <td>Target URL + valid credentials (session token, username/password) + optionally an OpenAPI spec or sitemap</td>
+          <td>Tests authenticated endpoints — where most vulnerabilities live. Much higher coverage. Faster scanning with OpenAPI spec.</td>
+          <td>Requires maintaining test credentials. Risk of modifying production data if not using dedicated test environment.</td>
+          <td>CI/CD pipeline scans. Pre-release testing. Most DAST in professional security programs.</td>
+        </tr>
+        <tr>
+          <td style="font-weight:700;color:var(--blue)">White-box DAST</td>
+          <td>Full source code access + running application. Often called IAST (Interactive) — covered in Lesson 7.</td>
+          <td>Instruments the application from inside. Extremely accurate, no false positives.</td>
+          <td>Requires agent installation. Performance overhead. More complex setup.</td>
+          <td>High-value application security assurance programs.</td>
+        </tr>
+      </table>
+      <div class="callout cl-warn">
+        <div class="cl-icon">⚠️</div>
+        <div class="cl-text"><strong>Never run DAST against production:</strong> DAST sends thousands of crafted HTTP requests including payloads like SQL injection strings, XSS payloads, and fuzzing inputs. Against production, this can corrupt data, trigger alert systems, crash the application, and generate fraudulent records. Always scan a dedicated staging/QA environment that mirrors production but has isolated databases.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- What DAST finds -->
+  <div class="panel" id="pan-finds">
+    <div class="panel-h" onclick="tp('pan-finds')">
+      <div class="panel-dot" style="background:var(--yellow)"></div>
+      <div class="panel-title">What DAST finds — the full vulnerability list</div>
+      <div class="panel-sub">DAST confirms what SAST suspects, and finds entire categories SAST cannot see</div>
+      <div class="panel-tog">▼</div>
+    </div>
+    <div class="panel-body">
+      <table>
+        <tr><th>Vulnerability</th><th>How DAST finds it</th><th>OWASP Category</th><th>SAST can find?</th></tr>
+        <tr><td style="color:var(--red);font-weight:600">Reflected XSS</td><td>Injects <code>&lt;script&gt;alert(1)&lt;/script&gt;</code> in every parameter. If payload appears unescaped in response body → confirmed XSS.</td><td>A03 Injection</td><td>Partially (patterns)</td></tr>
+        <tr><td style="color:var(--red);font-weight:600">SQL Injection</td><td>Sends <code>' OR 1=1--</code> and error-based payloads. DB error messages in response confirm injectable parameter.</td><td>A03 Injection</td><td>Yes (patterns)</td></tr>
+        <tr><td style="color:var(--orange);font-weight:600">Missing Security Headers</td><td>Inspects every response header — flags missing CSP, HSTS, X-Frame-Options, X-Content-Type-Options.</td><td>A05 Misconfiguration</td><td>Sometimes</td></tr>
+        <tr><td style="color:var(--orange);font-weight:600">SSL/TLS Misconfigs</td><td>Tests cipher suites, TLS version support, certificate validity, weak key exchange.</td><td>A02 Crypto Failures</td><td>No</td></tr>
+        <tr><td style="color:var(--orange);font-weight:600">Authentication Issues</td><td>Tests for default credentials, brute-force protection, session fixation, token reuse after logout.</td><td>A07 Auth Failures</td><td>No</td></tr>
+        <tr><td style="color:var(--yellow);font-weight:600">CSRF</td><td>Checks whether state-changing requests require CSRF tokens. Tests whether tokens are validated.</td><td>A01 Broken Access Control</td><td>No</td></tr>
+        <tr><td style="color:var(--yellow);font-weight:600">Directory Traversal</td><td>Injects <code>../../../etc/passwd</code> in file path parameters. If file contents appear in response → confirmed.</td><td>A01 Broken Access Control</td><td>Partially</td></tr>
+        <tr><td style="color:var(--yellow);font-weight:600">Server-side Redirect</td><td>Tests redirect parameters for open redirect to external domains.</td><td>A01 Broken Access Control</td><td>No</td></tr>
+        <tr><td style="color:var(--accent);font-weight:600">Information Disclosure</td><td>Triggers errors intentionally. Checks for stack traces, debug info, server version headers in responses.</td><td>A05 Misconfiguration</td><td>No</td></tr>
+        <tr><td style="color:var(--accent);font-weight:600">Insecure Cookies</td><td>Inspects Set-Cookie headers — flags missing HttpOnly, Secure, SameSite flags.</td><td>A07 Auth Failures</td><td>Sometimes</td></tr>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════ BEGINNER: HOW A DAST SCAN WORKS ════════════════════ -->
+<div class="section">
+  <div class="eyebrow">🟢 Beginner — Level 2</div>
+  <div class="sec-title">How a DAST scan works — phase by phase</div>
+  <div class="sec-sub">Every DAST tool follows the same fundamental workflow. Understanding each phase makes you a better scanner operator and helps you interpret results.</div>
+
+  <div id="scan-phases">
+    <div class="scan-phase" id="sp1">
+      <div class="sp-header" onclick="toggleSP('sp1')">
+        <div class="sp-num" style="background:rgba(14,92,58,0.12);color:var(--accent)">1</div>
+        <div class="sp-title">Target Configuration — what to scan and how</div>
+        <div class="sp-tag">Before scanning starts</div>
+        <div class="sp-tog">▼</div>
+      </div>
+      <div class="sp-body">
+        <p>You configure the scanner with: the target URL (e.g., <code>https://staging.myapp.com</code>), the scan scope (which paths to include/exclude), authentication credentials or a session token, and optionally an OpenAPI spec for API scanning. This phase is the most important — bad configuration leads to incomplete scans or wasted time scanning irrelevant endpoints.</p>
+        <h5>Critical configuration decisions</h5>
+        <table>
+          <tr><th>Config item</th><th>Why it matters</th><th>Example</th></tr>
+          <tr><td>Scope (include)</td><td>Only test URLs that belong to your application. Without scope, scanner follows every external link.</td><td><code>https://staging.myapp.com/.*</code></td></tr>
+          <tr><td>Scope (exclude)</td><td>Exclude logout URLs (would terminate your session mid-scan), admin destructive actions, email-sending endpoints.</td><td><code>.*/logout.*</code>, <code>.*/send-email.*</code></td></tr>
+          <tr><td>Authentication</td><td>Without auth, scanner only tests public pages — misses 80% of attack surface.</td><td>Session cookie, Bearer token, username+password for form auth</td></tr>
+          <tr><td>Max depth / threads</td><td>Too deep = too slow. Too many threads = crashes the app server.</td><td>Max depth: 5. Threads: 10 for staging.</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <div class="scan-phase" id="sp2">
+      <div class="sp-header" onclick="toggleSP('sp2')">
+        <div class="sp-num" style="background:rgba(26,61,122,0.1);color:var(--blue)">2</div>
+        <div class="sp-title">Spider / Crawl — discovering the attack surface</div>
+        <div class="sp-tag">~10–30 minutes depending on app size</div>
+        <div class="sp-tog">▼</div>
+      </div>
+      <div class="sp-body">
+        <p>The spider visits your application like a browser — following every link, form action, and JavaScript-discovered URL to build a map of the entire application. Every discovered URL, parameter, and form becomes a potential attack point for the active scan. Without thorough spidering, the active scan has nothing to attack.</p>
+        <h5>Two types of spider</h5>
+        <table>
+          <tr><th>Spider type</th><th>How it works</th><th>Best for</th><th>Limitation</th></tr>
+          <tr><td style="font-weight:600">Traditional spider</td><td>Follows HTML links, form actions, and redirects. Fast.</td><td>Server-rendered HTML apps (Django, Rails, Laravel)</td><td>Misses JavaScript-rendered content (React, Vue, Angular SPAs)</td></tr>
+          <tr><td style="font-weight:600">AJAX spider</td><td>Uses a headless browser (Selenium/Playwright) to render JavaScript and discover dynamically loaded routes.</td><td>Modern SPAs, React/Vue/Angular apps, AJAX-heavy applications</td><td>Slower — must execute JavaScript for every page</td></tr>
+        </table>
+        <div class="callout cl-note">
+          <div class="cl-icon">📌</div>
+          <div class="cl-text"><strong>For React/Vue/Angular apps:</strong> Always use the AJAX spider (also called DOM spider). A traditional spider on a SPA will find only the root <code>/</code> URL and miss every route. The AJAX spider renders the app, clicks through UI elements, and discovers dynamically loaded API calls — giving you the full attack surface.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="scan-phase" id="sp3">
+      <div class="sp-header" onclick="toggleSP('sp3')">
+        <div class="sp-num" style="background:rgba(192,90,14,0.1);color:var(--orange)">3</div>
+        <div class="sp-title">Passive Scan — analyzing every response for immediate findings</div>
+        <div class="sp-tag">Runs concurrently with spidering — zero additional requests</div>
+        <div class="sp-tog">▼</div>
+      </div>
+      <div class="sp-body">
+        <p>As the spider fetches pages, the passive scanner analyzes every request and response it sees — without sending any additional requests. It's looking for issues that are immediately visible: missing security headers, insecure cookie flags, information disclosure in responses, mixed HTTP/HTTPS content, and weak TLS configurations. Because it sends zero extra requests, it cannot disrupt the application.</p>
+        <h5>What passive scanning finds</h5>
+        <div class="payload-grid">
+          <div class="payload-row"><div class="payload-code">Missing: Content-Security-Policy</div><div class="payload-desc">No CSP header means XSS attacks have no mitigating layer beyond input validation</div></div>
+          <div class="payload-row"><div class="payload-code">Missing: Strict-Transport-Security</div><div class="payload-desc">No HSTS means browser will connect over HTTP if redirected by attacker (SSL stripping)</div></div>
+          <div class="payload-row"><div class="payload-code">Set-Cookie: session=abc; Path=/</div><div class="payload-desc">Missing HttpOnly (XSS can steal cookie) and Secure (sent over HTTP)</div></div>
+          <div class="payload-row"><div class="payload-code">Server: Apache/2.4.29 (Ubuntu)</div><div class="payload-desc">Server version disclosure — attacker knows exact version to look up CVEs for</div></div>
+          <div class="payload-row"><div class="payload-code">X-Powered-By: PHP/7.2.0</div><div class="payload-desc">Framework version disclosure — PHP 7.2.0 is EOL with known vulnerabilities</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="scan-phase" id="sp4">
+      <div class="sp-header" onclick="toggleSP('sp4')">
+        <div class="sp-num" style="background:rgba(192,41,31,0.1);color:var(--red)">4</div>
+        <div class="sp-title">Active Scan — attacking every discovered parameter</div>
+        <div class="sp-tag">The main event — sends thousands of crafted payloads</div>
+        <div class="sp-tog">▼</div>
+      </div>
+      <div class="sp-body">
+        <p>The active scanner takes every URL, parameter, header, and form field discovered by the spider and attacks them with crafted payloads. For a URL with 3 parameters, it might send 1,000+ requests — each one probing for a different vulnerability type. The response to each request is analyzed for indicators of vulnerability (error messages, reflected payload, time delays, different status codes).</p>
+        <h5>How active scanning works for each vulnerability type</h5>
+        <table>
+          <tr><th>Vulnerability</th><th>Payload example</th><th>Indicator of success</th></tr>
+          <tr><td style="color:var(--red)">SQL Injection (error-based)</td><td><code>' OR '1'='1</code>, <code>' --</code>, <code>'; DROP TABLE--</code></td><td>SQL error message in response: "You have an error in your SQL syntax"</td></tr>
+          <tr><td style="color:var(--red)">SQL Injection (blind, time-based)</td><td><code>'; WAITFOR DELAY '0:0:5'--</code> (MSSQL)</td><td>Response takes 5+ seconds longer than baseline — confirms SQLi without error output</td></tr>
+          <tr><td style="color:var(--orange)">Reflected XSS</td><td><code>&lt;script&gt;alert(1)&lt;/script&gt;</code>, <code>"&gt;&lt;img src=x onerror=alert(1)&gt;</code></td><td>Payload appears unencoded in response body — browser would execute it</td></tr>
+          <tr><td style="color:var(--orange)">Path Traversal</td><td><code>../../../etc/passwd</code>, <code>....//....//etc/passwd</code></td><td>Response contains <code>root:x:0:0</code> — contents of /etc/passwd</td></tr>
+          <tr><td style="color:var(--yellow)">SSTI (Template Injection)</td><td><code>{{7*7}}</code>, <code>${7*7}</code>, <code>#{7*7}</code></td><td>Response contains <code>49</code> — template engine evaluated the expression</td></tr>
+          <tr><td style="color:var(--yellow)">Open Redirect</td><td><code>?next=https://evil.com</code>, <code>?redirect=//evil.com</code></td><td>Response redirects to attacker's domain (Location header: https://evil.com)</td></tr>
+          <tr><td style="color:var(--accent)">Command Injection</td><td><code>; sleep 5</code>, <code>| whoami</code>, <code>$(id)</code></td><td>Time delay (for blind) or command output in response</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <div class="scan-phase" id="sp5">
+      <div class="sp-header" onclick="toggleSP('sp5')">
+        <div class="sp-num" style="background:rgba(107,37,128,0.1);color:var(--purple)">5</div>
+        <div class="sp-title">Reporting — understanding DAST output</div>
+        <div class="sp-tag">Triaging findings into real vs false positive</div>
+        <div class="sp-tog">▼</div>
+      </div>
+      <div class="sp-body">
+        <p>DAST reports contain findings ranked by severity (Critical → High → Medium → Low → Informational). Each finding shows: the affected URL, the specific parameter, the payload that triggered it, the evidence in the response, and a remediation recommendation. Your job is to triage these findings — not every finding is a real vulnerability.</p>
+        <h5>DAST finding triage checklist</h5>
+        <table>
+          <tr><th>Question to ask</th><th>What to check</th></tr>
+          <tr><td>Is the payload actually dangerous?</td><td>Some scanners flag <code>&lt;b&gt;</code> being reflected as "XSS" even if HTML is properly escaped. Verify the payload actually executes in a browser.</td></tr>
+          <tr><td>Is the endpoint reachable by attackers?</td><td>An internal-only endpoint accessible only from within the VPC is lower risk than a public endpoint.</td></tr>
+          <tr><td>Is authentication required?</td><td>A finding on an unauthenticated endpoint is higher severity than the same finding behind authentication.</td></tr>
+          <tr><td>Can you reproduce it manually?</td><td>Open Burp Suite, replay the exact request the scanner used. If it doesn't reproduce, it may be a false positive.</td></tr>
+          <tr><td>What is the real business impact?</td><td>Missing X-Frame-Options on an app with no sensitive functionality is lower risk than the same on a banking portal.</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════ INTERMEDIATE: OWASP ZAP ════════════════════ -->
+<div class="section">
+  <div class="eyebrow">🟡 Intermediate — OWASP ZAP</div>
+  <div class="sec-title">OWASP ZAP — the industry standard free DAST tool</div>
+  <div class="sec-sub">OWASP ZAP (Zed Attack Proxy) is the most widely used DAST tool in the world. It's free, open-source, and maintained by OWASP. It can be used as a GUI tool for manual testing or run headlessly in CI/CD pipelines. Every AppSec engineer must know it deeply.</div>
+
+  <div class="tab-wrap">
+    <div class="tab-bar">
+      <div class="tab-btn active" onclick="switchTab('overview')">Overview</div>
+      <div class="tab-btn" onclick="switchTab('install')">Installation</div>
+      <div class="tab-btn" onclick="switchTab('gui')">GUI Workflow</div>
+      <div class="tab-btn" onclick="switchTab('auth')">Authenticated Scan</div>
+      <div class="tab-btn" onclick="switchTab('cli')">CLI / Headless</div>
+    </div>
+
+    <div class="tab-pane active" id="tp-overview">
+      <p style="font-size:13.5px;color:var(--ink2);line-height:1.75;margin-bottom:1rem;">ZAP operates as an intercepting proxy between your browser (or test scripts) and your target application. Every HTTP request passes through ZAP, which records it, passively analyzes it, and optionally attacks it. ZAP's architecture consists of:</p>
+      <table>
+        <tr><th>Component</th><th>What it does</th><th>Used for</th></tr>
+        <tr><td style="font-weight:600">Proxy</td><td>Sits between browser and app. Records all traffic.</td><td>Manual exploration, session capture, authenticated scan setup</td></tr>
+        <tr><td style="font-weight:600">Spider</td><td>Automated crawler — finds all URLs and parameters</td><td>Attack surface discovery before active scan</td></tr>
+        <tr><td style="font-weight:600">AJAX Spider</td><td>Headless browser crawler for JavaScript-heavy apps</td><td>SPA scanning (React/Vue/Angular)</td></tr>
+        <tr><td style="font-weight:600">Active Scanner</td><td>Sends attack payloads to all discovered endpoints</td><td>Vulnerability discovery (XSS, SQLi, etc.)</td></tr>
+        <tr><td style="font-weight:600">Passive Scanner</td><td>Analyzes traffic without extra requests</td><td>Header issues, cookie flags, info disclosure</td></tr>
+        <tr><td style="font-weight:600">Fuzzer</td><td>Sends custom wordlists/payloads to specific params</td><td>Manual fuzzing for custom vulnerability classes</td></tr>
+        <tr><td style="font-weight:600">Alerts</td><td>All findings organized by risk level</td><td>Triage and reporting</td></tr>
+      </table>
+    </div>
+
+    <div class="tab-pane" id="tp-install">
+<pre>
+<span class="cm"># ── Option 1: Docker (recommended for CI/CD) ──────────────────</span>
+$ docker pull ghcr.io/zaproxy/zaproxy:stable
+
+<span class="cm"># Run ZAP baseline scan (unauthenticated)</span>
+$ docker run -t ghcr.io/zaproxy/zaproxy:stable zap-baseline.py \
+    -t https://staging.myapp.com \
+    -r zap-report.html
+
+<span class="cm"># ── Option 2: Package manager ─────────────────────────────────</span>
+$ brew install --cask owasp-zap        <span class="cm"># macOS</span>
+$ sudo snap install zaproxy            <span class="cm"># Ubuntu/Debian</span>
+
+<span class="cm"># ── Option 3: Direct download ─────────────────────────────────</span>
+<span class="cm"># Download from: https://www.zaproxy.org/download/</span>
+<span class="cm"># Available: .exe (Windows), .dmg (macOS), .sh (Linux)</span>
+
+<span class="cm"># ── Verify installation ────────────────────────────────────────</span>
+$ zap.sh -version
+<span class="cg">ZAP 2.15.0</span>
+
+<span class="cm"># ── Install key add-ons (from ZAP GUI: Tools → Add-ons) ───────</span>
+<span class="cm"># - Ajax Spider: for SPA crawling</span>
+<span class="cm"># - OpenAPI Support: for API spec-driven scanning</span>
+<span class="cm"># - GraphQL Support: for GraphQL endpoint scanning</span>
+<span class="cm"># - Retire.js: finds vulnerable JavaScript libraries</span>
+</pre>
+    </div>
+
+    <div class="tab-pane" id="tp-gui">
+      <p style="font-size:13.5px;color:var(--ink2);line-height:1.75;margin-bottom:1rem;">The ZAP GUI is where you do manual exploration and set up authenticated scans before running automated scans. Here is the standard workflow:</p>
+<pre>
+<span class="cm"># STEP 1: Configure your browser to use ZAP as proxy</span>
+<span class="cm"># ZAP listens on: localhost:8080 (HTTP proxy)</span>
+<span class="cm"># Set in browser: Settings → Network → Manual Proxy → localhost:8080</span>
+<span class="cm"># Install ZAP's root CA certificate in your browser (Tools → Options → Network → Server Certificates)</span>
+
+<span class="cm"># STEP 2: Browse your application</span>
+<span class="cm"># With your browser proxied through ZAP, log in to the app and navigate through key features.</span>
+<span class="cm"># ZAP records every request in the "Sites" tree.</span>
+<span class="cm"># This builds the attack surface map before automated scanning.</span>
+
+<span class="cm"># STEP 3: Set scan scope</span>
+<span class="cm"># Right-click the target site in "Sites" tree → "Include in Context"</span>
+<span class="cm"># This tells ZAP to only scan YOUR app's URLs, not CDNs or third parties</span>
+
+<span class="cm"># STEP 4: Run Spider</span>
+<span class="cm"># Right-click target → Spider → "Start Scan"</span>
+<span class="cm"># ZAP discovers all additional URLs not found through manual browsing</span>
+
+<span class="cm"># STEP 5: Run Active Scan</span>
+<span class="cm"># Right-click target → Active Scan → "Start Scan"</span>
+<span class="cm"># ZAP begins attacking every discovered parameter</span>
+
+<span class="cm"># STEP 6: Review Alerts</span>
+<span class="cm"># Bottom pane → "Alerts" tab</span>
+<span class="cm"># Sorted by risk: Red (High) → Orange (Medium) → Yellow (Low) → Blue (Informational)</span>
+</pre>
+    </div>
+
+    <div class="tab-pane" id="tp-auth">
+      <p style="font-size:13.5px;color:var(--ink2);line-height:1.75;margin-bottom:1rem;">Authenticated scanning is the most critical configuration. Without it, you only scan public pages. There are three authentication methods in ZAP depending on your app's auth type:</p>
+<pre>
+<span class="cm"># ── Method 1: Session Cookie (most common) ─────────────────────</span>
+<span class="cm"># Step 1: Log in to your app manually via ZAP proxy</span>
+<span class="cm"># Step 2: Find the session cookie in ZAP → Request → Response → Cookies</span>
+<span class="cm"># Step 3: In ZAP: Sites → Right-click app → Context → Authentication</span>
+<span class="cm"># Step 4: Set Authentication Method: "Script-based" or "Form-based"</span>
+<span class="cm"># Step 5: Add session cookie as an HTTP Session Token</span>
+
+<span class="cm"># ── Method 2: Bearer Token / JWT (API authentication) ──────────</span>
+<span class="cm"># In ZAP: Right-click target → Context → Authorization</span>
+<span class="cm"># Add Authorization header: Bearer eyJ... (your test user JWT)</span>
+<span class="cm"># ZAP attaches this header to every request in the scan</span>
+
+<span class="cm"># ── Method 3: Form-based auth (automated login) ─────────────────</span>
+<span class="cm"># ZAP logs in on your behalf using credentials you provide</span>
+<span class="cm"># Configure in: Context → Authentication → Form-based Authentication</span>
+Login URL:    https://staging.myapp.com/login
+POST data:    username={%username%}&password={%password%}
+Success:      Logged in as       <span class="cm"># text that appears when login works</span>
+Failure:      Invalid credentials <span class="cm"># text that appears on failed login</span>
+
+<span class="cm"># ZAP monitors for the logout pattern and re-authenticates</span>
+<span class="cm"># if it detects the session has expired during the scan</span>
+
+<span class="cm"># ── Verification: confirm ZAP is authenticated ──────────────────</span>
+<span class="cm"># Spider → check that authenticated URLs appear in Sites tree</span>
+<span class="cm"># If /dashboard, /profile, /settings appear → auth is working</span>
+<span class="cm"># If only /login, /register appear → auth failed, check config</span>
+</pre>
+    </div>
+
+    <div class="tab-pane" id="tp-cli">
+<pre>
+<span class="cm"># ZAP CLI / Docker — three built-in scan scripts</span>
+
+<span class="cm"># ── 1. Baseline Scan: passive only, fast (2–5 min) ─────────────</span>
+$ docker run ghcr.io/zaproxy/zaproxy:stable zap-baseline.py \
+    -t https://staging.myapp.com \
+    -r baseline-report.html \
+    -J baseline-report.json \
+    -I                        <span class="cm"># don't fail on warnings, only errors</span>
+
+<span class="cm"># ── 2. Full Scan: spider + active scan (20–60+ min) ─────────────</span>
+$ docker run ghcr.io/zaproxy/zaproxy:stable zap-full-scan.py \
+    -t https://staging.myapp.com \
+    -r full-report.html \
+    -z "-config scanner.strength=HIGH" \  <span class="cm"># increase scan strength</span>
+    -x full-report.xml
+
+<span class="cm"># ── 3. API Scan: OpenAPI-spec-driven (most thorough for APIs) ───</span>
+$ docker run -v $(pwd):/zap/wrk ghcr.io/zaproxy/zaproxy:stable zap-api-scan.py \
+    -t /zap/wrk/openapi.json \  <span class="cm"># your OpenAPI 3.0 spec file</span>
+    -f openapi \
+    -r api-report.html
+
+<span class="cm"># ── Authenticated scan from CLI ──────────────────────────────────</span>
+$ docker run ghcr.io/zaproxy/zaproxy:stable zap-full-scan.py \
+    -t https://staging.myapp.com \
+    -r report.html \
+    -z "-config replacer.full_list(0).description=Auth \
+        -config replacer.full_list(0).enabled=true \
+        -config replacer.full_list(0).matchtype=REQ_HEADER \
+        -config replacer.full_list(0).matchstr=Authorization \
+        -config replacer.full_list(0).replacement='Bearer eyJ...'"
+<span class="cm"># This injects your Bearer token into every request ZAP makes</span>
+</pre>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════ INTERMEDIATE: BURP SUITE ════════════════════ -->
+<div class="section">
+  <div class="eyebrow">🟡 Intermediate — Burp Suite</div>
+  <div class="sec-title">Burp Suite — the professional pentest platform</div>
+  <div class="sec-sub">Burp Suite is the tool of choice for professional security engineers and pentesters. The Community edition is free with limited features. Professional ($449/yr) adds the automated scanner, Intruder (for fuzzing), and extensions. Enterprise adds CI/CD integration.</div>
+
+  <div class="callout cl-info">
+    <div class="cl-icon">ℹ️</div>
+    <div class="cl-text"><strong>ZAP vs Burp:</strong> ZAP is free, excellent for CI/CD automation, and good for systematic scanning. Burp Pro is the professional tool for manual security testing, pentesting, and more sophisticated attacks. In a mature security program, you use both: ZAP in the automated pipeline, Burp for manual pentest work and deep investigation of findings.</div>
+  </div>
+
+  <!-- Burp tools -->
+  <div class="panel" id="pan-burp-proxy">
+    <div class="panel-h" onclick="tp('pan-burp-proxy')">
+      <div class="panel-dot" style="background:var(--orange)"></div>
+      <div class="panel-title">Burp Proxy — intercept and modify every HTTP request</div>
+      <div class="panel-sub">The foundation of all Burp workflow — everything flows through the proxy</div>
+      <div class="panel-tog">▼</div>
+    </div>
+    <div class="panel-body">
+      <p>Burp Proxy is an intercepting HTTP/HTTPS proxy. Every request your browser makes to the target goes through Burp first. You can inspect it, modify it, forward it, or drop it. This is how security engineers manually test for vulnerabilities — intercept a request, modify a parameter, see what the server does.</p>
+<pre>
+<span class="cm"># Burp Proxy workflow for testing an IDOR vulnerability:</span>
+
+<span class="cm"># 1. Configure browser to proxy through Burp: 127.0.0.1:8080</span>
+<span class="cm"># 2. Navigate to your profile page: GET /api/user/1001</span>
+<span class="cm"># 3. Burp intercepts the request — you see:</span>
+GET /api/user/<span class="cv">1001</span> HTTP/1.1
+Host: staging.myapp.com
+Cookie: session=abc123
+Authorization: Bearer eyJ...
+
+<span class="cm"># 4. Modify user ID in Burp: change 1001 → 1002</span>
+GET /api/user/<span class="cr">1002</span> HTTP/1.1
+Host: staging.myapp.com
+Cookie: session=abc123
+
+<span class="cm"># 5. Forward modified request and observe response:</span>
+HTTP/1.1 <span class="cr">200 OK</span>                          <span class="cm"># ← should be 403 Forbidden!</span>
+{<span class="cs">"id"</span>: 1002, <span class="cs">"email"</span>: <span class="cs">"other@user.com"</span>, <span class="cs">"address"</span>: <span class="cs">"123 Main St"</span>}
+<span class="cm"># CONFIRMED IDOR: user A can read user B's data</span>
+</pre>
+    </div>
+  </div>
+
+  <div class="panel" id="pan-burp-repeater">
+    <div class="panel-h" onclick="tp('pan-burp-repeater')">
+      <div class="panel-dot" style="background:var(--blue)"></div>
+      <div class="panel-title">Burp Repeater — replay and modify requests manually</div>
+      <div class="panel-sub">Your primary tool for confirming vulnerabilities and crafting exploits</div>
+      <div class="panel-tog">▼</div>
+    </div>
+    <div class="panel-body">
+      <p>Repeater lets you resend any intercepted request with modifications and see the response instantly. It's your workbench for confirming vulnerabilities. When ZAP flags a potential SQL injection, you use Repeater to manually craft progressively more complex payloads to confirm the vulnerability and determine its full impact.</p>
+<pre>
+<span class="cm"># Confirming SQL injection with Burp Repeater</span>
+<span class="cm"># ZAP flagged: POST /search?q= as potential SQLi</span>
+
+<span class="cm"># Test 1: Baseline — normal request</span>
+POST /search HTTP/1.1
+Content-Type: application/json
+{"q": "laptop"}
+<span class="cm"># Response: 200 OK, 12 results</span>
+
+<span class="cm"># Test 2: Single quote — triggers error?</span>
+{"q": "<span class="cr">'</span>"}
+<span class="cm"># Response: 500 Internal Server Error</span>
+<span class="cm"># Body: "You have an error in your SQL syntax near '''"</span>
+<span class="cm"># → CONFIRMED: SQL injection, error-based</span>
+
+<span class="cm"># Test 3: Authentication bypass</span>
+{"q": "<span class="cr">' OR '1'='1' --</span>"}
+<span class="cm"># Response: 200 OK, ALL 50,000 products returned</span>
+<span class="cm"># → Authentication bypass confirmed. Attacker can dump entire catalog.</span>
+
+<span class="cm"># Test 4: Union-based data extraction</span>
+{"q": "<span class="cr">' UNION SELECT username, password, null FROM users --</span>"}
+<span class="cm"># Response: 200 OK, results include:</span>
+<span class="cm"># [{"name": "admin", "description": "$2b$12$hash..."}, ...]</span>
+<span class="cm"># → Full database dump via SQLi confirmed</span>
+</pre>
+    </div>
+  </div>
+
+  <div class="panel" id="pan-burp-intruder">
+    <div class="panel-h" onclick="tp('pan-burp-intruder')">
+      <div class="panel-dot" style="background:var(--purple)"></div>
+      <div class="panel-title">Burp Intruder — automated fuzzing with payload lists</div>
+      <div class="panel-sub">Iterate through thousands of payloads against a specific parameter</div>
+      <div class="panel-tog">▼</div>
+    </div>
+    <div class="panel-body">
+      <p>Intruder takes a request with marked injection points and iterates through a payload list, sending one request per payload. It's used for credential brute-forcing, IDOR enumeration, and fuzzing for injection vulnerabilities with large payload sets.</p>
+<pre>
+<span class="cm"># Burp Intruder — enumerating IDOR across order IDs</span>
+
+<span class="cm"># Base request (intercepted from Burp Proxy):</span>
+GET /api/orders/<span class="cv">§1001§</span> HTTP/1.1   <span class="cm"># § marks injection point</span>
+Cookie: session=user_a_token
+
+<span class="cm"># Payload type: Numbers</span>
+<span class="cm"># Payload set: 1000 → 2000 (sequential)</span>
+<span class="cm"># Intruder sends 1000 requests, one per order ID</span>
+
+<span class="cm"># Analyze results by response length:</span>
+<span class="cm"># ID 1001: 200 OK, length 342  ← your order</span>
+<span class="cm"># ID 1002: 403 Forbidden, length 0</span>
+<span class="cm"># ID 1003: 403 Forbidden, length 0</span>
+<span class="cm"># ID 1004: 200 OK, length 387  ← ANOTHER USER's order! IDOR confirmed</span>
+<span class="cm"># ID 1005: 200 OK, length 412  ← and another one...</span>
+
+<span class="cm"># Filter by status code 200 → shows every IDOR-accessible order</span>
+<span class="cm"># This is automated IDOR enumeration — finds all exposed records</span>
+</pre>
+      <div class="callout cl-tip">
+        <div class="cl-icon">💡</div>
+        <div class="cl-text"><strong>Intruder attack types:</strong> Sniper (one payload list, one position at a time), Battering Ram (same payload in all positions simultaneously), Pitchfork (parallel payload lists), Cluster Bomb (all combinations). For credential stuffing: Pitchfork with username list + password list. For IDOR: Sniper with sequential numbers.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════ INTERMEDIATE: REAL DAST FINDINGS ════════════════════ -->
+<div class="section">
+  <div class="eyebrow">🟡 Intermediate — Real DAST Findings</div>
+  <div class="sec-title">Triaging real DAST output</div>
+  <div class="sec-sub">These are the exact findings you will see in OWASP ZAP and Burp reports — with the request, evidence, and your triage decision for each.</div>
+
+  <!-- Finding 1 -->
+  <div class="finding f-crit" id="df1" onclick="toggleDF('df1')">
+    <div class="f-top">
+      <div>
+        <div class="f-title">SQL Injection — POST /api/products/search parameter "q"</div>
+        <div class="f-meta">ZAP Alert ID: 40018 · CWE-89 · URL: https://staging.myapp.com/api/products/search</div>
+      </div>
+      <span class="f-sev sc">CRITICAL</span>
+    </div>
+    <div class="f-body" id="df1-b">
+      <h5>Evidence from ZAP Report</h5>
+<pre>
+<span class="cm"># Request ZAP sent:</span>
+POST /api/products/search HTTP/1.1
+Host: staging.myapp.com
+Content-Type: application/json
+
+{"q": "<span class="cr">' AND 1=2 UNION SELECT NULL,@@version,NULL--</span>"}
+
+<span class="cm"># Response ZAP received:</span>
+HTTP/1.1 500 Internal Server Error
+Content-Type: application/json
+
+{
+  "error": "near '--': syntax error",
+  "query": "SELECT id, name, price FROM products WHERE name LIKE '%' AND 1=2 UNION SELECT NULL,@@version,NULL--%'"
+}
+<span class="cm"># DB error leaked full SQL query in response → Error-based SQL injection confirmed</span>
+</pre>
+      <h5>Your Triage</h5>
+      <p><strong>TRUE POSITIVE — CRITICAL.</strong> ZAP has not just detected a potential SQLi — it has confirmed it. The full SQL query is reflected in the error response, revealing the query structure. The attacker can now craft a UNION-based extraction to dump the entire database. This is a P0 finding — block deployment until fixed.</p>
+      <h5>Fix</h5>
+<pre>
+<span class="cm"># Vulnerable (Flask + SQLAlchemy raw query):</span>
+<span class="cf">def</span> <span class="cg">search_products</span>(q):
+<span class="lb">    result = db.engine.execute(<span class="cs">f"SELECT * FROM products WHERE name LIKE '%{q}%'"</span>)</span>
+
+<span class="cm"># Fixed — SQLAlchemy ORM (parameterized by design):</span>
+<span class="cf">def</span> <span class="cg">search_products_fixed</span>(q):
+<span class="lg">    results = Product.query.filter(Product.name.ilike(<span class="cs">f'%{q}%'</span>)).all()</span>
+    <span class="cf">return</span> results
+
+<span class="cm"># ALSO fix: never return SQL errors to client</span>
+<span class="lg">app.config[<span class="cs">'PROPAGATE_EXCEPTIONS'</span>] = <span class="ck">False</span>  <span class="cm"># generic 500 error only</span></span>
+</pre>
+      <div class="pill-row"><span class="pill pr">TRUE POSITIVE</span><span class="pill pr">P0 — BLOCK RELEASE</span><span class="pill pr">CWE-89</span><span class="pill pr">OWASP A03</span></div>
+    </div>
+  </div>
+
+  <!-- Finding 2 -->
+  <div class="finding f-high" id="df2" onclick="toggleDF('df2')">
+    <div class="f-top">
+      <div>
+        <div class="f-title">Reflected Cross-Site Scripting — GET /search parameter "term"</div>
+        <div class="f-meta">ZAP Alert ID: 40012 · CWE-79 · URL: https://staging.myapp.com/search?term=</div>
+      </div>
+      <span class="f-sev sh">HIGH</span>
+    </div>
+    <div class="f-body" id="df2-b">
+      <h5>Evidence from ZAP Report</h5>
+<pre>
+<span class="cm"># Request ZAP sent:</span>
+GET /search?term=<span class="cr">%3Cscript%3Ealert%281%29%3C%2Fscript%3E</span> HTTP/1.1
+<span class="cm"># Decoded: term=&lt;script&gt;alert(1)&lt;/script&gt;</span>
+
+<span class="cm"># Response ZAP received:</span>
+HTTP/1.1 200 OK
+Content-Type: text/html
+
+&lt;html&gt;
+  &lt;body&gt;
+    &lt;h2&gt;Search results for: <span class="cr">&lt;script&gt;alert(1)&lt;/script&gt;</span>&lt;/h2&gt;
+    <span class="cm">&lt;!-- ZAP evidence: payload reflected unencoded in HTML --&gt;</span>
+  &lt;/body&gt;
+&lt;/html&gt;
+</pre>
+      <h5>Verifying in Browser</h5>
+      <p>Navigate to <code>https://staging.myapp.com/search?term=&lt;script&gt;alert(document.cookie)&lt;/script&gt;</code> in a browser. If an alert box appears showing the session cookie — XSS confirmed. The attacker can steal the session cookie and impersonate any user who clicks a crafted URL.</p>
+      <h5>Fix</h5>
+<pre>
+<span class="cm"># Jinja2 template — vulnerable (using | safe or wrong context):</span>
+<span class="lb">&lt;h2&gt;Search results for: {{ search_term | safe }}&lt;/h2&gt;  {# never | safe on user input #}</span>
+
+<span class="cm"># Fixed — Jinja2 auto-escaping (default, just remove | safe):</span>
+<span class="lg">&lt;h2&gt;Search results for: {{ search_term }}&lt;/h2&gt;  {# auto-escaped: &lt; → &amp;lt; #}</span>
+
+<span class="cm"># ALSO add Content-Security-Policy header:</span>
+<span class="lg">Content-Security-Policy: default-src 'self'; script-src 'self'</span>
+<span class="cm"># Even if XSS payload is injected, CSP blocks inline script execution</span>
+</pre>
+      <div class="pill-row"><span class="pill pr">TRUE POSITIVE</span><span class="pill pr">P1 — Fix this sprint</span><span class="pill py">CWE-79</span><span class="pill py">OWASP A03</span></div>
+    </div>
+  </div>
+
+  <!-- Finding 3 -->
+  <div class="finding f-med" id="df3" onclick="toggleDF('df3')">
+    <div class="f-top">
+      <div>
+        <div class="f-title">Missing Content-Security-Policy header — all pages</div>
+        <div class="f-meta">ZAP Alert ID: 10038 · CWE-693 · URL: https://staging.myapp.com/</div>
+      </div>
+      <span class="f-sev sm">MEDIUM</span>
+    </div>
+    <div class="f-body" id="df3-b">
+      <h5>Evidence</h5>
+<pre>
+<span class="cm"># Passive scan finding — ZAP inspects every response header:</span>
+HTTP/1.1 200 OK
+Content-Type: text/html; charset=utf-8
+<span class="cr">X-Frame-Options: SAMEORIGIN         </span><span class="cm"> ✓ present</span>
+<span class="cr">X-Content-Type-Options: nosniff     </span><span class="cm"> ✓ present</span>
+<span class="cr"># Content-Security-Policy: MISSING  </span><span class="cm"> ← ZAP flags this</span>
+<span class="cr"># Strict-Transport-Security: MISSING</span><span class="cm"> ← ZAP flags this too</span>
+</pre>
+      <h5>Fix — add all missing security headers in Django</h5>
+<pre>
+<span class="cm"># settings.py — add security middleware and headers</span>
+MIDDLEWARE = [
+    <span class="cs">'django.middleware.security.SecurityMiddleware'</span>,  <span class="cm"># adds HSTS and more</span>
+    <span class="cm"># ... other middleware</span>
+]
+
+<span class="cm"># Django security settings:</span>
+<span class="lg">SECURE_HSTS_SECONDS = <span class="ce">31536000</span>              <span class="cm"># HSTS: 1 year</span></span>
+<span class="lg">SECURE_HSTS_INCLUDE_SUBDOMAINS = <span class="ck">True</span></span>
+<span class="lg">SECURE_HSTS_PRELOAD = <span class="ck">True</span></span>
+<span class="lg">SECURE_SSL_REDIRECT = <span class="ck">True</span>                   <span class="cm"># redirect HTTP → HTTPS</span></span>
+<span class="lg">SESSION_COOKIE_SECURE = <span class="ck">True</span>                 <span class="cm"># cookie only over HTTPS</span></span>
+<span class="lg">SESSION_COOKIE_HTTPONLY = <span class="ck">True</span>               <span class="cm"># no JS access to cookie</span></span>
+<span class="lg">CSRF_COOKIE_SECURE = <span class="ck">True</span></span>
+
+<span class="cm"># Add CSP via middleware (django-csp package):</span>
+$ pip install django-csp
+
+<span class="cm"># settings.py:</span>
+<span class="lg">CSP_DEFAULT_SRC = (<span class="cs">"'self'"</span>,)</span>
+<span class="lg">CSP_SCRIPT_SRC  = (<span class="cs">"'self'"</span>, <span class="cs">'https://cdn.jsdelivr.net'</span>)</span>
+<span class="lg">CSP_STYLE_SRC   = (<span class="cs">"'self'"</span>, <span class="cs">'https://fonts.googleapis.com'</span>)</span>
+<span class="lg">CSP_FONT_SRC    = (<span class="cs">"'self'"</span>, <span class="cs">'https://fonts.gstatic.com'</span>)</span>
+<span class="lg">CSP_IMG_SRC     = (<span class="cs">"'self'"</span>, <span class="cs">'data:'</span>)</span>
+</pre>
+      <div class="pill-row"><span class="pill pr">TRUE POSITIVE</span><span class="pill py">P2 — fix within 30 days</span><span class="pill py">CWE-693</span><span class="pill py">OWASP A05</span></div>
+    </div>
+  </div>
+
+  <!-- Finding 4 — FALSE POSITIVE -->
+  <div class="finding f-high" id="df4" onclick="toggleDF('df4')">
+    <div class="f-top">
+      <div>
+        <div class="f-title">Cross-Site Request Forgery — POST /api/user/update-email</div>
+        <div class="f-meta">ZAP Alert ID: 10202 · CWE-352 · URL: https://staging.myapp.com/api/user/update-email</div>
+      </div>
+      <span class="f-sev sh">HIGH</span>
+    </div>
+    <div class="f-body" id="df4-b">
+      <h5>What ZAP Flagged</h5>
+<pre>
+<span class="cm"># ZAP sent this request with no CSRF token:</span>
+POST /api/user/update-email HTTP/1.1
+Host: staging.myapp.com
+Content-Type: application/json
+Authorization: Bearer eyJ...
+
+{"email": "zap-test@zap.com"}
+
+<span class="cm"># Response: 200 OK — email updated!</span>
+<span class="cm"># ZAP concludes: no CSRF protection</span>
+</pre>
+      <h5>Triage — Is This a Real CSRF Vulnerability?</h5>
+      <p><strong>This may be a FALSE POSITIVE</strong> — depending on your authentication mechanism. Here's the critical check:</p>
+      <table>
+        <tr><th>Auth method</th><th>CSRF vulnerable?</th><th>Reason</th></tr>
+        <tr><td style="color:var(--accent);font-weight:600">Bearer Token (Authorization header)</td><td style="color:var(--accent)">NOT vulnerable to CSRF</td><td>CSRF attacks cannot set custom request headers. An attacker's forged form submission from evil.com cannot include your Authorization header — the browser blocks it. Bearer token auth IS CSRF-safe.</td></tr>
+        <tr><td style="color:var(--red);font-weight:600">Session Cookie (Cookie header)</td><td style="color:var(--red)">VULNERABLE to CSRF</td><td>Browsers automatically send cookies with cross-origin requests. An attacker's form on evil.com triggers POST to your app, and the browser attaches the victim's session cookie automatically.</td></tr>
+      </table>
+      <h5>Verdict</h5>
+      <p><strong>If the API uses Bearer tokens exclusively:</strong> FALSE POSITIVE — suppress with documentation: <code># nosec CSRF — API uses Bearer token auth; CSRF not applicable per OWASP CSRF Prevention Cheat Sheet</code></p>
+      <p style="margin-top:.5rem;"><strong>If the API accepts cookies for auth:</strong> TRUE POSITIVE — add SameSite=Strict to session cookie AND verify that state-changing requests require either a CSRF token or check the Origin/Referer header.</p>
+      <div class="pill-row"><span class="pill py">CONTEXT-DEPENDENT</span><span class="pill pg">FP if Bearer-only</span><span class="pill pr">TP if cookie auth</span><span class="pill py">CWE-352</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════ ADVANCED: CI/CD DAST ════════════════════ -->
+<div class="section">
+  <div class="eyebrow">🔴 Advanced — CI/CD Integration</div>
+  <div class="sec-title">DAST in your CI/CD pipeline</div>
+  <div class="sec-sub">Running DAST in CI is harder than SAST — DAST needs a live running application. Here is the full architecture and GitHub Actions configuration to make it work reliably.</div>
+
+  <div class="callout cl-note">
+    <div class="cl-icon">📌</div>
+    <div class="cl-text"><strong>Architecture challenge:</strong> SAST scans source code — it can run without any infrastructure. DAST needs: a running application server, a running database, any external services your app calls (mocked or real), and a dedicated test environment with isolated data. This is why DAST is more complex to automate than SAST.</div>
+  </div>
+
+<pre>
+<span class="ctag">github-actions</span>
+<span class="cm"># .github/workflows/dast.yml</span>
+name: <span class="cs">DAST Security Scan</span>
+
+on:
+  push: { branches: [main] }
+  pull_request: { branches: [main] }
+
+jobs:
+  dast:
+    runs-on: ubuntu-latest
+
+    services:
+      <span class="cm"># ── Spin up the application + database ──────────────────────</span>
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: testdb
+          POSTGRES_PASSWORD: testpass
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      <span class="cm"># ── Build and start your application ───────────────────────</span>
+      - name: <span class="cs">Set up Python</span>
+        uses: actions/setup-python@v5
+        with: { python-version: <span class="cs">'3.12'</span> }
+
+      - name: <span class="cs">Install dependencies and start app</span>
+        run: |
+          pip install -r requirements.txt
+          python manage.py migrate --run-syncdb
+          python manage.py loaddata test_fixtures.json  <span class="cm"># load test data including test users</span>
+          python manage.py runserver 0.0.0.0:8000 &     <span class="cm"># start app in background</span>
+          sleep 5                                        <span class="cm"># wait for server to be ready</span>
+        env:
+          DATABASE_URL: postgresql://postgres:testpass@localhost/testdb
+          SECRET_KEY: ci-test-secret-key-not-for-production
+          DEBUG: <span class="cs">'False'</span>
+
+      <span class="cm"># ── Obtain authentication token for grey-box scan ───────────</span>
+      - name: <span class="cs">Get auth token for ZAP</span>
+        id: auth
+        run: |
+          TOKEN=$(curl -s -X POST http://localhost:8000/api/auth/token/ \
+            -H "Content-Type: application/json" \
+            -d '{"username":"testuser","password":"testpass123"}' \
+            | jq -r '.access')
+          echo "token=$TOKEN" >> $GITHUB_OUTPUT
+
+      <span class="cm"># ── Run ZAP Baseline (passive) scan ─────────────────────────</span>
+      - name: <span class="cs">ZAP Baseline Scan</span>
+        uses: zaproxy/action-baseline@v0.11.0
+        with:
+          target: <span class="cs">'http://localhost:8000'</span>
+          rules_file_name: <span class="cs">'.zap/rules.tsv'</span>     <span class="cm"># custom rule overrides</span>
+          cmd_options: <span class="cs">'-I'</span>                      <span class="cm"># don't fail on warnings</span>
+
+      <span class="cm"># ── Run ZAP Full Scan (authenticated, active) ───────────────</span>
+      - name: <span class="cs">ZAP Full Authenticated Scan</span>
+        uses: zaproxy/action-full-scan@v0.10.0
+        with:
+          target: <span class="cs">'http://localhost:8000'</span>
+          cmd_options: >-
+            -z "-config replacer.full_list(0).enabled=true
+               -config replacer.full_list(0).matchtype=REQ_HEADER
+               -config replacer.full_list(0).matchstr=Authorization
+               -config replacer.full_list(0).replacement='Bearer ${{ steps.auth.outputs.token }}'"
+
+      <span class="cm"># ── Enforce severity threshold ──────────────────────────────</span>
+      - name: <span class="cs">Parse ZAP results and enforce gate</span>
+        run: |
+          HIGHS=$(cat zap-report.json | jq '[.site[].alerts[] | select(.riskdesc | startswith("High"))] | length')
+          CRITS=$(cat zap-report.json | jq '[.site[].alerts[] | select(.riskdesc | startswith("Critical"))] | length')
+          echo "Critical: $CRITS  High: $HIGHS"
+          if [ $((CRITS + HIGHS)) -gt 0 ]; then
+            echo "::error::DAST gate failed — $CRITS critical, $HIGHS high findings"
+            exit 1
+          fi
+
+      <span class="cm"># ── Upload HTML report as artifact ──────────────────────────</span>
+      - name: <span class="cs">Upload ZAP Report</span>
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dast-report
+          path: |
+            zap-report.html
+            zap-report.json
+</pre>
+</div>
+
+<!-- ════════════════════ ADVANCED: API SCANNING ════════════════════ -->
+<div class="section">
+  <div class="eyebrow">🔴 Advanced — API Security Scanning</div>
+  <div class="sec-title">DAST for APIs — OpenAPI-driven scanning</div>
+  <div class="sec-sub">Modern applications are largely APIs. DAST scanning a REST API requires a different approach than scanning a web app — you need an API spec to tell the scanner what endpoints exist and what parameters they accept.</div>
+
+  <div class="callout cl-info">
+    <div class="cl-icon">ℹ️</div>
+    <div class="cl-text"><strong>Why APIs need special handling:</strong> A traditional web spider discovers pages by following HTML links. REST APIs have no HTML links. Without an OpenAPI/Swagger spec, the scanner has no way to discover endpoints like <code>POST /api/v2/payments</code> or <code>DELETE /api/users/{id}</code>. The OpenAPI spec IS the attack surface map for API scanning.</div>
+  </div>
+
+<pre>
+<span class="cm"># ZAP API Scan with OpenAPI spec — most thorough API DAST</span>
+
+<span class="cm"># Your openapi.json / openapi.yaml specifies all endpoints:</span>
+<span class="cm"># ZAP reads the spec, generates requests for every endpoint,</span>
+<span class="cm"># and injects payloads into every parameter.</span>
+
+$ docker run -v $(pwd):/zap/wrk:rw ghcr.io/zaproxy/zaproxy:stable \
+    zap-api-scan.py \
+    -t /zap/wrk/openapi.json \         <span class="cm"># OpenAPI 3.0 or Swagger 2.0 spec</span>
+    -f openapi \
+    -r /zap/wrk/api-report.html \
+    -J /zap/wrk/api-report.json \
+    -z "-config scanner.strength=HIGH" \
+    -H "Authorization: Bearer eyJ..."  <span class="cm"># auth token for authenticated scan</span>
+
+<span class="cm"># For GraphQL APIs — ZAP has a dedicated GraphQL scanner:</span>
+$ docker run ghcr.io/zaproxy/zaproxy:stable \
+    zap-full-scan.py \
+    -t https://staging.myapp.com/graphql \
+    -z "-config graphql.endpoint=https://staging.myapp.com/graphql \
+        -config graphql.schemaUrl=https://staging.myapp.com/graphql?sdl"
+</pre>
+
+  <!-- API-specific vulnerabilities DAST finds -->
+  <div class="panel" id="pan-api-vulns">
+    <div class="panel-h" onclick="tp('pan-api-vulns')">
+      <div class="panel-dot" style="background:var(--blue)"></div>
+      <div class="panel-title">API-specific vulnerabilities DAST finds</div>
+      <div class="panel-sub">Beyond standard web vulnerabilities — these are API-specific attack patterns</div>
+      <div class="panel-tog">▼</div>
+    </div>
+    <div class="panel-body">
+      <table>
+        <tr><th>Vulnerability</th><th>How DAST tests it</th><th>OWASP API Category</th></tr>
+        <tr>
+          <td style="color:var(--red);font-weight:600">BOLA / IDOR</td>
+          <td>Tests resource endpoints by replacing the object ID with other valid IDs (numeric increment, UUID fuzzing). Checks if different users' data is returned.</td>
+          <td>API1 — Broken Object Level Authorization</td>
+        </tr>
+        <tr>
+          <td style="color:var(--orange);font-weight:600">Mass Assignment</td>
+          <td>Sends extra fields in POST/PUT bodies beyond what the API spec accepts (e.g., adding <code>"role":"admin"</code> to a user update). Checks if the server accepts and processes them.</td>
+          <td>API3 — Broken Object Property Level Auth</td>
+        </tr>
+        <tr>
+          <td style="color:var(--orange);font-weight:600">No Rate Limiting</td>
+          <td>Sends the same request 100× in rapid succession. If all succeed with 200 OK → no rate limiting. Critical for auth endpoints.</td>
+          <td>API4 — Unrestricted Resource Consumption</td>
+        </tr>
+        <tr>
+          <td style="color:var(--yellow);font-weight:600">Excessive Data Exposure</td>
+          <td>Analyzes API responses for fields not in the OpenAPI spec — password hashes, internal IDs, PII fields that should be filtered out.</td>
+          <td>API3 — Broken Object Property Level Auth</td>
+        </tr>
+        <tr>
+          <td style="color:var(--yellow);font-weight:600">Broken Function Level Auth</td>
+          <td>Tests admin/privileged endpoints with a regular user token. If 200 OK → auth check missing at function level.</td>
+          <td>API5 — Broken Function Level Authorization</td>
+        </tr>
+      </table>
+
+<pre>
+<span class="cm"># Example: testing Mass Assignment with curl / Burp</span>
+<span class="cm"># API spec says: PATCH /api/users/{id} accepts: {name, email}</span>
+<span class="cm"># DAST tests: what happens if we send extra fields?</span>
+
+<span class="cm"># Normal request (as per spec):</span>
+PATCH /api/users/42 HTTP/1.1
+Authorization: Bearer user_token
+{"name": "Alice", "email": "alice@example.com"}
+<span class="cm"># Response: 200 OK — expected</span>
+
+<span class="cm"># Mass assignment attack (adding unauthorized field):</span>
+PATCH /api/users/42 HTTP/1.1
+Authorization: Bearer user_token
+<span class="cr">{"name": "Alice", "email": "alice@example.com", "role": "admin", "is_staff": true}</span>
+<span class="cm"># If Response: 200 OK → mass assignment vulnerability!</span>
+<span class="cm"># User has escalated their own privileges to admin</span>
+
+<span class="cm"># Fix: use explicit field allowlist in your serializer</span>
+<span class="cf">class</span> UserUpdateSerializer(serializers.ModelSerializer):
+<span class="lg">    <span class="cf">class</span> Meta:</span>
+<span class="lg">        model = User</span>
+<span class="lg">        fields = [<span class="cs">'name'</span>, <span class="cs">'email'</span>]  <span class="cm"># ONLY these two — role, is_staff excluded</span></span>
+</pre>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════ ADVANCED: TUNING ════════════════════ -->
+<div class="section">
+  <div class="eyebrow">🔴 Advanced — Scan Policies &amp; Tuning</div>
+  <div class="sec-title">Custom scan policies and false positive management</div>
+  <div class="sec-sub">A default ZAP scan on a large app generates hundreds of findings, many of which are false positives. Tuning your scan policy reduces noise and makes findings actionable.</div>
+
+<pre>
+<span class="cm"># ZAP custom rules file: .zap/rules.tsv</span>
+<span class="cm"># Format: rule_id  PASS|WARN|FAIL  optional-description</span>
+
+<span class="cm"># Syntax: tab-separated: AlertID   Action</span>
+<span class="cm"># PASS = suppress finding (false positive, accepted risk)</span>
+<span class="cm"># WARN = report but don't fail CI</span>
+<span class="cm"># FAIL = fail CI pipeline (default for HIGH+)</span>
+
+10020	WARN	<span class="cm"># X-Frame-Options — we use CSP frame-ancestors instead</span>
+10038	WARN	<span class="cm"># CSP missing — we're still rolling out CSP</span>
+10202	PASS	<span class="cm"># CSRF — API uses Bearer tokens only, CSRF not applicable</span>
+90022	PASS	<span class="cm"># App error disclosure in test env only — not prod</span>
+10015	WARN	<span class="cm"># Incomplete or no cache-control — acceptable for this app</span>
+
+<span class="cm"># Key ZAP Alert IDs to know:</span>
+<span class="cm"># 40018 = SQL Injection        40012 = XSS Reflected</span>
+<span class="cm"># 40014 = XSS Persistent       10202 = CSRF</span>
+<span class="cm"># 10038 = CSP missing          10020 = X-Frame-Options</span>
+<span class="cm"># 40009 = Path Traversal       90022 = App Error Disclosure</span>
+<span class="cm"># 10010 = Cookie no HttpOnly   10011 = Cookie Secure Flag Missing</span>
+</pre>
+
+  <div class="callout cl-warn">
+    <div class="cl-icon">⚠️</div>
+    <div class="cl-text"><strong>Every PASS suppression needs a documented business justification.</strong> In your <code>.zap/rules.tsv</code>, add a comment for every suppressed rule explaining why it's safe to suppress. "10202 PASS — API exclusively uses Bearer JWT tokens in Authorization header; CSRF not applicable per OWASP CSRF Cheat Sheet. Verified: no cookie-based auth." This is your audit trail for security reviews and compliance audits.</div>
+  </div>
+</div>
+
+<!-- ════════════════════ QUIZ ════════════════════ -->
+<div class="section">
+  <div class="eyebrow">Knowledge Check</div>
+  <div class="sec-title">DAST interview questions</div>
+  <div class="sec-sub">Questions you will face in AppSec engineer and security consultant interviews</div>
+
+  <div class="quiz-block">
+    <div class="quiz-q">Q1. ZAP flags a "SQL Injection" finding on your login endpoint. You check the request ZAP sent — it used a single quote as the payload. The response was a generic "Invalid credentials" message with no error details and a normal 200 status code. Is this a true positive?</div>
+    <div class="quiz-opts" id="q1">
+      <div class="qo" onclick="doQ('q1',this,'wrong')">Yes — any SQL injection payload causing a different response confirms SQLi</div>
+      <div class="qo" onclick="doQ('q1',this,'wrong')">Yes — single quote always triggers SQLi</div>
+      <div class="qo" onclick="doQ('q1',this,'correct')">Likely false positive — a generic "Invalid credentials" 200 response to a single quote gives no evidence of SQLi. A true positive would show a DB error, a different status code, or different response length/timing. Verify manually with Burp Repeater using time-based payloads.</div>
+      <div class="qo" onclick="doQ('q1',this,'wrong')">Definitely false positive — login endpoints are never vulnerable to SQLi</div>
+    </div>
+    <div class="quiz-exp" id="q1-exp">DAST confidence levels matter. ZAP sometimes flags potential SQLi when a response differs from baseline — but a generic "Invalid credentials" doesn't confirm injection. The evidence must show something injectable: a DB error, a significant response time difference with <code>; SLEEP(5)--</code>, different result counts, or reflected SQL in the response. Use Burp Repeater to manually test: send <code>' AND SLEEP(5)--</code> and check if response takes 5+ seconds. That would confirm blind SQLi.</div>
+  </div>
+
+  <div class="quiz-block">
+    <div class="quiz-q">Q2. You need to run DAST in CI/CD but your app calls Stripe's payment API during checkout. What problems does this cause and how do you solve them?</div>
+    <div class="quiz-opts" id="q2">
+      <div class="qo" onclick="doQ('q2',this,'wrong')">No problem — DAST only tests your app, not Stripe</div>
+      <div class="qo" onclick="doQ('q2',this,'correct')">DAST will trigger real Stripe API calls during scanning, potentially creating real charges and fraudulent transactions. Solution: use Stripe's test mode with test API keys in the CI environment. Also mock/stub all third-party integrations in the test environment, or configure ZAP to exclude the checkout endpoint from active scanning.</div>
+      <div class="qo" onclick="doQ('q2',this,'wrong')">Disable DAST scanning for the payment section entirely</div>
+      <div class="qo" onclick="doQ('q2',this,'wrong')">Use production Stripe keys — DAST won't send enough requests to cause real charges</div>
+    </div>
+    <div class="quiz-exp" id="q2-exp">DAST active scanning sends hundreds of crafted requests to every discovered endpoint. For a checkout endpoint, this means hundreds of attempted payment transactions — creating fraudulent charges in Stripe if live keys are used. Solutions: (1) Use Stripe test mode (<code>sk_test_...</code> keys) in CI — test charges don't cost real money. (2) Stub the Stripe SDK in the test environment (replace with a mock that returns fake success). (3) Add <code>.*/checkout.*</code> and <code>.*/payment.*</code> to ZAP's active scan exclusions. Option 3 reduces coverage — prefer option 1 or 2.</div>
+  </div>
+
+  <div class="quiz-block">
+    <div class="quiz-q">Q3. What is the difference between a ZAP Baseline scan and a ZAP Full scan, and when would you use each in a CI/CD pipeline?</div>
+    <div class="quiz-opts" id="q3">
+      <div class="qo" onclick="doQ('q3',this,'wrong')">They are the same — Full scan just has more rules enabled</div>
+      <div class="qo" onclick="doQ('q3',this,'wrong')">Baseline is for APIs, Full is for web applications</div>
+      <div class="qo" onclick="doQ('q3',this,'correct')">Baseline = passive scan only (no attack payloads sent, 2–5 min). Finds header misconfigs and info disclosure without disrupting the app. Full = spider + active scan (sends thousands of attack payloads, 20–60+ min). Finds SQLi, XSS, injection. Use Baseline on every PR (fast, safe). Use Full on merge to main or nightly (thorough but slow).</div>
+      <div class="qo" onclick="doQ('q3',this,'wrong')">Baseline scans authenticated pages, Full scan is unauthenticated</div>
+    </div>
+    <div class="quiz-exp" id="q3-exp">The key distinction is active vs passive. Baseline uses only the passive scanner — it never sends attack payloads, so it's extremely fast and safe to run against any environment. Full scan runs the active scanner — it sends SQLi strings, XSS payloads, and path traversal sequences to every discovered parameter, which can disrupt app operation and is slow. Pipeline strategy: Baseline on every PR (2–5 min, blocks on header issues), Full on merge to main (20–60 min, blocks on HIGH+ active findings), API scan against OpenAPI spec on pre-release.</div>
+  </div>
+</div>
+
+<!-- ════════════════════ CHALLENGE ════════════════════ -->
+<div class="challenge">
+  <div class="ch-ey">Capstone Challenge — Full DAST Analysis</div>
+  <div class="ch">
+    <h3>Triage this ZAP report &amp; design a CI/CD DAST strategy</h3>
+    <p class="ch-desc">Below is a ZAP report from a Node.js e-commerce application. Triage each finding (true/false positive, severity, fix). Then design the DAST CI/CD strategy for this application.</p>
+    <div class="scenario">
+      <p><strong>Application:</strong> Node.js + Express e-commerce store. Sells physical products. Has user accounts, shopping cart, checkout with Stripe, order history. Built as a React SPA with a REST API backend. Authentication: JWT Bearer tokens in Authorization header.<br><br>
+      <strong>Finding A — HIGH:</strong> ZAP found "Reflected XSS" on <code>GET /search?q=</code>. Payload: <code>&lt;img src=x onerror=alert(1)&gt;</code>. Evidence: payload appears in response JSON body as <code>{"query":"&lt;img src=x onerror=alert(1)&gt;","results":[]}</code>. The frontend is a React SPA that renders this JSON using <code>dangerouslySetInnerHTML</code>.<br><br>
+      <strong>Finding B — HIGH:</strong> ZAP found "SQL Injection" on <code>POST /api/cart/add</code> parameter <code>product_id</code>. Payload: <code>1' OR '1'='1</code>. Evidence: response time increased by 4.8 seconds compared to baseline (blind time-based SQLi indicator). App uses MongoDB (NoSQL).<br><br>
+      <strong>Finding C — MEDIUM:</strong> ZAP found "CSRF" on <code>POST /api/orders/place</code>. The request has no CSRF token. Auth is JWT Bearer token in Authorization header.<br><br>
+      <strong>Finding D — HIGH:</strong> ZAP found "Path Traversal" on <code>GET /api/files?name=invoice.pdf</code>. Payload: <code>../../../../etc/passwd</code>. Evidence: response was a 404 Not Found (not the file contents).<br><br>
+      <strong>Finding E — MEDIUM:</strong> ZAP found "Missing Anti-clickjacking Header" — no <code>X-Frame-Options</code> and no <code>Content-Security-Policy: frame-ancestors</code>. App has a payment form that handles credit card inputs.</p>
+    </div>
+    <textarea id="ch-ans" placeholder="Finding A: TP/FP — Severity: — Fix: ...
+Finding B: TP/FP — Severity: — Fix: ...
+Finding C: TP/FP — Severity: — Fix: ...
+Finding D: TP/FP — Severity: — Fix: ...
+Finding E: TP/FP — Severity: — Fix: ...
+
+CI/CD DAST Strategy:
+- On every PR: ...
+- On merge to main: ...
+- Pre-release gate: ...
+- How to handle Stripe: ...
+- How to handle React SPA: ..."></textarea>
+    <div class="btn-row">
+      <button class="btn btn-p" onclick="checkCh()">Submit</button>
+      <button class="btn btn-g" onclick="revealCh()">Reveal model answer</button>
+    </div>
+    <div class="ch-fb" id="ch-fb"></div>
+  </div>
+</div>
+
+<!-- ════════════════════ SUMMARY ════════════════════ -->
+<div class="section">
+  <div class="eyebrow">Quick Reference</div>
+  <div class="sec-title">DAST cheat sheet</div>
+  <table>
+    <tr><th>Concept</th><th>Definition</th><th>Key tool / pattern</th></tr>
+    <tr><td style="font-weight:700;color:var(--accent)">DAST</td><td>Tests running application via HTTP — black-box, no source code needed</td><td>OWASP ZAP, Burp Suite, Nikto, Nuclei</td></tr>
+    <tr><td style="font-weight:700;color:var(--blue)">Black-box</td><td>No credentials — tests what external attacker sees</td><td>ZAP Baseline, external recon</td></tr>
+    <tr><td style="font-weight:700;color:var(--accent)">Grey-box</td><td>With credentials — tests authenticated attack surface</td><td>ZAP Full Scan + Bearer token</td></tr>
+    <tr><td style="font-weight:700;color:var(--yellow)">Spider</td><td>Crawls app to discover all URLs and parameters for the active scan</td><td>ZAP traditional spider (HTML apps), AJAX spider (SPAs)</td></tr>
+    <tr><td style="font-weight:700;color:var(--orange)">Passive scan</td><td>Analyzes traffic without extra requests — headers, cookies, info disclosure</td><td>Runs alongside spidering in ZAP</td></tr>
+    <tr><td style="font-weight:700;color:var(--red)">Active scan</td><td>Sends attack payloads (SQLi, XSS, etc.) to every discovered parameter</td><td>ZAP Full Scan, Burp Scanner</td></tr>
+    <tr><td style="font-weight:700;color:var(--blue)">Burp Proxy</td><td>Intercepts and modifies HTTP traffic — manual testing workbench</td><td>Confirm findings, test IDOR, craft exploits</td></tr>
+    <tr><td style="font-weight:700;color:var(--purple)">Burp Repeater</td><td>Replay + modify requests to confirm and deepen vulnerability research</td><td>Verify SQLi, test variations, determine impact</td></tr>
+    <tr><td style="font-weight:700;color:var(--purple)">Burp Intruder</td><td>Automated fuzzing — iterates payload list against marked injection points</td><td>IDOR enumeration, credential brute-force</td></tr>
+    <tr><td style="font-weight:700;color:var(--accent)">OpenAPI scan</td><td>Uses API spec as the attack surface map — required for REST API scanning</td><td><code>zap-api-scan.py -t openapi.json</code></td></tr>
+    <tr><td style="font-weight:700;color:var(--yellow)">.zap/rules.tsv</td><td>Custom rule overrides — suppress false positives, tune severity</td><td>PASS/WARN/FAIL per alert ID</td></tr>
+    <tr><td style="font-weight:700;color:var(--red)">Staging only</td><td>NEVER run active DAST against production — corrupts data, crashes app</td><td>Dedicated isolated test environment required</td></tr>
+  </table>
+</div>
+
+<!-- NAV FOOTER -->
+<div class="nav-footer">
+  <a class="nf-btn" href="#">
+    <span class="nf-dir">← Previous</span>
+    <span class="nf-title">04 — SAST (Static Application Security Testing)</span>
+  </a>
+  <a class="nf-btn next" href="#">
+    <span class="nf-dir">Next Lesson →</span>
+    <span class="nf-title">06 — SCA (Software Composition Analysis)</span>
+  </a>
+</div>
+
+</div><!-- /content -->
+</div><!-- /main -->
+
+<script>
+// Panel toggle
+function tp(id){document.getElementById(id).classList.toggle('open');}
+document.getElementById('pan-compare').classList.add('open');
+
+// Scan phase toggle
+function toggleSP(id){document.getElementById(id).classList.toggle('open');}
+document.getElementById('sp1').classList.add('open');
+
+// Finding expand
+function toggleDF(id){
+  const b=document.getElementById(id+'-b');
+  b.classList.toggle('show');
+}
+
+// Tab switcher
+function switchTab(name){
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById('tp-'+name).classList.add('active');
+}
+
+// Quiz
+function doQ(qid,el,result){
+  const c=document.getElementById(qid);
+  c.querySelectorAll('.qo').forEach(o=>o.onclick=null);
+  el.classList.add(result==='correct'?'correct':'wrong');
+  document.getElementById(qid+'-exp').classList.add('show');
+}
+
+// Challenge
+function checkCh(){
+  const ans=document.getElementById('ch-ans').value.toLowerCase();
+  const fb=document.getElementById('ch-fb');
+  const checks=[
+    ans.includes('finding a') && (ans.includes('true') || ans.includes('tp')) && (ans.includes('dangerous') || ans.includes('react') || ans.includes('xss')),
+    ans.includes('finding b') && (ans.includes('nosql') || ans.includes('mongodb') || ans.includes('injection') || ans.includes('time-based')),
+    ans.includes('finding c') && (ans.includes('false') || ans.includes('bearer') || ans.includes('jwt') || ans.includes('csrf')),
+    ans.includes('finding d') && (ans.includes('false') || ans.includes('404') || ans.includes('path traversal')),
+    ans.includes('finding e') && (ans.includes('true') || ans.includes('payment') || ans.includes('clickjack') || ans.includes('frame')),
+    (ans.includes('baseline') || ans.includes('stripe') || ans.includes('ajax spider') || ans.includes('openapi')),
+  ];
+  const score=checks.filter(Boolean).length;
+  fb.className='ch-fb show '+(score>=5?'good':score>=3?'hint':'hint');
+  if(score>=5){
+    fb.innerHTML=`🎯 Excellent triage — ${score}/6 key areas covered. You're reasoning about DAST findings like a senior AppSec engineer. The hardest one was Finding B: a time-based "SQL injection" on MongoDB. MongoDB doesn't use SQL — but it IS vulnerable to NoSQL injection (e.g., <code>{"$gt":""}}</code> operator injection). The 4.8s delay is suspicious and warrants investigation, but the fix is different: use a MongoDB sanitization library like <code>mongo-sanitize</code>, not parameterized SQL queries.`;
+  } else if(score>=3){
+    fb.innerHTML=`✅ Good work — ${score}/6 covered. Key nuances: <strong>Finding A</strong> is a critical TRUE POSITIVE because the backend echoes user input into JSON AND the React frontend uses <code>dangerouslySetInnerHTML</code> — that's the execution context. Even "safe" JSON becomes XSS when rendered via dangerouslySetInnerHTML. <strong>Finding D</strong> — a 404 response to a path traversal payload is NOT evidence of vulnerability. The file wasn't found, which means the traversal didn't work. That's a FALSE POSITIVE.`;
+  } else {
+    fb.innerHTML=`⚠️ Work through each finding methodically: (1) What payload did ZAP send? (2) What was the response? (3) Does the response prove the vulnerability is real? For Finding D — ZAP sent <code>../../../../etc/passwd</code> and got a 404. Did it find the file? No. Is that a real path traversal? Think it through. For Finding B — the app uses MongoDB. Can MongoDB be SQL-injected?`;
+  }
+}
+
+function revealCh(){
+  const fb=document.getElementById('ch-fb');
+  fb.className='ch-fb show reveal';
+  fb.innerHTML=`<strong>Model Answer:</strong><br><br>
+<strong>Finding A — TRUE POSITIVE — CRITICAL (upgrade from HIGH)</strong><br>
+Evidence is strong: payload echoed unescaped in JSON response AND React frontend renders it via <code>dangerouslySetInnerHTML</code>. This is confirmed Stored/Reflected XSS executable in browser. Two fixes needed: (1) Backend: sanitize output — never echo raw user input in JSON responses (use allowlist of valid search characters). (2) Frontend: replace <code>dangerouslySetInnerHTML</code> with React's safe rendering (<code>{searchQuery}</code>) — React auto-escapes by design. Using <code>dangerouslySetInnerHTML</code> defeats all of React's XSS protections.<br><br>
+<strong>Finding B — INVESTIGATE (not straightforward TP or FP)</strong><br>
+App uses MongoDB, not SQL — traditional SQL injection doesn't apply. BUT: the 4.8-second response time delay is suspicious. MongoDB is vulnerable to <em>NoSQL injection</em> — attackers use MongoDB operators like <code>{"$gt": ""}</code> or <code>{"$where": "sleep(5000)"}</code> to manipulate queries. The time delay may indicate blind NoSQL injection. Investigate with Burp Repeater: send <code>{"product_id": {"$gt": ""}}</code> and check if it returns unexpected results. Fix: use <code>mongo-sanitize</code> npm package to strip operator keys from user input before passing to MongoDB queries.<br><br>
+<strong>Finding C — FALSE POSITIVE</strong><br>
+API uses JWT Bearer tokens in Authorization header. CSRF attacks cannot set custom request headers — browser CORS policy blocks it. A forged request from evil.com can include cookies but NOT the Authorization header. Bearer token auth is inherently CSRF-resistant. Suppress: add <code>10202 PASS # API uses Bearer JWT; CSRF not applicable per OWASP CSRF Cheat Sheet</code> to <code>.zap/rules.tsv</code>.<br><br>
+<strong>Finding D — FALSE POSITIVE</strong><br>
+ZAP sent <code>../../../../etc/passwd</code> and received <code>404 Not Found</code>. The file was NOT returned. A 404 means the path traversal did not succeed — the server either sanitized the path or the file doesn't exist at that traversal depth. Evidence required for TP: response body containing <code>root:x:0:0:root:/root:/bin/bash</code>. That's not present here. However, add a regression test: explicitly validate that the <code>name</code> parameter can only contain filenames (no slashes, no dots at start) and that files are served from a locked-down directory.<br><br>
+<strong>Finding E — TRUE POSITIVE — Upgrade to HIGH given payment context</strong><br>
+A payment form without clickjacking protection can be framed in an attacker's iframe. The attacker overlays transparent elements on top to capture keystrokes and card entry — a "UI redressing" or "clickjacking" attack that steals credit card details. This is HIGH severity because it directly targets payment data. Fix: add <code>Content-Security-Policy: frame-ancestors 'none'</code> to all response headers (preferred over X-Frame-Options for modern browsers). This prevents the app from being embedded in any iframe on any external domain.<br><br>
+<strong>CI/CD DAST Strategy:</strong><br>
+• Every PR: ZAP Baseline (passive, 3 min). Blocks on MEDIUM+. Catches header issues before code merges.<br>
+• Merge to main: ZAP Full Scan authenticated with test JWT (20–40 min). Blocks on HIGH+. Runs in parallel with other jobs to minimize pipeline time.<br>
+• Pre-release: ZAP API Scan using OpenAPI spec + manual review of all MEDIUM findings.<br>
+• Handle Stripe: Use <code>STRIPE_SECRET_KEY=sk_test_...</code> in CI env. Exclude <code>.*/webhook.*</code> from active scan (webhook endpoints shouldn't receive crafted payloads).<br>
+• Handle React SPA: Use ZAP AJAX Spider (not traditional spider) — React routes aren't discoverable via HTML link following. Configure headless Selenium/Playwright to click through the app.`;
+}
+</script>
+</body>
+</html>

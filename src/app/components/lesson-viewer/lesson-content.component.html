@@ -1,0 +1,116 @@
+<div class="viewer-shell">
+
+  <!-- Top bar -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <div class="breadcrumb">
+        <span class="bc-root">appsec-engineer</span>
+        <span class="bc-sep">/</span>
+        <span class="bc-module">{{ currentModule()?.name }}</span>
+        <span class="bc-sep">/</span>
+        <span class="bc-current">{{ lesson()?.title }}</span>
+      </div>
+    </div>
+
+    <div class="topbar-center">
+      <div class="lesson-progress-dots">
+        <span
+          *ngFor="let n of [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20]"
+          class="dot"
+          [class.active]="n === lesson()?.num"
+          [class.done]="isLessonDone(n)"
+          [routerLink]="['/lesson', n]"
+          [title]="'Lesson ' + n"
+        ></span>
+      </div>
+    </div>
+
+    <div class="topbar-right">
+      <span class="lesson-badge">
+        Lesson {{ lesson()?.num }} / 20
+      </span>
+      <span class="duration-badge">
+        <svg viewBox="0 0 14 14" fill="none">
+          <circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.2"/>
+          <path d="M7 4.5V7l1.5 1.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+        </svg>
+        {{ lesson()?.duration }}
+      </span>
+      <span class="level-badge" [attr.data-level]="lesson()?.level">
+        {{ lesson()?.level }}
+      </span>
+    </div>
+  </header>
+
+  <!-- Lesson iframe -->
+  <div class="frame-wrap">
+    <!-- Loading skeleton -->
+    <div class="loading-overlay" *ngIf="isLoading()">
+      <div class="skeleton-topbar"></div>
+      <div class="skeleton-content">
+        <div class="skeleton-line w80"></div>
+        <div class="skeleton-line w60"></div>
+        <div class="skeleton-line w90"></div>
+        <div class="skeleton-line w70"></div>
+        <div class="skeleton-gap"></div>
+        <div class="skeleton-line w85"></div>
+        <div class="skeleton-line w65"></div>
+        <div class="skeleton-line w80"></div>
+      </div>
+    </div>
+
+    <iframe
+      #frame
+      class="lesson-frame"
+      [class.ready]="!isLoading()"
+      [src]="lessonUrl() | safeUrl"
+      (load)="onFrameLoad()"
+      title="{{ lesson()?.title }}"
+      sandbox="allow-scripts allow-same-origin allow-popups"
+    ></iframe>
+  </div>
+
+  <!-- Footer nav -->
+  <footer class="nav-footer">
+    <button
+      class="nav-btn prev-btn"
+      [disabled]="!prevLesson()"
+      (click)="goToPrev()"
+    >
+      <svg viewBox="0 0 16 16" fill="none">
+        <path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span>
+        <small>Previous</small>
+        <strong>{{ prevLesson()?.title ?? '—' }}</strong>
+      </span>
+    </button>
+
+    <button
+      class="complete-btn"
+      [class.done]="isCompleted()"
+      (click)="toggleComplete()"
+    >
+      <svg viewBox="0 0 16 16" fill="none">
+        <circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.2"/>
+        <path d="M5 8l2.5 2.5L11 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      {{ isCompleted() ? 'Completed ✓' : 'Mark Complete' }}
+    </button>
+
+    <button
+      class="nav-btn next-btn"
+      [disabled]="!nextLesson()"
+      (click)="goToNext()"
+    >
+      <span>
+        <small>Next</small>
+        <strong>{{ nextLesson()?.title ?? '—' }}</strong>
+      </span>
+      <svg viewBox="0 0 16 16" fill="none">
+        <path d="M6 3l5 5-5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
+  </footer>
+  
+</div>

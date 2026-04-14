@@ -1,0 +1,1194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AppSec Engineer — Lesson 16: Security Architecture</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500;600;700&family=IBM+Plex+Serif:ital,wght@0,600;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#fafaf8;--surface:#ffffff;--surface2:#f2f2ee;--surface3:#e8e8e2;
+  --border:#d8d8d0;--border2:#c0c0b4;--ink:#1c1c18;--ink2:#4a4a40;--ink3:#909088;
+  --accent:#c0392b;--accent-bg:rgba(192,57,43,0.07);
+  --red:#c0392b;--red-bg:rgba(192,57,43,0.06);
+  --orange:#c46020;--orange-bg:rgba(196,96,32,0.07);
+  --yellow:#9a7010;--yellow-bg:rgba(154,112,16,0.07);
+  --green:#2a7a40;--green-bg:rgba(42,122,64,0.07);
+  --blue:#1a4a9a;--blue-bg:rgba(26,74,154,0.07);
+  --purple:#6a2a8a;--purple-bg:rgba(106,42,138,0.07);
+  --teal:#1a7a6a;--teal-bg:rgba(26,122,106,0.07);
+  --slate:#405060;--slate-bg:rgba(64,80,96,0.07);
+  --code-bg:#1c1c18;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--ink);font-family:'IBM Plex Sans',sans-serif;font-size:15px;line-height:1.8;}
+.sidebar{position:fixed;left:0;top:0;bottom:0;width:252px;background:var(--ink);overflow-y:auto;z-index:100;}
+.sb-brand{padding:1.4rem 1.2rem 1rem;border-bottom:1px solid rgba(255,255,255,.07);}
+.sb-badge{font-family:'JetBrains Mono',monospace;font-size:9px;background:var(--accent);color:#fff;padding:2px 8px;border-radius:2px;letter-spacing:.12em;display:inline-block;margin-bottom:7px;text-transform:uppercase;font-weight:700;}
+.sb-brand h2{font-size:13px;font-weight:400;color:rgba(255,255,255,.35);line-height:1.4;}
+.sb-sect{padding:.7rem 1.2rem .2rem;font-size:9px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:rgba(255,255,255,.18);margin-top:.25rem;}
+.nav-item{display:flex;align-items:center;gap:9px;padding:.38rem 1.2rem;cursor:pointer;border-left:2px solid transparent;font-size:12.5px;color:rgba(255,255,255,.22);text-decoration:none;transition:all .15s;}
+.nav-item:hover{color:rgba(255,255,255,.6);background:rgba(255,255,255,.04);}
+.nav-item.done{color:rgba(255,255,255,.28);}
+.nav-item.active{color:#fff;border-left-color:var(--accent);background:var(--accent-bg);}
+.nav-item .num{font-family:'JetBrains Mono',monospace;font-size:10px;min-width:22px;opacity:.28;}
+.nav-item.active .num{opacity:1;color:var(--accent);}
+.main{margin-left:252px;}
+.topbar{position:sticky;top:0;background:rgba(250,250,248,.96);backdrop-filter:blur(14px);border-bottom:1px solid var(--border);padding:.65rem 2.5rem;display:flex;align-items:center;justify-content:space-between;z-index:50;}
+.bc{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink3);}
+.bc span{color:var(--accent);font-weight:700;}
+.top-badge{font-family:'JetBrains Mono',monospace;font-size:10px;padding:3px 10px;background:var(--ink);color:rgba(255,255,255,.6);border-radius:2px;}
+.content{padding:3rem 2.5rem 5rem;max-width:960px;}
+.hero{margin-bottom:3.5rem;padding-bottom:2.5rem;border-bottom:2px solid var(--border);}
+.hero-meta{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1rem;}
+.tag{font-family:'JetBrains Mono',monospace;font-size:10px;padding:3px 10px;border-radius:2px;font-weight:600;letter-spacing:.04em;}
+.t-beg{background:var(--green-bg);color:var(--green);border:1px solid rgba(42,122,64,.2);}
+.t-frm{background:var(--blue-bg);color:var(--blue);border:1px solid rgba(26,74,154,.2);}
+.t-time{background:var(--purple-bg);color:var(--purple);border:1px solid rgba(106,42,138,.2);}
+.hero h1{font-family:'IBM Plex Serif',serif;font-size:3.2rem;font-weight:700;line-height:1.1;color:var(--ink);margin-bottom:.85rem;}
+.hero h1 .hl{color:var(--accent);}
+.hero-sub{font-size:14.5px;color:var(--ink2);max-width:660px;line-height:1.8;margin-bottom:1.75rem;}
+.level-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:6px;overflow:hidden;}
+.lv-cell{background:var(--surface);padding:.9rem 1rem;}
+.lv-pip{width:8px;height:8px;border-radius:50%;margin-bottom:7px;}
+.lv-label{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink3);margin-bottom:3px;}
+.lv-title{font-size:13px;font-weight:600;color:var(--ink);margin-bottom:2px;}
+.lv-desc{font-size:12px;color:var(--ink3);line-height:1.5;}
+.section{margin-bottom:3.5rem;}
+.eyebrow{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.15em;color:var(--accent);margin-bottom:5px;font-weight:700;}
+.sec-title{font-family:'IBM Plex Serif',serif;font-size:1.9rem;color:var(--ink);line-height:1.2;margin-bottom:.35rem;}
+.sec-sub{font-size:14px;color:var(--ink2);max-width:660px;line-height:1.75;margin-bottom:1.5rem;}
+.callout{border-radius:4px;padding:.9rem 1.1rem;margin:1rem 0;display:flex;gap:10px;align-items:flex-start;border-left:3px solid;}
+.cl-warn{background:var(--red-bg);border-color:var(--red);}
+.cl-info{background:var(--blue-bg);border-color:var(--blue);}
+.cl-tip{background:var(--green-bg);border-color:var(--green);}
+.cl-note{background:var(--yellow-bg);border-color:var(--yellow);}
+.cl-purple{background:var(--purple-bg);border-color:var(--purple);}
+.cl-teal{background:var(--teal-bg);border-color:var(--teal);}
+.cl-slate{background:var(--slate-bg);border-color:var(--slate);}
+.cl-icon{font-size:15px;flex-shrink:0;margin-top:2px;}
+.cl-text{font-size:13.5px;color:var(--ink2);line-height:1.7;}
+.cl-text strong{color:var(--ink);}
+.cl-text code{font-family:'JetBrains Mono',monospace;font-size:11.5px;background:rgba(0,0,0,.06);padding:1px 5px;border-radius:2px;color:var(--accent);}
+pre{background:var(--code-bg);color:#d4dbc8;border-radius:6px;padding:1.25rem;font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.8;overflow-x:auto;margin:.85rem 0;position:relative;border:1px solid rgba(255,255,255,.05);}
+.ctag{position:absolute;top:10px;right:12px;font-family:'JetBrains Mono',monospace;font-size:9px;color:rgba(255,255,255,.2);text-transform:uppercase;letter-spacing:.1em;}
+.ck{color:#c084fc;}.cf{color:#7dd3fc;}.cs{color:#86efac;}.cm{color:#374151;}.cv{color:#fcd34d;}.ce{color:#fb923c;}.cr{color:#f87171;}.cg{color:#4ade80;}.ct{color:#2dd4bf;}.cw{color:#f9a8d4;}.ca{color:#a3e635;}
+.lb{display:block;background:rgba(248,113,113,.09);border-left:2px solid #ef4444;margin:0 -1.25rem;padding:0 1.25rem;}
+.lg{display:block;background:rgba(74,222,128,.07);border-left:2px solid #22c55e;margin:0 -1.25rem;padding:0 1.25rem;}
+.lw{display:block;background:rgba(252,211,77,.07);border-left:2px solid #f59e0b;margin:0 -1.25rem;padding:0 1.25rem;}
+table{width:100%;border-collapse:collapse;font-size:13px;margin:1rem 0;}
+th{padding:.55rem .9rem;text-align:left;background:var(--ink);color:rgba(255,255,255,.7);font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.08em;}
+th:first-child{border-radius:4px 0 0 0;}th:last-child{border-radius:0 4px 0 0;}
+td{padding:.55rem .9rem;border-bottom:1px solid var(--border);color:var(--ink2);line-height:1.5;vertical-align:top;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:var(--surface2);}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:6px;overflow:hidden;margin-bottom:.75rem;}
+.panel-h{display:flex;align-items:center;gap:10px;padding:.9rem 1.1rem;cursor:pointer;transition:background .15s;user-select:none;}
+.panel-h:hover{background:var(--surface2);}
+.panel-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.panel-title{font-size:13.5px;font-weight:600;flex:1;color:var(--ink);}
+.panel-sub{font-size:12px;color:var(--ink3);}
+.panel-tog{color:var(--ink3);font-size:13px;transition:transform .2s;}
+.panel.open .panel-tog{transform:rotate(180deg);}
+.panel-body{display:none;padding:0 1.1rem 1.1rem;border-top:1px solid var(--border);}
+.panel.open .panel-body{display:block;}
+.panel-body h4{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--ink3);margin:1rem 0 .5rem;font-weight:600;}
+.panel-body p{font-size:13.5px;color:var(--ink2);line-height:1.75;margin-top:.6rem;}
+.principle-grid{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin:1rem 0;}
+.principle{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:1rem;}
+.p-num{font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:700;color:var(--border2);margin-bottom:.4rem;line-height:1;}
+.p-title{font-size:14px;font-weight:700;color:var(--ink);margin-bottom:.35rem;}
+.p-text{font-size:12.5px;color:var(--ink3);line-height:1.6;}
+.p-example{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--accent);background:var(--surface2);padding:.35rem .6rem;border-radius:3px;margin-top:.5rem;display:inline-block;}
+.arch-tabs{border:1px solid var(--border);border-radius:6px;overflow:hidden;margin:1.25rem 0;}
+.tab-bar{display:flex;background:var(--surface2);border-bottom:1px solid var(--border);flex-wrap:wrap;}
+.atab{padding:.55rem 1rem;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;cursor:pointer;color:var(--ink3);border-right:1px solid var(--border);transition:all .15s;user-select:none;}
+.atab:hover{color:var(--ink);}
+.atab.active{background:var(--surface);color:var(--accent);border-bottom:2px solid var(--accent);}
+.tab-pane{display:none;padding:1.25rem;}
+.tab-pane.active{display:block;}
+.pattern-card{background:var(--surface);border:1px solid var(--border);border-left:4px solid;border-radius:0 6px 6px 0;padding:1rem 1.1rem;margin-bottom:.75rem;cursor:pointer;transition:background .15s;}
+.pattern-card:hover{background:var(--surface2);}
+.pc-red{border-left-color:var(--red);}
+.pc-blue{border-left-color:var(--blue);}
+.pc-green{border-left-color:var(--green);}
+.pc-teal{border-left-color:var(--teal);}
+.pc-purple{border-left-color:var(--purple);}
+.pc-orange{border-left-color:var(--orange);}
+.pc-top{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;}
+.pc-title{font-size:13.5px;font-weight:700;color:var(--ink);margin-bottom:3px;}
+.pc-meta{font-size:11px;color:var(--ink3);font-family:'JetBrains Mono',monospace;}
+.pc-badge{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;padding:3px 10px;border-radius:2px;flex-shrink:0;white-space:nowrap;}
+.badge-r{background:var(--red-bg);color:var(--red);border:1px solid rgba(192,57,43,.2);}
+.badge-b{background:var(--blue-bg);color:var(--blue);border:1px solid rgba(26,74,154,.2);}
+.badge-g{background:var(--green-bg);color:var(--green);border:1px solid rgba(42,122,64,.2);}
+.badge-t{background:var(--teal-bg);color:var(--teal);border:1px solid rgba(26,122,106,.2);}
+.badge-p{background:var(--purple-bg);color:var(--purple);border:1px solid rgba(106,42,138,.2);}
+.badge-o{background:var(--orange-bg);color:var(--orange);border:1px solid rgba(196,96,32,.2);}
+.pc-body{display:none;margin-top:.85rem;padding-top:.85rem;border-top:1px solid var(--border);}
+.pc-body.show{display:block;}
+.pc-body h5{font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:var(--ink3);margin:.75rem 0 .35rem;font-weight:700;}
+.pc-body p{font-size:13.5px;color:var(--ink2);line-height:1.7;}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin:1rem 0;}
+.cb{background:var(--red-bg);border:1px solid rgba(192,57,43,.15);border-radius:6px;padding:1rem;}
+.cg-box{background:var(--green-bg);border:1px solid rgba(42,122,64,.15);border-radius:6px;padding:1rem;}
+.cmp-l{font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.12em;font-weight:700;margin-bottom:.6rem;}
+.cb .cmp-l{color:var(--red);}
+.cg-box .cmp-l{color:var(--green);}
+.pill{font-size:11px;padding:3px 9px;border-radius:2px;font-family:'JetBrains Mono',monospace;font-weight:600;}
+.pr{background:var(--red-bg);color:var(--red);border:1px solid rgba(192,57,43,.2);}
+.pg{background:var(--green-bg);color:var(--green);border:1px solid rgba(42,122,64,.2);}
+.py{background:var(--yellow-bg);color:var(--yellow);border:1px solid rgba(154,112,16,.2);}
+.pb{background:var(--blue-bg);color:var(--blue);border:1px solid rgba(26,74,154,.2);}
+.pp{background:var(--purple-bg);color:var(--purple);border:1px solid rgba(106,42,138,.2);}
+.pt{background:var(--teal-bg);color:var(--teal);border:1px solid rgba(26,122,106,.2);}
+.pill-row{display:flex;flex-wrap:wrap;gap:6px;margin:.5rem 0;}
+.quiz-block{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:1.25rem;margin-bottom:1rem;}
+.quiz-q{font-size:14.5px;font-weight:600;color:var(--ink);margin-bottom:.85rem;line-height:1.55;}
+.quiz-opts{display:flex;flex-direction:column;gap:7px;}
+.qo{padding:.65rem 1rem;border:1px solid var(--border);border-radius:4px;cursor:pointer;font-size:13.5px;color:var(--ink2);background:var(--surface2);transition:all .15s;}
+.qo:hover{border-color:var(--accent);color:var(--ink);}
+.qo.correct{border-color:var(--green);color:var(--green);background:var(--green-bg);cursor:default;}
+.qo.wrong{border-color:var(--red);color:var(--red);background:var(--red-bg);cursor:default;}
+.quiz-exp{font-size:13px;color:var(--ink2);line-height:1.7;padding:.75rem 1rem;background:var(--surface2);border-radius:4px;border-left:3px solid var(--green);display:none;margin-top:.5rem;}
+.quiz-exp.show{display:block;}
+.challenge{background:var(--ink);border-radius:10px;padding:2rem;margin:3rem 0;position:relative;overflow:hidden;}
+.challenge::before{content:'';position:absolute;top:-60px;right:-60px;width:220px;height:220px;background:radial-gradient(circle,rgba(192,57,43,.12) 0%,transparent 70%);pointer-events:none;}
+.ch-ey{font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.15em;color:var(--accent);margin-bottom:.5rem;}
+.ch h3{font-family:'IBM Plex Serif',serif;font-size:1.55rem;color:#fff;margin-bottom:.7rem;}
+.ch-desc{font-size:13.5px;color:rgba(255,255,255,.45);line-height:1.75;margin-bottom:1.25rem;}
+.scenario{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:5px;padding:1rem 1.1rem;margin-bottom:1.25rem;}
+.scenario p{font-size:13px;color:rgba(255,255,255,.55);line-height:1.75;}
+.scenario strong{color:rgba(255,255,255,.9);}
+.challenge textarea{width:100%;min-height:200px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:4px;padding:1rem;font-family:'JetBrains Mono',monospace;font-size:12px;color:rgba(255,255,255,.85);resize:vertical;outline:none;transition:border-color .2s;margin-bottom:1rem;}
+.challenge textarea:focus{border-color:var(--accent);}
+.challenge textarea::placeholder{color:rgba(255,255,255,.2);}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap;}
+.btn{padding:9px 20px;border-radius:4px;font-size:13px;font-family:'IBM Plex Sans',sans-serif;font-weight:600;cursor:pointer;border:1px solid;transition:all .15s;}
+.btn-p{background:var(--accent);color:#fff;border-color:var(--accent);}
+.btn-p:hover{background:#a93226;}
+.btn-g{background:transparent;color:rgba(255,255,255,.45);border-color:rgba(255,255,255,.14);}
+.btn-g:hover{color:#fff;border-color:rgba(255,255,255,.35);}
+.ch-fb{margin-top:1rem;padding:1rem 1.1rem;border-radius:5px;font-size:13.5px;line-height:1.7;display:none;}
+.ch-fb.show{display:block;}
+.ch-fb.good{background:rgba(42,122,64,.15);border:1px solid rgba(42,122,64,.3);color:#4ade80;}
+.ch-fb.hint{background:rgba(252,211,77,.1);border:1px solid rgba(252,211,77,.25);color:#fcd34d;}
+.ch-fb.reveal{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.75);}
+.nav-footer{display:flex;justify-content:space-between;margin-top:4rem;padding-top:2rem;border-top:2px solid var(--border);}
+.nf-btn{padding:.85rem 1.5rem;border:1px solid var(--border);border-radius:4px;font-size:13px;cursor:pointer;background:var(--surface);color:var(--ink2);text-align:left;transition:all .15s;text-decoration:none;display:block;}
+.nf-btn:hover{border-color:var(--accent);}
+.nf-btn.next{background:var(--accent);color:#fff;border-color:var(--accent);text-align:right;}
+.nf-btn.next:hover{background:#a93226;}
+.nf-dir{font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:var(--ink3);display:block;margin-bottom:3px;}
+.nf-btn.next .nf-dir{color:rgba(255,255,255,.4);}
+.nf-title{font-weight:700;display:block;}
+code{font-family:'JetBrains Mono',monospace;font-size:12px;background:rgba(0,0,0,.06);padding:1px 5px;border-radius:2px;color:var(--accent);}
+pre code{background:none;padding:0;color:inherit;font-size:inherit;}
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px;}
+@media(max-width:860px){.sidebar{display:none;}.main{margin-left:0;}.content{padding:1.5rem 1.1rem 3rem;}.level-strip,.two-col,.principle-grid{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+<nav class="sidebar">
+  <div class="sb-brand"><div class="sb-badge">AppSec Engineer</div><h2>Application Security<br>Learning Path</h2></div>
+  <div class="sb-sect">Module 1 &mdash; Foundations</div>
+  <a class="nav-item done" href="#"><span class="num">01</span>OWASP Top 10 2021</a>
+  <a class="nav-item done" href="#"><span class="num">02</span>Secure SDLC</a>
+  <a class="nav-item done" href="#"><span class="num">03</span>Threat Modeling</a>
+  <div class="sb-sect">Module 2 &mdash; Testing Tools</div>
+  <a class="nav-item done" href="#"><span class="num">04</span>SAST</a>
+  <a class="nav-item done" href="#"><span class="num">05</span>DAST</a>
+  <a class="nav-item done" href="#"><span class="num">06</span>SCA</a>
+  <a class="nav-item done" href="#"><span class="num">07</span>IAST &amp; RASP</a>
+  <div class="sb-sect">Module 3 &mdash; API Security</div>
+  <a class="nav-item done" href="#"><span class="num">08</span>OWASP API Top 10</a>
+  <a class="nav-item done" href="#"><span class="num">09</span>API Security Testing</a>
+  <a class="nav-item done" href="#"><span class="num">10</span>GraphQL Security</a>
+  <div class="sb-sect">Module 4 &mdash; DevSecOps</div>
+  <a class="nav-item done" href="#"><span class="num">11</span>DevSecOps Pipeline</a>
+  <a class="nav-item done" href="#"><span class="num">12</span>Secrets Management</a>
+  <a class="nav-item done" href="#"><span class="num">13</span>Container Security</a>
+  <a class="nav-item done" href="#"><span class="num">14</span>Dependency Scanning</a>
+  <a class="nav-item done" href="#"><span class="num">15</span>SBOM</a>
+  <div class="sb-sect">Module 5 &mdash; Architecture</div>
+  <a class="nav-item active" href="#"><span class="num">16</span>Security Architecture</a>
+  <a class="nav-item" href="#"><span class="num">17</span>Supply Chain Security</a>
+  <a class="nav-item" href="#"><span class="num">18</span>WAF</a>
+  <a class="nav-item" href="#"><span class="num">19</span>Code Review</a>
+  <a class="nav-item" href="#"><span class="num">20</span>RASP</a>
+</nav>
+
+<div class="main">
+<div class="topbar">
+  <div class="bc">appsec-engineer / module-5 / <span>security-architecture</span></div>
+  <div class="top-badge">Lesson 16 / 20</div>
+</div>
+<div class="content">
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-meta">
+    <span class="tag t-beg">Beginner &rarr; Advanced</span>
+    <span class="tag t-frm">Architecture</span>
+    <span class="tag t-time">~75 min</span>
+  </div>
+  <h1>Security<br><span class="hl">Architecture</span></h1>
+  <p class="hero-sub">Security architecture is the discipline of designing systems so that they are secure by default &mdash; not patched into security later. The choices made at the architecture level determine what is possible and what is impossible for an attacker: you cannot inject authentication into a system that was never designed for it, and you cannot bolt defence-in-depth onto a flat network. This lesson covers the foundational principles, the architectural patterns that implement them, the major modern paradigms (Zero Trust, defence-in-depth, least privilege at system scale), and how to apply them when reviewing or designing real systems.</p>
+  <div class="level-strip">
+    <div class="lv-cell"><div class="lv-pip" style="background:var(--green)"></div><div class="lv-label">Beginner</div><div class="lv-title">Core principles</div><div class="lv-desc">The 8 principles of secure design, least privilege, fail secure, defence-in-depth, separation of concerns</div></div>
+    <div class="lv-cell"><div class="lv-pip" style="background:var(--yellow)"></div><div class="lv-label">Intermediate</div><div class="lv-title">Security architecture patterns</div><div class="lv-desc">Zero Trust, layered security, authentication architecture, API gateway patterns, microservices security, encryption in transit and at rest</div></div>
+    <div class="lv-cell"><div class="lv-pip" style="background:var(--red)"></div><div class="lv-label">Advanced</div><div class="lv-title">Review, threat modelling &amp; tradeoffs</div><div class="lv-desc">Security architecture review process, STRIDE at system level, security debt, common anti-patterns, design review checklist</div></div>
+  </div>
+</div>
+
+<!-- BEGINNER: PRINCIPLES -->
+<div class="section">
+  <div class="eyebrow">&#x1F7E2; Beginner &mdash; The 8 Principles of Secure Design</div>
+  <div class="sec-title">The foundations every secure system is built on</div>
+  <div class="sec-sub">These principles were first articulated by Jerome Saltzer and Michael Schroeder in 1975. They remain the most important security design guidance ever written. Every security architecture decision traces back to one or more of these.</div>
+
+  <div class="principle-grid">
+    <div class="principle">
+      <div class="p-num">01</div>
+      <div class="p-title">Economy of Mechanism</div>
+      <div class="p-text">Keep security mechanisms as simple as possible. Complex systems have complex failure modes. A complicated authorisation system has more places to introduce a bug than a simple one.</div>
+      <div class="p-example">Simple RBAC beats complex ABAC unless ABAC is genuinely needed</div>
+    </div>
+    <div class="principle">
+      <div class="p-num">02</div>
+      <div class="p-title">Fail-Safe Defaults</div>
+      <div class="p-text">Default to denial. Access requires explicit permission grants, not absence of denial. A misconfigured system should deny access, not grant it.</div>
+      <div class="p-example">IAM: default deny all, allowlist specific actions</div>
+    </div>
+    <div class="principle">
+      <div class="p-num">03</div>
+      <div class="p-title">Complete Mediation</div>
+      <div class="p-text">Every access to every resource must be checked against the access control policy. No caching of permission decisions that can become stale. No side doors.</div>
+      <div class="p-example">Auth check on every API call, not just on login</div>
+    </div>
+    <div class="principle">
+      <div class="p-num">04</div>
+      <div class="p-title">Open Design</div>
+      <div class="p-text">Security should not depend on secrecy of the mechanism. Assume attackers know how the system works. Only secrets should be secret (keys, passwords).</div>
+      <div class="p-example">AES-256 is secure even though everyone knows how AES works</div>
+    </div>
+    <div class="principle">
+      <div class="p-num">05</div>
+      <div class="p-title">Separation of Privilege</div>
+      <div class="p-text">Require more than one condition to grant access or perform a sensitive operation. No single key unlocks everything. Two-person integrity for critical actions.</div>
+      <div class="p-example">MFA: password AND token both required</div>
+    </div>
+    <div class="principle">
+      <div class="p-num">06</div>
+      <div class="p-title">Least Privilege</div>
+      <div class="p-text">Every component, user, and process should operate with the minimum permissions needed. Excess privilege is attack surface waiting to be exploited.</div>
+      <div class="p-example">DB user with SELECT only, not full schema owner</div>
+    </div>
+    <div class="principle">
+      <div class="p-num">07</div>
+      <div class="p-title">Least Common Mechanism</div>
+      <div class="p-text">Minimise shared mechanisms between users or components. Shared state is a potential covert channel; shared services are a single point of compromise.</div>
+      <div class="p-example">Per-tenant databases vs shared schema with row-level security</div>
+    </div>
+    <div class="principle">
+      <div class="p-num">08</div>
+      <div class="p-title">Psychological Acceptability</div>
+      <div class="p-text">Security mechanisms must not make the system harder to use than the insecure alternative. If security is too burdensome, users route around it.</div>
+      <div class="p-example">SSO is more usable than 20 separate passwords; users adopt it</div>
+    </div>
+  </div>
+
+  <div class="panel" id="pan-did">
+    <div class="panel-h" onclick="tp('pan-did')">
+      <div class="panel-dot" style="background:var(--blue)"></div>
+      <div class="panel-title">Defence-in-depth &mdash; why one control is never enough</div>
+      <div class="panel-sub">The Swiss cheese model applied to security architecture</div>
+      <div class="panel-tog">&#x25BC;</div>
+    </div>
+    <div class="panel-body">
+      <p>Defence-in-depth (DiD) is the principle that security controls should be layered so that the failure of any single control does not result in a full compromise. James Reason's Swiss cheese model applies: each security layer has holes (vulnerabilities, misconfigurations, human error), but the holes in different layers don't align. An attacker must penetrate every layer simultaneously.</p>
+<pre>
+<span class="cm"># Request to a financial API &mdash; defence-in-depth layers</span>
+<span class="cm">#</span>
+<span class="cm"># Layer 1: Network perimeter (WAF, DDoS protection)</span>
+<span class="cm">#   Blocks: known bad IPs, XSS/SQLi in parameters, volumetric attacks</span>
+<span class="cm">#   Bypassed by: unknown attack patterns, HTTPS payloads WAF can't inspect</span>
+<span class="cm">#</span>
+<span class="cm"># Layer 2: API Gateway (rate limiting, auth token validation)</span>
+<span class="cm">#   Blocks: unauthenticated requests, brute force, expired tokens</span>
+<span class="cm">#   Bypassed by: stolen valid tokens, token confusion attacks</span>
+<span class="cm">#</span>
+<span class="cm"># Layer 3: Application authentication &amp; authorisation (RBAC)</span>
+<span class="cm">#   Blocks: privilege escalation, BOLA, function-level access control</span>
+<span class="cm">#   Bypassed by: logic errors in permission checks</span>
+<span class="cm">#</span>
+<span class="cm"># Layer 4: Input validation &amp; parameterised queries</span>
+<span class="cm">#   Blocks: SQL injection, command injection, XSS</span>
+<span class="cm">#   Bypassed by: edge cases in validation logic</span>
+<span class="cm">#</span>
+<span class="cm"># Layer 5: Database access (least-privilege DB user)</span>
+<span class="cm">#   Blocks: reading tables the app doesn't need, writing audit logs</span>
+<span class="cm">#   Bypassed by: SQL injection that succeeds</span>
+<span class="cm">#</span>
+<span class="cm"># Layer 6: Data encryption at rest</span>
+<span class="cm">#   Blocks: direct disk/backup access to read PII</span>
+<span class="cm">#   Bypassed by: application-level access (already authenticated)</span>
+<span class="cm">#</span>
+<span class="cm"># Layer 7: Audit logging &amp; anomaly detection (SIEM)</span>
+<span class="cm">#   Detects: unusual data access patterns, failed auth spikes</span>
+<span class="cm">#   Every layer's failure is still detected and alertable</span>
+<span class="cm">#</span>
+<span class="cm"># An attacker who bypasses Layer 2 still hits Layers 3-6</span>
+<span class="cm"># Layer 7 fires on any successful bypass of the others</span>
+</pre>
+      <div class="callout cl-note" style="margin-top:.75rem;">
+        <div class="cl-icon">&#x26A0;&#xFE0F;</div>
+        <div class="cl-text"><strong>Common DiD mistake:</strong> Treating the same control at different levels as "defence-in-depth." Two input validation checks in the same codebase is not DiD &mdash; they share the same failure mode (a bug in the validation logic). True DiD requires controls at different architectural layers that fail independently.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel" id="pan-least-priv">
+    <div class="panel-h" onclick="tp('pan-least-priv')">
+      <div class="panel-dot" style="background:var(--green)"></div>
+      <div class="panel-title">Least privilege at system scale &mdash; applied to every layer</div>
+      <div class="panel-sub">How least privilege manifests across network, compute, data, and identity</div>
+      <div class="panel-tog">&#x25BC;</div>
+    </div>
+    <div class="panel-body">
+      <table>
+        <tr><th>Layer</th><th>Least privilege means</th><th>Common violation</th><th>Correct design</th></tr>
+        <tr><td style="font-weight:600">Network</td><td>Services can only reach the other services they need to talk to</td><td>All-to-all connectivity in a flat internal network</td><td>Default-deny network policies; explicit allowlist per service pair</td></tr>
+        <tr><td style="font-weight:600">Compute / IAM</td><td>Service accounts have only the cloud permissions they actually use</td><td>EC2 instance profile with AdministratorAccess; S3 bucket policy with *</td><td>IAM role with exact list of actions on exact resource ARNs</td></tr>
+        <tr><td style="font-weight:600">Database</td><td>App user has exactly the permissions the app uses: SELECT/INSERT on specific tables</td><td>App connects as schema owner or DBA account</td><td>Dedicated app user with row-level security; separate read replica user</td></tr>
+        <tr><td style="font-weight:600">Application (RBAC)</td><td>Users can access only what their role permits, on resources they own</td><td>Admin panel accessible to all authenticated users</td><td>Role + resource ownership checks on every endpoint</td></tr>
+        <tr><td style="font-weight:600">Process / OS</td><td>Container runs as non-root, no capabilities, read-only filesystem</td><td>Docker container with --privileged or running as root</td><td>Drop ALL capabilities, runAsNonRoot: true, readOnlyRootFilesystem</td></tr>
+        <tr><td style="font-weight:600">Secrets</td><td>Each service can only read the secrets it needs</td><td>Shared Vault token with access to all secrets</td><td>Per-service policy scoped to exact secret paths</td></tr>
+      </table>
+    </div>
+  </div>
+</div>
+<!-- INTERMEDIATE: ARCHITECTURE PATTERNS -->
+<div class="section">
+  <div class="eyebrow">&#x1F7E1; Intermediate &mdash; Security Architecture Patterns</div>
+  <div class="sec-title">The patterns that implement secure design principles</div>
+  <div class="sec-sub">Architecture patterns are reusable solutions to recurring security design problems. Each pattern below encodes one or more of the foundational principles into a concrete, implementable design.</div>
+
+  <!-- ZERO TRUST -->
+  <div class="pattern-card pc-red" id="pc1" onclick="togglePC('pc1')">
+    <div class="pc-top">
+      <div><div class="pc-title">Zero Trust Architecture</div><div class="pc-meta">Never trust, always verify &bull; BeyondCorp &bull; NIST SP 800-207</div></div>
+      <span class="pc-badge badge-r">Modern Paradigm</span>
+    </div>
+    <div class="pc-body" id="pc1-b">
+      <h5>What it is and why the old model failed</h5>
+      <p>Traditional security assumed a trusted internal network. "Inside the firewall" meant trusted; "outside" meant untrusted. Zero Trust assumes there is no trusted network. Every request, from anywhere, must be authenticated, authorised, and verified, regardless of whether it originated inside or outside the corporate perimeter. The SolarWinds breach (2020) demonstrated exactly why: attackers inside the trusted network moved laterally for months because east-west traffic within the "trusted" perimeter was not inspected or controlled.</p>
+<pre>
+<span class="cm"># Zero Trust pillars and what each requires in practice</span>
+
+<span class="cm"># Pillar 1: Verify explicitly</span>
+<span class="cm"># Every request must prove identity. "Inside the network" is NOT identity.</span>
+<span class="cm"># Implementation: mTLS for service-to-service, JWT for user-to-service,</span>
+<span class="cm"># SPIFFE/SPIRE for workload identity, MFA for all human access</span>
+
+<span class="cm"># Pillar 2: Use least privileged access</span>
+<span class="cm"># Access is granted just-in-time and just-enough, not permanently.</span>
+<span class="cm"># Implementation: short-lived tokens (15min), dynamic secrets,</span>
+<span class="cm"># IRSA for cloud resources, role binding by workload not by host</span>
+
+<span class="cm"># Pillar 3: Assume breach</span>
+<span class="cm"># Design assuming attackers are already in the network.</span>
+<span class="cm"># Implementation: network segmentation so lateral movement is blocked,</span>
+<span class="cm"># encryption of all east-west traffic, logging all internal API calls,</span>
+<span class="cm"># blast radius minimisation via micro-segmentation</span>
+
+<span class="cm"># BeyondCorp implementation (Google's Zero Trust):</span>
+<span class="cm"># - Corporate laptop connects from home or coffee shop</span>
+<span class="cm"># - Access proxy checks: device health, user identity, MFA, context</span>
+<span class="cm"># - No VPN needed; access is granted per-application, not per-network</span>
+<span class="cm"># - Device certificate + user identity = access decision</span>
+<span class="cm"># - Lateral movement from compromised device is limited to that device's</span>
+<span class="cm">#   approved application list, not the entire internal network</span>
+
+<span class="cm"># Istio service mesh for Zero Trust service-to-service:</span>
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: default
+  namespace: production
+spec:
+<span class="lg">  mtls:</span>
+<span class="lg">    mode: STRICT   <span class="cm"># reject any non-mTLS traffic between services</span></span>
+<span class="cm"># Every service gets a SPIFFE X.509 certificate from SPIRE</span>
+<span class="cm"># Services verify each other's certificates on every request</span>
+<span class="cm"># Compromised service A cannot masquerade as service B</span>
+</pre>
+    </div>
+  </div>
+
+  <!-- AUTHENTICATION ARCHITECTURE -->
+  <div class="pattern-card pc-blue" id="pc2" onclick="togglePC('pc2')">
+    <div class="pc-top">
+      <div><div class="pc-title">Authentication Architecture &mdash; designing identity into the system</div><div class="pc-meta">OAuth 2.0 / OIDC &bull; JWT patterns &bull; Service-to-service auth &bull; MFA</div></div>
+      <span class="pc-badge badge-b">Foundation</span>
+    </div>
+    <div class="pc-body" id="pc2-b">
+      <h5>The authentication architecture decision tree</h5>
+      <p>Authentication architecture decisions are among the highest-impact security choices made at design time. Getting them wrong is expensive to fix. The key decisions: what grants access (factor types), how identity is conveyed to services (token format and validation), and what happens when authentication is compromised (session revocation).</p>
+<pre>
+<span class="cm"># User → Application authentication: OAuth 2.0 / OIDC</span>
+<span class="cm">#</span>
+<span class="cm"># PKCE flow (recommended for SPAs and mobile apps):</span>
+<span class="cm"># 1. App generates code_verifier (random, 43-128 chars)</span>
+<span class="cm"># 2. App sends code_challenge = SHA256(code_verifier) to auth server</span>
+<span class="cm"># 3. User authenticates with IdP (SSO, MFA, etc.)</span>
+<span class="cm"># 4. Auth server returns authorization_code</span>
+<span class="cm"># 5. App exchanges code + code_verifier for tokens</span>
+<span class="cm"># Prevents auth code interception attacks</span>
+
+<span class="cm"># Token types and their security properties:</span>
+<span class="cm">#</span>
+<span class="cm"># Access token (JWT, short TTL: 15min)</span>
+<span class="cm"># - Sent on every API request: Authorization: Bearer TOKEN</span>
+<span class="cm"># - Stateless: API validates signature, no DB lookup</span>
+<span class="cm"># - SHORT TTL: if stolen, attacker has &lt;15 minutes</span>
+<span class="cm"># - Validated: issuer, audience, expiry, signature</span>
+<span class="cm">#</span>
+<span class="cm"># Refresh token (opaque, long TTL: 7-30 days)</span>
+<span class="cm"># - Stored securely (httpOnly cookie, not localStorage)</span>
+<span class="cm"># - Used only to get new access tokens</span>
+<span class="cm"># - Can be revoked server-side (DB lookup required)</span>
+<span class="cm"># - Rotation: new refresh token issued on each use</span>
+
+<span class="cm"># JWT validation checklist (every API that accepts JWTs):</span>
+<span class="cf">import</span> jwt <span class="cf">from</span> <span class="cs">'jsonwebtoken'</span>
+
+<span class="cf">function</span> validateToken(token, publicKey) {
+  <span class="cf">return</span> jwt.verify(token, publicKey, {
+<span class="lg">    algorithms: [<span class="cs">'RS256'</span>],        <span class="cm">// only RS256, never 'none' or HS256 with known key</span></span>
+<span class="lg">    issuer: <span class="cs">'https://auth.myapp.com'</span>,   <span class="cm">// reject tokens from other issuers</span></span>
+<span class="lg">    audience: <span class="cs">'https://api.myapp.com'</span>,  <span class="cm">// reject tokens meant for other services</span></span>
+<span class="lg">    clockTolerance: 30                 <span class="cm">// 30 seconds clock skew tolerance</span></span>
+  })
+<span class="cm">  // Never use: jwt.decode() (no signature verification!)</span>
+<span class="cm">  // Never accept: algorithm: 'none'</span>
+<span class="cm">  // Never use symmetric key (HS256) if key is shared with untrusted parties</span>
+}
+
+<span class="cm"># Service-to-service authentication patterns:</span>
+<span class="cm">#</span>
+<span class="cm"># Option A: mTLS (Mutual TLS) via service mesh</span>
+<span class="cm"># - Best for Kubernetes: Istio/Linkerd auto-issues certs</span>
+<span class="cm"># - Zero secrets to manage: certs rotate automatically</span>
+<span class="cm"># - Cryptographic identity: impossible to spoof without cert</span>
+<span class="cm">#</span>
+<span class="cm"># Option B: JWT bearer token with short TTL</span>
+<span class="cm"># - Service A generates signed JWT, presents to Service B</span>
+<span class="cm"># - Service B validates: correct issuer, audience = "service-b", not expired</span>
+<span class="cm"># - Good for: multi-cloud, heterogeneous infrastructure</span>
+<span class="cm">#</span>
+<span class="cm"># Option C: IRSA / Workload Identity (cloud-native)</span>
+<span class="cm"># - No secrets: cloud IAM handles identity via OIDC</span>
+<span class="cm"># - Best for: services calling cloud APIs (S3, Secrets Manager)</span>
+</pre>
+    </div>
+  </div>
+
+  <!-- API GATEWAY PATTERN -->
+  <div class="pattern-card pc-green" id="pc3" onclick="togglePC('pc3')">
+    <div class="pc-top">
+      <div><div class="pc-title">API Gateway Security Pattern</div><div class="pc-meta">Central enforcement point &bull; Rate limiting &bull; Auth delegation &bull; Traffic inspection</div></div>
+      <span class="pc-badge badge-g">Infrastructure</span>
+    </div>
+    <div class="pc-body" id="pc3-b">
+      <h5>The API gateway as a security chokepoint</h5>
+      <p>An API gateway is the single entry point for all external API traffic. Centralising security enforcement here means: every downstream service can assume requests are authenticated, rate-limited, and logged. Each microservice does not need to re-implement these controls. The gateway pattern also enables consistent policy enforcement across all services as policies change.</p>
+<pre>
+<span class="cm"># API Gateway security responsibilities (Kong/AWS API Gateway/Nginx):</span>
+<span class="cm">#</span>
+<span class="cm"># ── Authentication &amp; authorisation ──────────────────────────────</span>
+<span class="cm"># Validate JWT/OAuth tokens before forwarding to services</span>
+<span class="cm"># Services receive pre-validated, trusted headers</span>
+<span class="cm"># X-Authenticated-User: user123 (set by gateway after validation)</span>
+<span class="cm"># Services trust this header ONLY because it came from gateway</span>
+<span class="cm"># (Internal traffic must be restricted to gateway source only)</span>
+<span class="cm">#</span>
+<span class="cm"># ── Rate limiting ────────────────────────────────────────────────</span>
+<span class="cm"># Per-user: 100 requests/minute on authenticated endpoints</span>
+<span class="cm"># Per-IP: 20 requests/minute on public endpoints (before auth)</span>
+<span class="cm"># Per-endpoint: custom limits for sensitive operations (login: 5/min)</span>
+<span class="cm"># Response: 429 Too Many Requests with Retry-After header</span>
+<span class="cm">#</span>
+<span class="cm"># ── TLS termination ──────────────────────────────────────────────</span>
+<span class="cm"># HTTPS terminates at gateway. Services communicate over HTTP internally</span>
+<span class="cm"># OR: re-encrypt for end-to-end (required for high-security environments)</span>
+<span class="cm">#</span>
+<span class="cm"># ── Request/response transformation ─────────────────────────────</span>
+<span class="cm"># Strip internal headers before forwarding to services</span>
+<span class="cm"># Add correlation IDs for request tracing</span>
+<span class="cm"># Remove sensitive response headers (server version, internal paths)</span>
+
+<span class="cm"># Kong Gateway security plugin configuration:</span>
+plugins:
+  - name: jwt
+    config:
+      key_claim_name: kid
+      claims_to_verify: [exp, iss]
+      allowed_algorithms: [RS256]
+
+  - name: rate-limiting
+    config:
+      minute: 100
+      policy: redis         <span class="cm"># distributed rate limit across gateway instances</span>
+      error_message: <span class="cs">"Rate limit exceeded"</span>
+
+  - name: cors
+    config:
+      origins: [<span class="cs">"https://app.mycompany.com"</span>]
+      methods: [GET, POST, PUT, DELETE]
+      allowed_headers: [Authorization, Content-Type]
+      credentials: true
+
+<span class="cm"># CRITICAL: Backend services must only accept traffic from the gateway</span>
+<span class="cm"># Not from the internet. Enforce via network policy:</span>
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-gateway-only
+spec:
+  podSelector: { matchLabels: { app: myservice } }
+  ingress:
+    - from:
+        - podSelector: { matchLabels: { app: api-gateway } }
+<span class="cm">  # If bypassing the gateway is possible, all its security controls are bypassed too</span>
+</pre>
+    </div>
+  </div>
+
+  <!-- MICROSERVICES SECURITY -->
+  <div class="pattern-card pc-teal" id="pc4" onclick="togglePC('pc4')">
+    <div class="pc-top">
+      <div><div class="pc-title">Microservices Security Architecture</div><div class="pc-meta">Service mesh &bull; mTLS &bull; SPIFFE/SPIRE &bull; Sidecar pattern</div></div>
+      <span class="pc-badge badge-t">Distributed</span>
+    </div>
+    <div class="pc-body" id="pc4-b">
+      <h5>Security challenges unique to microservices</h5>
+      <p>Microservices break a monolith into many small services that communicate over a network. This creates security challenges that don't exist in a monolith: every service-to-service call is a potential attack vector, network traffic between services is often unencrypted by default, and each service must independently enforce authorisation. The service mesh pattern solves this at the infrastructure layer rather than requiring every service to implement it.</p>
+<pre>
+<span class="cm"># Security problem: Service A calls Service B over HTTP (unencrypted)</span>
+<span class="cm"># Service B has no way to verify the caller is actually Service A</span>
+<span class="lb">http://order-service:8080/api/orders  <span class="cm"># ← plaintext, no mutual auth</span></span>
+
+<span class="cm"># Solution: Istio service mesh with mTLS and AuthorizationPolicy</span>
+
+<span class="cm"># 1. mTLS enforced cluster-wide</span>
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata: { name: default, namespace: production }
+spec:
+<span class="lg">  mtls: { mode: STRICT }  <span class="cm"># reject any non-mTLS request</span></span>
+
+<span class="cm"># 2. AuthorizationPolicy: service-to-service allow rules</span>
+<span class="cm"># Order service can ONLY be called by gateway and payment service</span>
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata: { name: order-service-policy, namespace: production }
+spec:
+  selector: { matchLabels: { app: order-service } }
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+<span class="lg">            principals:            <span class="cm"># SPIFFE identity of the caller</span></span>
+<span class="lg">              - "cluster.local/ns/production/sa/api-gateway"</span>
+<span class="lg">              - "cluster.local/ns/production/sa/payment-service"</span>
+      to:
+<span class="lg">        - operation: { methods: ["GET","POST"], paths: ["/api/orders*"] }</span>
+<span class="cm"># User-service cannot call Order-service even inside the cluster</span>
+<span class="cm"># Compromised user-service cannot reach order data</span>
+
+<span class="cm"># 3. JWT end-user authentication validation at the service layer</span>
+apiVersion: security.istio.io/v1beta1
+kind: RequestAuthentication
+metadata: { name: jwt-validation, namespace: production }
+spec:
+  selector: { matchLabels: { app: order-service } }
+<span class="lg">  jwtRules:</span>
+<span class="lg">    - issuer: "https://auth.myapp.com"</span>
+<span class="lg">      jwksUri: "https://auth.myapp.com/.well-known/jwks.json"</span>
+<span class="lg">      audiences: ["https://api.myapp.com"]</span>
+</pre>
+    </div>
+  </div>
+
+  <!-- ENCRYPTION ARCHITECTURE -->
+  <div class="pattern-card pc-purple" id="pc5" onclick="togglePC('pc5')">
+    <div class="pc-top">
+      <div><div class="pc-title">Encryption Architecture &mdash; data in transit and at rest</div><div class="pc-meta">TLS 1.3 &bull; Envelope encryption &bull; Key management &bull; Field-level encryption</div></div>
+      <span class="pc-badge badge-p">Data Protection</span>
+    </div>
+    <div class="pc-body" id="pc5-b">
+<pre>
+<span class="cm"># ── Data in transit ─────────────────────────────────────────────</span>
+<span class="cm"># Minimum: TLS 1.2. Recommended: TLS 1.3 everywhere.</span>
+<span class="cm"># TLS 1.3 improvements over 1.2:</span>
+<span class="cm"># - 1-RTT handshake (vs 2-RTT): 50% faster connection setup</span>
+<span class="cm"># - Perfect Forward Secrecy mandatory (ECDHE only)</span>
+<span class="cm"># - Eliminated weak cipher suites (RC4, DES, CBC with MAC-then-encrypt)</span>
+<span class="cm"># - Encrypted handshake (certificate hidden from passive observers)</span>
+
+<span class="cm"># Nginx TLS configuration (production-grade):</span>
+server {
+    ssl_protocols TLSv1.3 TLSv1.2;        <span class="cm"># drop 1.0 and 1.1</span>
+    ssl_ciphers ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384;
+    ssl_prefer_server_ciphers off;         <span class="cm"># TLS 1.3: client chooses</span>
+    ssl_session_timeout 1d;
+    ssl_session_cache shared:SSL:10m;
+    add_header Strict-Transport-Security <span class="cs">"max-age=63072000; includeSubDomains; preload"</span>;
+    add_header X-Content-Type-Options nosniff;
+    add_header X-Frame-Options DENY;
+}
+
+<span class="cm"># ── Envelope encryption (data at rest) ──────────────────────────</span>
+<span class="cm"># Data Encryption Key (DEK): encrypts the actual data. AES-256-GCM.</span>
+<span class="cm"># Key Encryption Key (KEK): encrypts the DEK. Stored in KMS (AWS/GCP/Azure).</span>
+<span class="cm"># The DEK is stored alongside the data, encrypted with the KEK.</span>
+<span class="cm"># Rotating the KEK re-encrypts only the small DEK, not all the data.</span>
+
+<span class="cm"># AWS envelope encryption:</span>
+<span class="cf">import</span> boto3, os
+<span class="cf">from</span> cryptography.hazmat.primitives.ciphers.aead <span class="cf">import</span> AESGCM
+
+kms = boto3.client(<span class="cs">'kms'</span>)
+
+<span class="cf">def</span> <span class="cg">encrypt_sensitive_field</span>(plaintext: bytes, kms_key_id: str) -&gt; dict:
+    <span class="cm"># 1. Generate a data key (DEK) via KMS</span>
+    response = kms.generate_data_key(
+        KeyId=kms_key_id, KeySpec=<span class="cs">'AES_256'</span>
+    )
+    plaintext_dek  = response[<span class="cs">'Plaintext'</span>]   <span class="cm"># ephemeral, use then discard</span>
+    encrypted_dek  = response[<span class="cs">'CiphertextBlob'</span>]  <span class="cm"># safe to store alongside data</span>
+
+    <span class="cm"># 2. Encrypt the actual data with the DEK</span>
+    nonce = os.urandom(<span class="ce">12</span>)
+    ciphertext = AESGCM(plaintext_dek).encrypt(nonce, plaintext, <span class="ck">None</span>)
+
+    <span class="cm"># 3. Store ciphertext + nonce + encrypted DEK together</span>
+    <span class="cf">return</span> {<span class="cs">'ct'</span>: ciphertext, <span class="cs">'nonce'</span>: nonce, <span class="cs">'edek'</span>: encrypted_dek}
+
+<span class="cm"># ── Field-level encryption ───────────────────────────────────────</span>
+<span class="cm"># Use when specific fields (SSN, card PAN, health data) need</span>
+<span class="cm"># stricter access controls than the rest of the record.</span>
+<span class="cm"># Only the application components that legitimately need the data</span>
+<span class="cm"># have the key to decrypt those specific fields.</span>
+<span class="cm"># The reporting database can see all other fields but not PII.</span>
+</pre>
+    </div>
+  </div>
+
+  <!-- LAYERED SECURITY FOR WEB APPS -->
+  <div class="pattern-card pc-orange" id="pc6" onclick="togglePC('pc6')">
+    <div class="pc-top">
+      <div><div class="pc-title">Layered Web Application Security</div><div class="pc-meta">Perimeter &rarr; Gateway &rarr; Application &rarr; Data &bull; Security headers &bull; CSP</div></div>
+      <span class="pc-badge badge-o">Web Security</span>
+    </div>
+    <div class="pc-body" id="pc6-b">
+<pre>
+<span class="cm"># Complete HTTP security response headers (production config)</span>
+<span class="cm"># Django middleware example:</span>
+
+SECURE_BROWSER_XSS_FILTER     = True   <span class="cm"># X-XSS-Protection: 1; mode=block</span>
+SECURE_CONTENT_TYPE_NOSNIFF   = True   <span class="cm"># X-Content-Type-Options: nosniff</span>
+X_FRAME_OPTIONS               = <span class="cs">'DENY'</span>  <span class="cm"># X-Frame-Options: DENY</span>
+SECURE_HSTS_SECONDS           = <span class="ce">31536000</span>  <span class="cm"># 1 year HSTS</span>
+SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+SECURE_HSTS_PRELOAD           = True
+
+<span class="cm"># Content Security Policy (prevents XSS even if injection occurs)</span>
+CSP_DEFAULT_SRC     = (<span class="cs">"'self'"</span>,)
+CSP_SCRIPT_SRC      = (<span class="cs">"'self'"</span>, <span class="cs">"'nonce-{random}'"</span>)  <span class="cm"># nonce per request</span>
+CSP_STYLE_SRC       = (<span class="cs">"'self'"</span>, <span class="cs">"'nonce-{random}'"</span>)
+CSP_IMG_SRC         = (<span class="cs">"'self'"</span>, <span class="cs">"data:"</span>, <span class="cs">"https://cdn.myapp.com"</span>)
+CSP_CONNECT_SRC     = (<span class="cs">"'self'"</span>, <span class="cs">"https://api.myapp.com"</span>)
+CSP_FRAME_ANCESTORS = (<span class="cs">"'none'"</span>,)         <span class="cm"># prevents clickjacking</span>
+CSP_OBJECT_SRC      = (<span class="cs">"'none'"</span>,)         <span class="cm"># no Flash, no plugins</span>
+CSP_BASE_URI        = (<span class="cs">"'self'"</span>,)
+CSP_REPORT_URI      = <span class="cs">"/csp-report"</span>        <span class="cm"># collect violation reports</span>
+
+<span class="cm"># Permissions Policy: disable dangerous browser features</span>
+<span class="cm"># Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(self)</span>
+
+<span class="cm"># Cookie security attributes</span>
+SESSION_COOKIE_SECURE   = True   <span class="cm"># only sent over HTTPS</span>
+SESSION_COOKIE_HTTPONLY = True   <span class="cm"># not accessible via JS (prevents XSS cookie theft)</span>
+SESSION_COOKIE_SAMESITE = <span class="cs">'Strict'</span>  <span class="cm"># not sent in cross-origin requests (CSRF protection)</span>
+CSRF_COOKIE_SECURE      = True
+CSRF_COOKIE_HTTPONLY    = True
+</pre>
+    </div>
+  </div>
+</div>
+<!-- INTERMEDIATE: COMMON ANTI-PATTERNS -->
+<div class="section">
+  <div class="eyebrow">&#x1F7E1; Intermediate &mdash; What Not to Do</div>
+  <div class="sec-title">Security architecture anti-patterns</div>
+  <div class="sec-sub">These design choices appear repeatedly in systems that suffer significant breaches. Recognising them in architecture reviews is as important as knowing the correct patterns.</div>
+
+  <div class="arch-tabs">
+    <div class="tab-bar">
+      <div class="atab active" onclick="switchTab(this,'t-ap1')">Perimeter Trust</div>
+      <div class="atab" onclick="switchTab(this,'t-ap2')">Implicit Trust</div>
+      <div class="atab" onclick="switchTab(this,'t-ap3')">Security Through Obscurity</div>
+      <div class="atab" onclick="switchTab(this,'t-ap4')">Bolted-on Security</div>
+      <div class="atab" onclick="switchTab(this,'t-ap5')">Shared Credentials</div>
+    </div>
+
+    <div class="tab-pane active" id="t-ap1">
+      <p style="font-size:13.5px;color:var(--ink2);line-height:1.75;margin-bottom:.85rem;"><strong style="color:var(--ink)">The problem:</strong> "We have a firewall, so everything inside is trusted." East-west traffic (between internal services) is treated as safe and not authenticated or encrypted. A single compromised service can reach every other service.</p>
+<pre>
+<span class="cm"># Anti-pattern: flat internal network, services trust each other</span>
+<span class="lb">service_a → http://service_b/internal/admin  <span class="cm"># no auth, just "internal"</span></span>
+<span class="lb">database  ← any service can connect          <span class="cm"># no service account isolation</span></span>
+<span class="lb">vault     ← shared token for all services    <span class="cm"># any service reads any secret</span></span>
+
+<span class="cm"># Real consequence: SolarWinds (2020)</span>
+<span class="cm"># Attackers with a foothold moved laterally for months</span>
+<span class="cm"># because east-west traffic was fully trusted inside the perimeter</span>
+
+<span class="cm"># Fix: Zero Trust, mTLS, AuthorizationPolicy per service pair</span>
+<span class="lg">service_a → mTLS + SPIFFE cert → service_b   <span class="cm"># cryptographic identity</span></span>
+<span class="lg">database  ← per-service credentials          <span class="cm"># service_a reads only its tables</span></span>
+<span class="lg">vault     ← per-service policy               <span class="cm"># service_a reads only its secrets</span></span>
+</pre>
+    </div>
+
+    <div class="tab-pane" id="t-ap2">
+      <p style="font-size:13.5px;color:var(--ink2);line-height:1.75;margin-bottom:.85rem;"><strong style="color:var(--ink)">The problem:</strong> Services trust request metadata without verification. "The gateway sets <code>X-User-ID</code> and services trust it." But if services are accessible without going through the gateway, or if an attacker can forge the header, the trust chain breaks.</p>
+<pre>
+<span class="cm"># Anti-pattern: trusting headers without verification</span>
+<span class="cf">def</span> <span class="cg">get_current_user</span>(request):
+<span class="lb">    user_id = request.headers.get(<span class="cs">'X-User-ID'</span>)    <span class="cm"># ← attacker controls this</span></span>
+<span class="lb">    <span class="cf">return</span> User.objects.get(id=user_id)             <span class="cm"># ← any user ID works</span></span>
+
+<span class="cm"># Fix 1: Only accept requests from known gateway (network policy)</span>
+<span class="cm"># Fix 2: Use signed JWT (gateway signs, service verifies signature)</span>
+<span class="cf">def</span> <span class="cg">get_current_user_secure</span>(request):
+<span class="lg">    token = request.headers.get(<span class="cs">'Authorization'</span>, <span class="cs">''</span>).removeprefix(<span class="cs">'Bearer '</span>)</span>
+<span class="lg">    payload = jwt.decode(token, PUBLIC_KEY, algorithms=[<span class="cs">'RS256'</span>],</span>
+<span class="lg">                        audience=<span class="cs">'https://api.myapp.com'</span>)</span>
+<span class="lg">    <span class="cf">return</span> User.objects.get(id=payload[<span class="cs">'sub'</span>])</span>
+</pre>
+    </div>
+
+    <div class="tab-pane" id="t-ap3">
+      <p style="font-size:13.5px;color:var(--ink2);line-height:1.75;margin-bottom:.85rem;"><strong style="color:var(--ink)">The problem:</strong> "We don't publish the admin endpoint URL, so attackers won't find it." Hidden endpoints, obfuscated API keys in client-side JavaScript, and "secret" internal URLs are not security controls. Attackers enumerate, decompile, and search leaked source.</p>
+<pre>
+<span class="cm"># Anti-pattern: relying on obscurity</span>
+<span class="lb">GET /api/v1/internal_admin_xyz123/users  <span class="cm"># "secret" endpoint</span></span>
+<span class="lb">const API_KEY = "sk_live_abc123"         <span class="cm"># hardcoded in JS bundle</span></span>
+<span class="lb">                                         <span class="cm"># will be found by: grep, jsbeautifier, Sourcemapper</span></span>
+
+<span class="cm"># Real example: Firebase misconfigurations where API keys were in</span>
+<span class="cm"># client JS but database rules were "no one would guess the path"</span>
+
+<span class="cm"># Fix: design assuming the attacker knows the full URL and structure</span>
+<span class="lg">POST /api/v1/admin/users                 <span class="cm"># clearly named</span></span>
+<span class="lg">Authorization: Bearer ADMIN_JWT          <span class="cm"># authentication is the protection</span></span>
+<span class="lg">                                         <span class="cm"># not secrecy of the URL</span></span>
+</pre>
+    </div>
+
+    <div class="tab-pane" id="t-ap4">
+      <p style="font-size:13.5px;color:var(--ink2);line-height:1.75;margin-bottom:.85rem;"><strong style="color:var(--ink)">The problem:</strong> Security added after the design is complete. Authentication added to an API that was designed without it. Encryption added to a database schema that stores data in a way that makes selective decryption impossible. Audit logging added to a system where the data model doesn't record which user performed which action.</p>
+<pre>
+<span class="cm"># Anti-pattern: authentication bolted onto a system post-design</span>
+<span class="cm"># Original design had no user concept at all:</span>
+<span class="lb">GET /orders        → returns ALL orders from the DB</span>
+<span class="lb">POST /orders       → creates order with no owner field</span>
+
+<span class="cm"># After "bolting on" auth:</span>
+<span class="lb">GET /orders        → now requires JWT... but still returns ALL orders</span>
+<span class="lb">                   → "authenticated" but still has BOLA/data exposure</span>
+<span class="lb">                   → orders table has no user_id column to filter by</span>
+
+<span class="cm"># Fix: design the data model with ownership from the start</span>
+<span class="lg">orders.user_id                  → every order belongs to a user</span>
+<span class="lg">GET /orders → filter by JWT sub → user sees only their orders</span>
+
+<span class="cm"># Security must be designed in, not added on top</span>
+</pre>
+    </div>
+
+    <div class="tab-pane" id="t-ap5">
+      <p style="font-size:13.5px;color:var(--ink2);line-height:1.75;margin-bottom:.85rem;"><strong style="color:var(--ink)">The problem:</strong> Multiple services share the same database credentials, API key, or service account. When one service is compromised, all shared credentials must be rotated simultaneously &mdash; often requiring a coordinated production deployment across all consumers.</p>
+<pre>
+<span class="cm"># Anti-pattern: shared credentials</span>
+<span class="lb">DB_PASSWORD=shared_prod_password  <span class="cm"># used by 8 different services</span></span>
+<span class="lb">API_KEY=stripe_key_abc             <span class="cm"># used by order-service AND reporting-service</span></span>
+<span class="lb">VAULT_TOKEN=hvs.abc123             <span class="cm"># same token for all services in the cluster</span></span>
+
+<span class="cm"># Consequences:</span>
+<span class="cm"># - Compromise of any service exposes all others</span>
+<span class="cm"># - Rotation requires coordinated deployment of ALL consumers</span>
+<span class="cm"># - Audit log says "db_user connected" &mdash; which service was it?</span>
+
+<span class="cm"># Fix: per-service credentials</span>
+<span class="lg">order_service: DB user order_svc_user (SELECT/INSERT on orders, order_items)</span>
+<span class="lg">reporting:     DB user report_ro_user (SELECT only, on reporting views)</span>
+<span class="lg">               Stripe key is READ-ONLY reporting key, not the payment key</span>
+<span class="lg">               Vault: per-service policy, per-service token TTL=1h</span>
+</pre>
+    </div>
+  </div>
+</div>
+
+<!-- ADVANCED: SECURITY ARCHITECTURE REVIEW -->
+<div class="section">
+  <div class="eyebrow">&#x1F534; Advanced &mdash; Architecture Review</div>
+  <div class="sec-title">How to conduct a security architecture review</div>
+  <div class="sec-sub">A security architecture review (SAR) is a structured analysis of a system's design to identify security risks before the system is built or before changes go live. It is distinct from a penetration test: you are reviewing diagrams and design documents, not running exploits against a live system.</div>
+
+  <div class="panel" id="pan-sar-process">
+    <div class="panel-h" onclick="tp('pan-sar-process')">
+      <div class="panel-dot" style="background:var(--red)"></div>
+      <div class="panel-title">The security architecture review process</div>
+      <div class="panel-sub">5 phases from intake to sign-off</div>
+      <div class="panel-tog">&#x25BC;</div>
+    </div>
+    <div class="panel-body">
+      <table>
+        <tr><th>Phase</th><th>What you do</th><th>Output</th><th>Typical duration</th></tr>
+        <tr><td style="font-weight:700;color:var(--accent)">1. Scope &amp; context</td><td>Understand what is being reviewed: new feature, new system, or existing system change. Identify the data sensitivity, regulatory context, and threat actors relevant to this system.</td><td>Scope document, threat actor list, data classification</td><td>1&ndash;2 hours</td></tr>
+        <tr><td style="font-weight:700;color:var(--blue)">2. Architectural review</td><td>Review data flow diagrams, architecture diagrams, and any existing threat models. Identify trust boundaries, entry points, data stores, and how components communicate.</td><td>Annotated architecture diagram, trust boundary map</td><td>2&ndash;4 hours</td></tr>
+        <tr><td style="font-weight:700;color:var(--purple)">3. STRIDE analysis</td><td>Apply STRIDE to each component and data flow. For each: what spoofing attacks are possible? What tampering? What repudiation? What information disclosure? What denial of service? What privilege escalation?</td><td>STRIDE matrix with findings per component</td><td>2&ndash;4 hours</td></tr>
+        <tr><td style="font-weight:700;color:var(--yellow)">4. Findings &amp; risk rating</td><td>For each identified risk: severity (CVSS or risk matrix), likelihood, and potential business impact. Map to specific design changes needed.</td><td>Risk register with severity/likelihood/action</td><td>1&ndash;2 hours</td></tr>
+        <tr><td style="font-weight:700;color:var(--green)">5. Recommendations &amp; sign-off</td><td>Produce actionable recommendations. Distinguish must-fix (blocking deployment), should-fix (pre-launch), and monitor (post-launch). Get explicit acceptance of residual risks from the system owner.</td><td>Findings report, risk acceptance document</td><td>1 hour + review cycle</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="panel" id="pan-stride-system">
+    <div class="panel-h" onclick="tp('pan-stride-system')">
+      <div class="panel-dot" style="background:var(--blue)"></div>
+      <div class="panel-title">STRIDE applied at system level &mdash; worked example</div>
+      <div class="panel-sub">Applying STRIDE to an e-commerce order processing system</div>
+      <div class="panel-tog">&#x25BC;</div>
+    </div>
+    <div class="panel-body">
+      <p>The system: a web frontend, an API gateway, an order service, a payment service, a notification service, and a PostgreSQL database. Users place orders; the order service calls the payment service; on success, the notification service sends email.</p>
+<pre>
+<span class="cm"># STRIDE analysis per component and data flow</span>
+<span class="cm">#</span>
+<span class="cm"># ── Order Service ────────────────────────────────────────────────</span>
+<span class="cm"># S Spoofing:</span>
+<span class="cm">#   Risk: Any caller can claim to be the payment service in a callback</span>
+<span class="cm">#   Mitigation: Validate callback via HMAC signature or mTLS from payment-svc</span>
+<span class="cm">#</span>
+<span class="cm"># T Tampering:</span>
+<span class="cm">#   Risk: Order total could be modified in transit between frontend and API</span>
+<span class="cm">#   Mitigation: Server-side total calculation, never trust client-submitted price</span>
+<span class="cm">#</span>
+<span class="cm"># R Repudiation:</span>
+<span class="cm">#   Risk: User claims they never placed an order they actually placed</span>
+<span class="cm">#   Mitigation: Audit log with user ID, timestamp, IP, order details, JWT claims</span>
+<span class="cm">#</span>
+<span class="cm"># I Information disclosure:</span>
+<span class="cm">#   Risk: Order service returns all orders to any authenticated user (BOLA)</span>
+<span class="cm">#   Mitigation: Filter by user_id = JWT sub on every query, not just GET /orders/{id}</span>
+<span class="cm">#</span>
+<span class="cm"># D Denial of service:</span>
+<span class="cm">#   Risk: Expensive "get all orders with full details" query crushes DB</span>
+<span class="cm">#   Mitigation: Pagination (max 50/page), query timeout, read replica for reports</span>
+<span class="cm">#</span>
+<span class="cm"># E Elevation of privilege:</span>
+<span class="cm">#   Risk: Order service has schema owner DB privileges, injected SQL deletes tables</span>
+<span class="cm">#   Mitigation: Dedicated app DB user with SELECT/INSERT on specific tables only</span>
+<span class="cm">#</span>
+<span class="cm"># ── Payment Service → External Payment Processor ─────────────────</span>
+<span class="cm"># T Tampering:</span>
+<span class="cm">#   Risk: Amount could be modified in the outbound API call</span>
+<span class="cm">#   Mitigation: HMAC-sign the payment request; Stripe validates the signature</span>
+<span class="cm">#</span>
+<span class="cm"># I Information disclosure:</span>
+<span class="cm">#   Risk: Payment service logs include full card details</span>
+<span class="cm">#   Mitigation: Log only last 4 digits. Never log CVV. PCI-DSS requirement.</span>
+</pre>
+    </div>
+  </div>
+
+  <div class="panel" id="pan-review-checklist">
+    <div class="panel-h" onclick="tp('pan-review-checklist')">
+      <div class="panel-dot" style="background:var(--green)"></div>
+      <div class="panel-title">Security architecture review checklist</div>
+      <div class="panel-sub">The questions to ask for any system &mdash; print this, use it in every review</div>
+      <div class="panel-tog">&#x25BC;</div>
+    </div>
+    <div class="panel-body">
+      <table>
+        <tr><th>Category</th><th>Questions to ask</th></tr>
+        <tr>
+          <td style="font-weight:700;color:var(--red)">Authentication</td>
+          <td>How does a user prove their identity? How does one service prove its identity to another? Are tokens short-lived? Is MFA enforced for sensitive operations? What happens when a token is stolen &mdash; how is it revoked? Are JWTs validated with correct issuer, audience, and algorithm?</td>
+        </tr>
+        <tr>
+          <td style="font-weight:700;color:var(--orange)">Authorisation</td>
+          <td>Is every request to every resource checked against an access control policy? Is authorisation checked at the data layer or only at the API layer? Can users access other users' data by enumerating IDs? Is there a privilege escalation path? Are admin functions separated from regular user flows?</td>
+        </tr>
+        <tr>
+          <td style="font-weight:700;color:var(--blue)">Data flows</td>
+          <td>Where does sensitive data flow? Is it encrypted in transit at every hop? Is it logged anywhere it shouldn't be (request bodies, headers, query strings)? Is it cached anywhere (CDN, client browser) when it shouldn't be? Who has read access to each data store?</td>
+        </tr>
+        <tr>
+          <td style="font-weight:700;color:var(--purple)">Trust boundaries</td>
+          <td>Where are the trust boundaries? What changes when data crosses a trust boundary? Is all input from less-trusted components validated? Are internal services accessible from the internet directly (bypassing the gateway)?</td>
+        </tr>
+        <tr>
+          <td style="font-weight:700;color:var(--teal)">Secrets</td>
+          <td>Where are credentials stored? Are they per-service or shared? How are they rotated? Can a compromised service read another service's credentials? Are secrets in environment variables, config files, or a proper secrets manager?</td>
+        </tr>
+        <tr>
+          <td style="font-weight:700;color:var(--yellow)">Resilience</td>
+          <td>What is the impact of a compromised service? Can it reach all other services? Can it read all data? What is the blast radius? Is there defence-in-depth so a single compromise is not a full compromise?</td>
+        </tr>
+        <tr>
+          <td style="font-weight:700;color:var(--green)">Observability</td>
+          <td>Is every security-relevant event logged? Who performed what action on what resource and when? Are logs tamper-resistant? Is there anomaly detection that would fire on a security incident?</td>
+        </tr>
+        <tr>
+          <td style="font-weight:700;color:var(--accent)">Supply chain</td>
+          <td>What third-party components does this system depend on? How are dependencies scanned for CVEs? What happens if a dependency is compromised? Is the build pipeline itself trusted?</td>
+        </tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="panel" id="pan-tradeoffs">
+    <div class="panel-h" onclick="tp('pan-tradeoffs')">
+      <div class="panel-dot" style="background:var(--teal)"></div>
+      <div class="panel-title">Security vs usability vs performance &mdash; the real tradeoffs</div>
+      <div class="panel-sub">How to make and communicate architecture decisions when security competes with other constraints</div>
+      <div class="panel-tog">&#x25BC;</div>
+    </div>
+    <div class="panel-body">
+      <p>Every security control has a cost: performance overhead, development complexity, operational burden, or user friction. The job of a security architect is not to maximise security at all costs, but to maximise security per unit of friction. Some tradeoffs are false (TLS 1.3 is both more secure AND faster than TLS 1.2). Most are real.</p>
+      <table>
+        <tr><th>Security decision</th><th>Security benefit</th><th>Real cost</th><th>Resolution pattern</th></tr>
+        <tr><td style="font-weight:600">mTLS for all service traffic</td><td>Cryptographic service identity, encrypted east-west</td><td>Cert management overhead, latency (~2ms per connection), debugging complexity</td><td>Use service mesh (Istio/Linkerd): automates cert management, makes cost near zero</td></tr>
+        <tr><td style="font-weight:600">15-minute JWT TTL</td><td>Stolen tokens expire quickly</td><td>Refresh token round trip on every 15 min window, UX friction if not handled silently</td><td>Silent refresh in background before expiry; user never sees it</td></tr>
+        <tr><td style="font-weight:600">Field-level encryption on PII</td><td>Database compromise doesn't expose PII</td><td>Cannot query/sort/filter encrypted fields; performance overhead on encrypt/decrypt</td><td>Encrypt only the most sensitive fields (SSN, card PAN); use indexed hashes for lookups</td></tr>
+        <tr><td style="font-weight:600">MFA everywhere</td><td>Stolen password is not enough</td><td>User friction, support costs for locked accounts, accessibility concerns</td><td>Risk-based MFA: always for admin/sensitive actions, on anomalous logins for regular actions</td></tr>
+        <tr><td style="font-weight:600">Complete request audit logging</td><td>Full forensic trail, anomaly detection</td><td>Storage costs, performance on high-traffic endpoints, PII in logs risk</td><td>Log security-relevant events (auth, data access, admin actions); sample routine reads; scrub PII before logging</td></tr>
+      </table>
+    </div>
+  </div>
+</div>
+<!-- QUIZ -->
+<div class="section">
+  <div class="eyebrow">Knowledge Check</div>
+  <div class="sec-title">Security architecture interview questions</div>
+  <div class="sec-sub">These questions appear in senior AppSec engineer, security architect, and staff engineer interviews.</div>
+
+  <div class="quiz-block">
+    <div class="quiz-q">Q1. A team proposes handling authorisation in a middleware that checks every request at the API layer. They argue this is "defence-in-depth" because they also validate permissions in the frontend. Is this correct? What is the flaw?</div>
+    <div class="quiz-opts" id="q1">
+      <div class="qo" onclick="doQ('q1',this,'wrong')">Correct &mdash; checking auth in both frontend and backend is a good example of defence-in-depth</div>
+      <div class="qo" onclick="doQ('q1',this,'correct')">Incorrect. This is not defence-in-depth because both controls share the same failure mode and the frontend check is trivially bypassed. Real defence-in-depth requires controls at different architectural layers that fail independently. True layered auth: API middleware validates JWT (layer 1), individual resolver/service checks object ownership (layer 2), database row-level security enforces at query time (layer 3). Frontend validation is not a security control &mdash; it is a UX optimisation.</div>
+      <div class="qo" onclick="doQ('q1',this,'wrong')">Correct &mdash; any two controls counts as defence-in-depth</div>
+      <div class="qo" onclick="doQ('q1',this,'wrong')">Incorrect because they should use a WAF instead of middleware</div>
+    </div>
+    <div class="quiz-exp" id="q1-exp">Defence-in-depth requires that controls fail independently &mdash; a bug in one should not cause all others to fail simultaneously. Frontend + API middleware using the same permission logic is not independent: if the permission model has a flaw, both checks are wrong in the same way. Additionally, client-side checks are trivially bypassed: an attacker sends a raw HTTP request and the frontend never runs. True security-in-depth for authorisation has independent layers: API gateway validates token structure, application middleware checks coarse-grained permissions (is this user authenticated?), individual resolver enforces object ownership (does this user own this order?), and database row-level security enforces at the data layer regardless of what the application does. These layers fail independently.</div>
+  </div>
+
+  <div class="quiz-block">
+    <div class="quiz-q">Q2. You are reviewing a new microservices architecture. Service A calls Service B using a shared API key that is stored in both services' environment variables. What security problems does this create, and what should replace it?</div>
+    <div class="quiz-opts" id="q2">
+      <div class="qo" onclick="doQ('q2',this,'wrong')">The API key should be in a secrets manager instead of an env var &mdash; that fixes the problem</div>
+      <div class="qo" onclick="doQ('q2',this,'correct')">Three problems: (1) Shared credential: if either Service A or B is compromised, the key is exposed and must be rotated simultaneously across both. Any audit trail says "api-key-abc" not "service-a called service-b". (2) Static long-lived key: no automatic rotation means it grows more valuable to attackers over time. (3) Shared secret is a covert channel: any service that knows the key can impersonate any other service that uses it. Replace with: mTLS via service mesh (SPIFFE identity per service, automatic rotation, no secret to share), or per-service JWT with short TTL issued by a central auth service, or IRSA/Workload Identity for cloud-native environments.</div>
+      <div class="qo" onclick="doQ('q2',this,'wrong')">Only rotate the API key more frequently &mdash; monthly rotation fixes the problem</div>
+      <div class="qo" onclick="doQ('q2',this,'wrong')">This is fine for internal service-to-service communication</div>
+    </div>
+    <div class="quiz-exp" id="q2-exp">This is the shared credentials anti-pattern. The fundamental problem is that a shared secret provides no individual identity: you know someone who knows the secret presented it, but not which specific service. This breaks audit trails, complicates incident response (which service leaked the key?), and means rotation must be coordinated across all consumers simultaneously. mTLS via service mesh is the cleanest solution: each service gets a unique X.509 certificate issued by SPIRE, signed by a SPIFFE trust domain. The certificate identity is specific to that service's workload. There is no shared secret: Service B sees "this request was made by the entity holding the certificate for service-a.production.svc". Certificates rotate automatically (24-hour TTL), so there is nothing to manage. Moving the key to a secrets manager is an improvement (better audit trail, rotation management) but does not solve the shared identity problem.</div>
+  </div>
+
+  <div class="quiz-block">
+    <div class="quiz-q">Q3. A startup argues: "We don't need Zero Trust because we're too small for nation-state attacks and we trust our employees." What is wrong with this reasoning, and what is the minimum Zero Trust investment that would make a meaningful difference?</div>
+    <div class="quiz-opts" id="q3">
+      <div class="qo" onclick="doQ('q3',this,'wrong')">The reasoning is correct &mdash; small companies don't need Zero Trust</div>
+      <div class="qo" onclick="doQ('q3',this,'wrong')">Zero Trust is only about preventing insider threats, which may not apply</div>
+      <div class="qo" onclick="doQ('q3',this,'correct')">Wrong on two counts. First, most breaches are not nation-state attacks &mdash; they are opportunistic criminals exploiting misconfigurations and stolen credentials. Second, Zero Trust is not about distrust of employees; it is about designing systems that limit the blast radius when any credential, device, or endpoint is compromised &mdash; which happens to small companies through phishing, stolen laptops, and credential stuffing constantly. Minimum effective investment: (1) MFA on all admin access (stops 99% of credential-based attacks). (2) Default-deny network policies between services. (3) Per-service database credentials. (4) Short-lived tokens. These four controls deliver most of the Zero Trust blast-radius-limiting benefit at very low cost.</div>
+      <div class="qo" onclick="doQ('q3',this,'wrong')">Zero Trust requires a service mesh which is too complex for small companies</div>
+    </div>
+    <div class="quiz-exp" id="q3-exp">Zero Trust is fundamentally about blast radius limitation: designing systems so that when something goes wrong (compromised credential, phished employee, misconfigured service), the damage is contained. Phishing, credential stuffing, and stolen laptops are not nation-state attacks &mdash; they are routine threats that hit every company at every scale. The minimum Zero Trust investment that changes the risk profile: MFA eliminates most credential-based attacks; network policies prevent a compromised service from reaching everything; per-service credentials mean one compromised service doesn't expose all data; short-lived tokens mean a stolen token expires quickly. None of these require a service mesh, complex infrastructure, or significant engineering investment. They are policy and configuration decisions.</div>
+  </div>
+</div>
+
+<!-- CHALLENGE -->
+<div class="challenge">
+  <div class="ch-ey">Capstone Challenge &mdash; Architecture Review</div>
+  <div class="ch">
+    <h3>Conduct a security architecture review</h3>
+    <p class="ch-desc">A team is building a new healthcare patient portal. Apply a structured security architecture review and identify the security design issues. Then propose the correct design for each.</p>
+    <div class="scenario">
+      <p><strong>System description:</strong> A React SPA calls a Django REST API. The API stores patient records in PostgreSQL. The API calls an external lab results service via an API key. An admin dashboard is a separate route in the same Django app. Inter-service: a background Celery worker sends notification emails using SendGrid. All services run in Kubernetes.<br><br>
+      <strong>Current design choices:</strong><br>
+      1. JWT tokens have a 7-day TTL, stored in localStorage<br>
+      2. The PostgreSQL connection string uses the <code>postgres</code> superuser<br>
+      3. The lab API key is stored in a Kubernetes ConfigMap (not a Secret)<br>
+      4. Admin routes are at <code>/api/admin/*</code>, access controlled by <code>if user.is_staff</code> check in each view<br>
+      5. The Celery worker and the web API share the same service account (same IAM role)<br>
+      6. All services are on the same Kubernetes network with no NetworkPolicy applied<br>
+      7. Audit logging records timestamps and HTTP methods but not user IDs or what data was accessed<br>
+      8. The SPA sends the patient record ID in the URL: <code>/patients/12345/records</code> and the API returns records for that ID without checking the requesting user owns patient 12345</p>
+    </div>
+    <textarea id="ch-ans" placeholder="Issue 1 (JWT):
+Problem: ...
+Attack: ...
+Fix: ...
+
+Issue 2 (DB superuser):
+...
+
+[Continue for all 8 issues]"></textarea>
+    <div class="btn-row">
+      <button class="btn btn-p" onclick="checkCh()">Submit</button>
+      <button class="btn btn-g" onclick="revealCh()">Reveal model answer</button>
+    </div>
+    <div class="ch-fb" id="ch-fb"></div>
+  </div>
+</div>
+
+<!-- SUMMARY -->
+<div class="section">
+  <div class="eyebrow">Quick Reference</div>
+  <div class="sec-title">Security architecture cheat sheet</div>
+  <table>
+    <tr><th>Principle</th><th>In practice</th><th>Common violation</th></tr>
+    <tr><td style="font-weight:700;color:var(--accent)">Fail-safe defaults</td><td>IAM deny-all by default; allowlist specific permissions</td><td>IAM role with *, open security groups, permissive CORS</td></tr>
+    <tr><td style="font-weight:700;color:var(--blue)">Least privilege</td><td>DB user with exact SELECT/INSERT on specific tables; IRSA scoped to exact ARNs</td><td>App connects as schema owner; EC2 with AdministratorAccess</td></tr>
+    <tr><td style="font-weight:700;color:var(--green)">Complete mediation</td><td>Auth check on every API call; ownership check per resource, not per endpoint</td><td>Auth at API middleware only, BOLA in individual resolvers</td></tr>
+    <tr><td style="font-weight:700;color:var(--purple)">Defence-in-depth</td><td>WAF → Gateway → App auth → DB RLS → Encryption → Audit logging: independent layers</td><td>Two checks in the same codebase called "DiD"; frontend + backend same logic</td></tr>
+    <tr><td style="font-weight:700;color:var(--teal)">Separation of privilege</td><td>MFA = password + TOTP both required; production deploy = PR + CI gate + approval</td><td>Single admin password; single shared API key with full access</td></tr>
+    <tr><td style="font-weight:700;color:var(--red)">Open design</td><td>AES-256 is secure even though everyone knows AES; security = key not algorithm</td><td>"Secret" admin URL; obfuscated API key in JS bundle</td></tr>
+    <tr><td style="font-weight:700;color:var(--orange)">Zero Trust</td><td>mTLS between services; network policies; per-service secrets; short-lived tokens</td><td>Flat internal network; trusted after the perimeter; shared service accounts</td></tr>
+    <tr><td style="font-weight:700;color:var(--yellow)">Encryption</td><td>TLS 1.3 in transit; envelope encryption at rest; httpOnly SameSite cookies</td><td>HTTP on internal network; database unencrypted; tokens in localStorage</td></tr>
+  </table>
+</div>
+
+<!-- NAV FOOTER -->
+<div class="nav-footer">
+  <a class="nf-btn" href="#"><span class="nf-dir">&larr; Previous</span><span class="nf-title">15 &mdash; SBOM</span></a>
+  <a class="nf-btn next" href="#"><span class="nf-dir">Next Lesson &rarr;</span><span class="nf-title">17 &mdash; Supply Chain Security</span></a>
+</div>
+
+</div>
+</div>
+
+<!-- REVEAL HTML in hidden DOM - no HTML in JS strings -->
+<div id="reveal-html" style="display:none">
+<strong>Model Answer &mdash; Healthcare Portal Security Architecture Review</strong><br><br>
+<strong>Issue 1 &mdash; 7-day JWT TTL in localStorage (CRITICAL):</strong><br>
+Problem: Two separate issues combined. (1) 7-day TTL: a stolen token gives an attacker a full week of access to patient health records. No amount of password security helps if the token persists after a credential compromise. (2) localStorage storage: accessible via JavaScript, which means any XSS vulnerability can exfiltrate the token. Healthcare data is PHI under HIPAA, making XSS-via-stolen-token a reportable breach.<br>
+Attack: XSS payload reads localStorage.getItem('access_token') and exfiltrates to attacker's server. Attacker uses token for 7 days to access any patient record the user could access.<br>
+Fix: Reduce TTL to 15 minutes. Store tokens in httpOnly, Secure, SameSite=Strict cookies. HttpOnly prevents JS access; SameSite=Strict prevents CSRF. Silent refresh in the background using a refresh token (also httpOnly cookie). For healthcare: enforce re-authentication before viewing sensitive records.<br><br>
+<strong>Issue 2 &mdash; PostgreSQL superuser connection (CRITICAL):</strong><br>
+Problem: The application connects as the postgres superuser. Any SQL injection, logic error, or compromised application process can: read any table in any database, drop tables, create new superusers, execute arbitrary OS commands via pg_execute_server_program. Violates both least privilege and breach containment.<br>
+Attack: SQL injection in the patient search query executes as superuser: SELECT * FROM patients WHERE name='x'; DROP TABLE patients;-- or COPY (SELECT * FROM pg_shadow) TO '/tmp/hashes';<br>
+Fix: Create a dedicated application user: CREATE USER portal_app WITH PASSWORD '...'; GRANT SELECT, INSERT, UPDATE ON patients, records, appointments TO portal_app; The app can only touch the tables it legitimately needs. Also implement row-level security (RLS) so even if SQL injection occurs, the query runs as the portal_app role and RLS policies limit which rows are visible.<br><br>
+<strong>Issue 3 &mdash; Lab API key in ConfigMap (HIGH):</strong><br>
+Problem: Kubernetes ConfigMaps are not encrypted and are world-readable to anyone with kubectl get configmap access in that namespace. The lab API key grants access to patient lab results at an external service. A Kubernetes namespace compromise, a misconfigured RBAC role, or any pod with exec access can trivially read it.<br>
+Fix: Move to a Kubernetes Secret (immediate step) and enable etcd encryption at rest with KMS. Better: use External Secrets Operator to sync from AWS Secrets Manager or Vault, with 90-day automatic rotation. The ESO syncs the key into a K8s Secret that is encrypted in etcd. Add audit logging for Secret access so you know when it is read.<br><br>
+<strong>Issue 4 &mdash; Admin routes with per-view is_staff check (HIGH):</strong><br>
+Problem: Relying on every developer to remember to add the is_staff check to every admin view is error-prone. One forgotten check exposes the admin function to regular users. This is "bolted-on" security rather than structural. Also: the admin dashboard being at /api/admin/* means it shares the same authentication infrastructure as the patient API, so a patient-facing vulnerability (like a cookie theft) can give admin access.<br>
+Fix: Implement admin routes as a separate Django application (or separate service) with its own authentication middleware that enforces is_staff at the framework level, not at the individual view level. Admin traffic should require: staff flag AND separate admin session AND ideally MFA step-up re-authentication. Network policy should prevent patient-facing pods from reaching admin endpoints. Better: host the admin dashboard at a separate subdomain only accessible via VPN/corporate SSO.<br><br>
+<strong>Issue 5 &mdash; Celery worker and API share service account (MEDIUM-HIGH):</strong><br>
+Problem: If the Celery worker is compromised (e.g., via a dependency vulnerability), the attacker inherits the API service account's permissions, which include reading patient records, calling the lab API, and all other API permissions. The notification worker has no legitimate need for patient record access but gets it through shared identity. Also: incident response cannot distinguish between "the API service did X" and "the Celery worker did X" in audit logs.<br>
+Fix: Create separate Kubernetes ServiceAccounts and IAM roles for the web API and the Celery worker. The Celery worker needs only: SendGrid API key (in its own Secret) and ability to read queued task data. It does not need access to patient records, the lab API key, or database write permissions beyond what tasks require. Principle of least common mechanism: separate service accounts, separate permissions.<br><br>
+<strong>Issue 6 &mdash; No NetworkPolicy (flat K8s network) (HIGH):</strong><br>
+Problem: All pods can communicate with all other pods. A compromised patient-facing web pod can directly reach the database, the Celery worker's message broker, the admin service, and any other internal service. The flat network means lateral movement is trivial. This is the anti-pattern that made SolarWinds devastating.<br>
+Fix: Implement default-deny NetworkPolicy in the production namespace. Then allowlist only necessary flows: web-api → postgres:5432, web-api → redis:6379 (Celery queue), celery-worker → redis:6379, celery-worker → SendGrid (HTTPS egress), web-api → lab-service (HTTPS egress). Admin service gets its own namespace with its own network policies. Lateral movement from a compromised web pod is now blocked from reaching the database or other services.<br><br>
+<strong>Issue 7 &mdash; Audit logging without user IDs (HIGH for healthcare):</strong><br>
+Problem: HIPAA requires audit controls that record who accessed which patient records and when. Logging timestamps and HTTP methods without user IDs is not a HIPAA-compliant audit trail. "GET /patients/12345/records at 14:32" is useless for an investigation: you cannot determine which user, whether they were authorised, or whether this was a breach. In healthcare this is not just a security gap; it is a compliance failure with regulatory penalties.<br>
+Fix: Log at minimum: user_id (from JWT sub claim), patient_id accessed, data type accessed (records, appointments, etc.), action (read/write/delete), timestamp, IP address, service name. For healthcare: implement a dedicated audit log table that is append-only (no UPDATE/DELETE permissions for the application user) and consider shipping logs to an immutable SIEM. The application user should have INSERT only on the audit_log table, not SELECT (prevents an attacker from covering their tracks).<br><br>
+<strong>Issue 8 &mdash; No ownership check on patient records (CRITICAL, BOLA):</strong><br>
+Problem: This is a textbook Broken Object Level Authorization (OWASP API1). Any authenticated user can access any patient's records by changing the patient ID in the URL. In a healthcare context, this is a PHI breach on every request. A patient can access another patient's mental health records, HIV status, or prescriptions simply by incrementing the ID.<br>
+Fix: Every query that returns patient data must include a WHERE clause that ties the patient to the requesting user: SELECT * FROM records WHERE patient_id = %s AND patient_id IN (SELECT id FROM patients WHERE assigned_user_id = %s). For healthcare portals specifically: a patient can only view their own records. Clinicians can view assigned patients. Implement this as a database policy (row-level security) in addition to application-level checks so a SQL injection that bypasses application logic is still constrained by the database policy.
+</div>
+
+<!-- JAVASCRIPT - no HTML in JS strings -->
+<script>
+function tp(id) {
+  document.getElementById(id).classList.toggle('open');
+}
+document.getElementById('pan-did').classList.add('open');
+document.getElementById('pan-least-priv').classList.add('open');
+
+function togglePC(id) {
+  var card = document.getElementById(id);
+  var wasOpen = card.classList.contains('open');
+  document.querySelectorAll('.pattern-card').forEach(function(c) {
+    c.classList.remove('open');
+    var b = document.getElementById(c.id + '-b');
+    if (b) { b.classList.remove('show'); }
+  });
+  if (!wasOpen) {
+    card.classList.add('open');
+    var body = document.getElementById(id + '-b');
+    if (body) { body.classList.add('show'); }
+  }
+}
+togglePC('pc1');
+
+function switchTab(btn, paneId) {
+  var bar = btn.parentElement;
+  bar.querySelectorAll('.atab').forEach(function(t) { t.classList.remove('active'); });
+  btn.classList.add('active');
+  var wrap = bar.parentElement;
+  wrap.querySelectorAll('.tab-pane').forEach(function(p) { p.classList.remove('active'); });
+  var pane = document.getElementById(paneId);
+  if (pane) { pane.classList.add('active'); }
+}
+
+function doQ(qid, el, result) {
+  var container = document.getElementById(qid);
+  container.querySelectorAll('.qo').forEach(function(o) { o.onclick = null; });
+  el.classList.add(result === 'correct' ? 'correct' : 'wrong');
+  var exp = document.getElementById(qid + '-exp');
+  if (exp) { exp.classList.add('show'); }
+}
+
+function checkCh() {
+  var ans = document.getElementById('ch-ans').value.toLowerCase();
+  var fb  = document.getElementById('ch-fb');
+  var checks = [
+    (ans.includes('jwt') || ans.includes('token')) && (ans.includes('7 day') || ans.includes('ttl') || ans.includes('localstorage') || ans.includes('httponly')),
+    (ans.includes('superuser') || ans.includes('postgres user') || ans.includes('least priv')) && (ans.includes('db') || ans.includes('database') || ans.includes('select')),
+    (ans.includes('configmap') || ans.includes('config map')) && (ans.includes('secret') || ans.includes('encrypt') || ans.includes('plaintext')),
+    (ans.includes('admin') || ans.includes('is_staff')) && (ans.includes('middleware') || ans.includes('separate') || ans.includes('framework') || ans.includes('all view')),
+    (ans.includes('celery') || ans.includes('worker')) && (ans.includes('separate') || ans.includes('service account') || ans.includes('shared')),
+    (ans.includes('network') || ans.includes('networkpolicy')) && (ans.includes('flat') || ans.includes('default deny') || ans.includes('lateral')),
+    (ans.includes('audit') || ans.includes('log')) && (ans.includes('user') || ans.includes('hipaa') || ans.includes('who') || ans.includes('patient id')),
+    (ans.includes('bola') || ans.includes('ownership') || ans.includes('patient 12345') || ans.includes('object level')) && (ans.includes('check') || ans.includes('filter') || ans.includes('where'))
+  ];
+  var score = checks.filter(Boolean).length;
+  fb.className = 'ch-fb show ' + (score >= 6 ? 'good' : 'hint');
+  if (score >= 6) {
+    fb.textContent = 'Excellent — ' + score + '/8 issues identified. You are thinking like a security architect: covering authentication, authorisation, data access, network segmentation, audit, and least privilege. The two CRITICAL issues are Issue 1 (JWT in localStorage: XSS readable + 7-day window in a healthcare context = guaranteed PHI breach) and Issue 8 (BOLA: any patient can read any other patient\'s records by changing an ID). Both are design decisions that cannot be patched onto the current design without data model changes, not just code fixes.';
+  } else if (score >= 4) {
+    fb.textContent = 'Good work — ' + score + '/8 covered. Issues to revisit: (1) The BOLA on patient records (Issue 8) is CRITICAL for healthcare: any authenticated user can read any other patient\'s PHI. This requires a WHERE clause tied to the requesting user in every patient data query. (2) The flat Kubernetes network (Issue 6) means a compromised web pod can directly reach the database. Default-deny NetworkPolicy is the fix. (3) The audit logging gap (Issue 7) is a HIPAA compliance failure: without user IDs in audit logs, you cannot demonstrate compliance or investigate a suspected breach.';
+  } else {
+    fb.textContent = 'Work through each issue systematically. For each: what is the security property being violated? What attack does this enable? What is the minimum fix? The 8 Saltzer-Schroeder principles are a useful lens: which principle is Issue 2 violating? (Least privilege.) Which is Issue 8? (Complete mediation.) Which is Issue 6? (Defence-in-depth.) Naming the principle helps identify the correct fix.';
+  }
+}
+
+function revealCh() {
+  var fb  = document.getElementById('ch-fb');
+  var src = document.getElementById('reveal-html');
+  fb.className = 'ch-fb show reveal';
+  fb.innerHTML = src ? src.innerHTML : 'Model answer unavailable.';
+}
+</script>
+</body>
+</html>

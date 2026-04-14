@@ -1,0 +1,1379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AppSec Engineer — Lesson 11: DevSecOps Pipeline</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Fraunces:ital,wght@0,700;0,900;1,700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f7f6f2;--surface:#ffffff;--surface2:#f0ede6;--surface3:#e8e4db;
+  --border:#ddd9cf;--border2:#ccc8bc;--ink:#18160f;--ink2:#4a4636;--ink3:#9a9383;
+  --accent:#1a6b3c;--accent-bg:rgba(26,107,60,0.07);
+  --red:#c0392b;--red-bg:rgba(192,57,43,0.06);
+  --orange:#c0500a;--orange-bg:rgba(192,80,10,0.06);
+  --yellow:#9a6c00;--yellow-bg:rgba(154,108,0,0.07);
+  --blue:#1a4db8;--blue-bg:rgba(26,77,184,0.07);
+  --purple:#6b30b8;--purple-bg:rgba(107,48,184,0.07);
+  --teal:#0d7c6e;--teal-bg:rgba(13,124,110,0.07);
+  --code-bg:#13120e;--code-text:#e8e4d8;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--ink);font-family:'Inter',sans-serif;font-size:15px;line-height:1.8;}
+.sidebar{position:fixed;left:0;top:0;bottom:0;width:252px;background:var(--ink);overflow-y:auto;z-index:100;}
+.sb-brand{padding:1.4rem 1.2rem 1rem;border-bottom:1px solid rgba(255,255,255,.07);}
+.sb-badge{font-family:'JetBrains Mono',monospace;font-size:9px;background:var(--accent);color:#fff;padding:2px 8px;border-radius:2px;letter-spacing:.12em;display:inline-block;margin-bottom:7px;text-transform:uppercase;font-weight:700;}
+.sb-brand h2{font-size:13px;font-weight:400;color:rgba(255,255,255,.35);line-height:1.4;}
+.sb-sect{padding:.7rem 1.2rem .2rem;font-size:9px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:rgba(255,255,255,.18);margin-top:.25rem;}
+.nav-item{display:flex;align-items:center;gap:9px;padding:.38rem 1.2rem;cursor:pointer;border-left:2px solid transparent;font-size:12.5px;color:rgba(255,255,255,.22);text-decoration:none;transition:all .15s;}
+.nav-item:hover{color:rgba(255,255,255,.6);background:rgba(255,255,255,.04);}
+.nav-item.done{color:rgba(255,255,255,.28);}
+.nav-item.active{color:#fff;border-left-color:var(--accent);background:var(--accent-bg);}
+.nav-item .num{font-family:'JetBrains Mono',monospace;font-size:10px;min-width:22px;opacity:.28;}
+.nav-item.active .num{opacity:1;color:var(--accent);}
+.main{margin-left:252px;}
+.topbar{position:sticky;top:0;background:rgba(247,246,242,.96);backdrop-filter:blur(14px);border-bottom:1px solid var(--border);padding:.65rem 2.5rem;display:flex;align-items:center;justify-content:space-between;z-index:50;}
+.bc{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink3);}
+.bc span{color:var(--accent);font-weight:700;}
+.top-badge{font-family:'JetBrains Mono',monospace;font-size:10px;padding:3px 10px;background:var(--ink);color:rgba(255,255,255,.6);border-radius:2px;}
+.content{padding:3rem 2.5rem 5rem;max-width:960px;}
+.hero{margin-bottom:3.5rem;padding-bottom:2.5rem;border-bottom:2px solid var(--border);}
+.hero-meta{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1rem;}
+.tag{font-family:'JetBrains Mono',monospace;font-size:10px;padding:3px 10px;border-radius:2px;font-weight:600;letter-spacing:.04em;}
+.t-beg{background:var(--accent-bg);color:var(--accent);border:1px solid rgba(26,107,60,.2);}
+.t-frm{background:var(--blue-bg);color:var(--blue);border:1px solid rgba(26,77,184,.2);}
+.t-time{background:var(--purple-bg);color:var(--purple);border:1px solid rgba(107,48,184,.2);}
+.hero h1{font-family:'Fraunces',serif;font-size:3.2rem;font-weight:900;line-height:1.1;color:var(--ink);margin-bottom:.85rem;}
+.hero h1 .hl{color:var(--accent);}
+.hero-sub{font-size:14.5px;color:var(--ink2);max-width:660px;line-height:1.8;margin-bottom:1.75rem;}
+.level-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:6px;overflow:hidden;}
+.lv-cell{background:var(--surface);padding:.9rem 1rem;}
+.lv-pip{width:8px;height:8px;border-radius:50%;margin-bottom:7px;}
+.lv-label{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink3);margin-bottom:3px;}
+.lv-title{font-size:13px;font-weight:700;color:var(--ink);margin-bottom:2px;}
+.lv-desc{font-size:12px;color:var(--ink3);line-height:1.5;}
+.section{margin-bottom:3.5rem;}
+.eyebrow{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.15em;color:var(--accent);margin-bottom:5px;font-weight:700;}
+.sec-title{font-family:'Fraunces',serif;font-size:1.9rem;font-weight:700;color:var(--ink);line-height:1.2;margin-bottom:.35rem;}
+.sec-sub{font-size:14px;color:var(--ink2);max-width:660px;line-height:1.75;margin-bottom:1.5rem;}
+.callout{border-radius:4px;padding:.9rem 1.1rem;margin:1rem 0;display:flex;gap:10px;align-items:flex-start;border-left:3px solid;}
+.cl-warn{background:var(--red-bg);border-color:var(--red);}
+.cl-info{background:var(--blue-bg);border-color:var(--blue);}
+.cl-tip{background:var(--accent-bg);border-color:var(--accent);}
+.cl-note{background:var(--yellow-bg);border-color:var(--yellow);}
+.cl-purple{background:var(--purple-bg);border-color:var(--purple);}
+.cl-teal{background:var(--teal-bg);border-color:var(--teal);}
+.cl-icon{font-size:15px;flex-shrink:0;margin-top:2px;}
+.cl-text{font-size:13.5px;color:var(--ink2);line-height:1.7;}
+.cl-text strong{color:var(--ink);}
+.cl-text code{font-family:'JetBrains Mono',monospace;font-size:11.5px;background:rgba(0,0,0,.06);padding:1px 5px;border-radius:2px;color:var(--accent);}
+pre{background:var(--code-bg);color:var(--code-text);border-radius:6px;padding:1.25rem;font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.8;overflow-x:auto;margin:.85rem 0;position:relative;border:1px solid rgba(255,255,255,.05);}
+.ctag{position:absolute;top:10px;right:12px;font-family:'JetBrains Mono',monospace;font-size:9px;color:rgba(255,255,255,.2);text-transform:uppercase;letter-spacing:.1em;}
+.ck{color:#c084fc;}.cf{color:#7dd3fc;}.cs{color:#86efac;}.cm{color:#374151;}.cv{color:#fcd34d;}.ce{color:#fb923c;}.cr{color:#f87171;}.cg{color:#4ade80;}.ct{color:#2dd4bf;}.cw{color:#f9a8d4;}
+.lb{display:block;background:rgba(248,113,113,.09);border-left:2px solid #ef4444;margin:0 -1.25rem;padding:0 1.25rem;}
+.lg{display:block;background:rgba(74,222,128,.07);border-left:2px solid #22c55e;margin:0 -1.25rem;padding:0 1.25rem;}
+.lw{display:block;background:rgba(252,211,77,.07);border-left:2px solid #f59e0b;margin:0 -1.25rem;padding:0 1.25rem;}
+table{width:100%;border-collapse:collapse;font-size:13px;margin:1rem 0;}
+th{padding:.55rem .9rem;text-align:left;background:var(--ink);color:rgba(255,255,255,.7);font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.08em;}
+th:first-child{border-radius:4px 0 0 0;}th:last-child{border-radius:0 4px 0 0;}
+td{padding:.55rem .9rem;border-bottom:1px solid var(--border);color:var(--ink2);line-height:1.5;vertical-align:top;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:var(--surface2);}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:6px;overflow:hidden;margin-bottom:.75rem;}
+.panel-h{display:flex;align-items:center;gap:10px;padding:.9rem 1.1rem;cursor:pointer;transition:background .15s;user-select:none;}
+.panel-h:hover{background:var(--surface2);}
+.panel-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.panel-title{font-size:13.5px;font-weight:700;flex:1;color:var(--ink);}
+.panel-sub{font-size:12px;color:var(--ink3);}
+.panel-tog{color:var(--ink3);font-size:13px;transition:transform .2s;}
+.panel.open .panel-tog{transform:rotate(180deg);}
+.panel-body{display:none;padding:0 1.1rem 1.1rem;border-top:1px solid var(--border);}
+.panel.open .panel-body{display:block;}
+.panel-body h4{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--ink3);margin:1rem 0 .5rem;font-weight:700;}
+.panel-body p{font-size:13.5px;color:var(--ink2);line-height:1.75;margin-top:.6rem;}
+.gate-list{display:flex;flex-direction:column;gap:.6rem;margin:1.25rem 0;}
+.gate{background:var(--surface);border:1px solid var(--border);border-radius:6px;overflow:hidden;}
+.gate-h{display:flex;align-items:center;gap:12px;padding:.85rem 1rem;cursor:pointer;user-select:none;transition:background .15s;}
+.gate-h:hover{background:var(--surface2);}
+.gate-num{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;flex-shrink:0;}
+.gate-title{font-size:13.5px;font-weight:700;flex:1;color:var(--ink);}
+.gate-badge{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink3);}
+.gate-tog{color:var(--ink3);font-size:13px;transition:transform .2s;}
+.gate.open .gate-tog{transform:rotate(180deg);}
+.gate-body{display:none;padding:.9rem 1rem 1rem;border-top:1px solid var(--border);}
+.gate.open .gate-body{display:block;}
+.gate-body h5{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--ink3);margin:.85rem 0 .4rem;font-weight:700;}
+.gate-body p{font-size:13.5px;color:var(--ink2);line-height:1.75;}
+.tool-tabs{border:1px solid var(--border);border-radius:6px;overflow:hidden;margin:1.25rem 0;}
+.tool-tab-bar{display:flex;background:var(--surface2);border-bottom:1px solid var(--border);flex-wrap:wrap;}
+.ttab{padding:.55rem 1rem;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;cursor:pointer;color:var(--ink3);border-right:1px solid var(--border);transition:all .15s;user-select:none;}
+.ttab:hover{color:var(--ink);}
+.ttab.active{background:var(--surface);color:var(--accent);border-bottom:2px solid var(--accent);}
+.tool-pane{display:none;padding:1.25rem;}
+.tool-pane.active{display:block;}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin:1rem 0;}
+.cb{background:var(--red-bg);border:1px solid rgba(192,57,43,.15);border-radius:6px;padding:1rem;}
+.cg-box{background:var(--accent-bg);border:1px solid rgba(26,107,60,.15);border-radius:6px;padding:1rem;}
+.cmp-l{font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.12em;font-weight:700;margin-bottom:.6rem;}
+.cb .cmp-l{color:var(--red);}
+.cg-box .cmp-l{color:var(--accent);}
+.pill{font-size:11px;padding:3px 9px;border-radius:2px;font-family:'JetBrains Mono',monospace;font-weight:600;}
+.pr{background:var(--red-bg);color:var(--red);border:1px solid rgba(192,57,43,.2);}
+.pg{background:var(--accent-bg);color:var(--accent);border:1px solid rgba(26,107,60,.2);}
+.py{background:var(--yellow-bg);color:var(--yellow);border:1px solid rgba(154,108,0,.2);}
+.pb{background:var(--blue-bg);color:var(--blue);border:1px solid rgba(26,77,184,.2);}
+.pp{background:var(--purple-bg);color:var(--purple);border:1px solid rgba(107,48,184,.2);}
+.pt{background:var(--teal-bg);color:var(--teal);border:1px solid rgba(13,124,110,.2);}
+.pill-row{display:flex;flex-wrap:wrap;gap:6px;margin:.5rem 0;}
+.rw-box{background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:1rem 1.1rem;margin:.85rem 0;}
+.rw-label{font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.12em;color:var(--red);margin-bottom:5px;font-weight:700;}
+.rw-box p{font-size:13px;color:var(--ink2);line-height:1.7;}
+.quiz-block{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:1.25rem;margin-bottom:1rem;}
+.quiz-q{font-size:14.5px;font-weight:700;color:var(--ink);margin-bottom:.85rem;line-height:1.55;}
+.quiz-opts{display:flex;flex-direction:column;gap:7px;}
+.qo{padding:.65rem 1rem;border:1px solid var(--border);border-radius:4px;cursor:pointer;font-size:13.5px;color:var(--ink2);background:var(--surface2);transition:all .15s;}
+.qo:hover{border-color:var(--accent);color:var(--ink);}
+.qo.correct{border-color:var(--accent);color:var(--accent);background:var(--accent-bg);cursor:default;}
+.qo.wrong{border-color:var(--red);color:var(--red);background:var(--red-bg);cursor:default;}
+.quiz-exp{font-size:13px;color:var(--ink2);line-height:1.7;padding:.75rem 1rem;background:var(--surface2);border-radius:4px;border-left:3px solid var(--accent);display:none;margin-top:.5rem;}
+.quiz-exp.show{display:block;}
+.challenge{background:var(--ink);border-radius:10px;padding:2rem;margin:3rem 0;position:relative;overflow:hidden;}
+.challenge::before{content:'';position:absolute;top:-60px;right:-60px;width:220px;height:220px;background:radial-gradient(circle,rgba(26,107,60,.15) 0%,transparent 70%);pointer-events:none;}
+.ch-ey{font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.15em;color:var(--accent);margin-bottom:.5rem;}
+.ch h3{font-family:'Fraunces',serif;font-size:1.55rem;font-weight:700;color:#fff;margin-bottom:.7rem;}
+.ch-desc{font-size:13.5px;color:rgba(255,255,255,.45);line-height:1.75;margin-bottom:1.25rem;}
+.scenario{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:5px;padding:1rem 1.1rem;margin-bottom:1.25rem;}
+.scenario p{font-size:13px;color:rgba(255,255,255,.55);line-height:1.75;}
+.scenario strong{color:rgba(255,255,255,.9);}
+.challenge textarea{width:100%;min-height:180px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:4px;padding:1rem;font-family:'JetBrains Mono',monospace;font-size:12px;color:rgba(255,255,255,.85);resize:vertical;outline:none;transition:border-color .2s;margin-bottom:1rem;}
+.challenge textarea:focus{border-color:var(--accent);}
+.challenge textarea::placeholder{color:rgba(255,255,255,.2);}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap;}
+.btn{padding:9px 20px;border-radius:4px;font-size:13px;font-family:'Inter',sans-serif;font-weight:600;cursor:pointer;border:1px solid;transition:all .15s;}
+.btn-p{background:var(--accent);color:#fff;border-color:var(--accent);}
+.btn-p:hover{background:#145a31;}
+.btn-g{background:transparent;color:rgba(255,255,255,.45);border-color:rgba(255,255,255,.14);}
+.btn-g:hover{color:#fff;border-color:rgba(255,255,255,.35);}
+.ch-fb{margin-top:1rem;padding:1rem 1.1rem;border-radius:5px;font-size:13.5px;line-height:1.7;display:none;}
+.ch-fb.show{display:block;}
+.ch-fb.good{background:rgba(26,107,60,.15);border:1px solid rgba(26,107,60,.3);color:#4ade80;}
+.ch-fb.hint{background:rgba(252,211,77,.1);border:1px solid rgba(252,211,77,.25);color:#fcd34d;}
+.ch-fb.reveal{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.75);}
+.nav-footer{display:flex;justify-content:space-between;margin-top:4rem;padding-top:2rem;border-top:2px solid var(--border);}
+.nf-btn{padding:.85rem 1.5rem;border:1px solid var(--border);border-radius:4px;font-size:13px;cursor:pointer;background:var(--surface);color:var(--ink2);text-align:left;transition:all .15s;text-decoration:none;display:block;}
+.nf-btn:hover{border-color:var(--accent);}
+.nf-btn.next{background:var(--accent);color:#fff;border-color:var(--accent);text-align:right;}
+.nf-btn.next:hover{background:#145a31;}
+.nf-dir{font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:var(--ink3);display:block;margin-bottom:3px;}
+.nf-btn.next .nf-dir{color:rgba(255,255,255,.4);}
+.nf-title{font-weight:700;display:block;}
+code{font-family:'JetBrains Mono',monospace;font-size:12px;background:rgba(0,0,0,.06);padding:1px 5px;border-radius:2px;color:var(--accent);}
+pre code{background:none;padding:0;color:inherit;font-size:inherit;}
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px;}
+@media(max-width:860px){.sidebar{display:none;}.main{margin-left:0;}.content{padding:1.5rem 1.1rem 3rem;}.level-strip,.two-col{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+<nav class="sidebar">
+  <div class="sb-brand"><div class="sb-badge">AppSec Engineer</div><h2>Application Security<br>Learning Path</h2></div>
+  <div class="sb-sect">Module 1 &mdash; Foundations</div>
+  <a class="nav-item done" href="#"><span class="num">01</span>OWASP Top 10 2021</a>
+  <a class="nav-item done" href="#"><span class="num">02</span>Secure SDLC</a>
+  <a class="nav-item done" href="#"><span class="num">03</span>Threat Modeling</a>
+  <div class="sb-sect">Module 2 &mdash; Testing Tools</div>
+  <a class="nav-item done" href="#"><span class="num">04</span>SAST</a>
+  <a class="nav-item done" href="#"><span class="num">05</span>DAST</a>
+  <a class="nav-item done" href="#"><span class="num">06</span>SCA</a>
+  <a class="nav-item done" href="#"><span class="num">07</span>IAST &amp; RASP</a>
+  <div class="sb-sect">Module 3 &mdash; API Security</div>
+  <a class="nav-item done" href="#"><span class="num">08</span>OWASP API Top 10</a>
+  <a class="nav-item done" href="#"><span class="num">09</span>API Security Testing</a>
+  <a class="nav-item done" href="#"><span class="num">10</span>GraphQL Security</a>
+  <div class="sb-sect">Module 4 &mdash; DevSecOps</div>
+  <a class="nav-item active" href="#"><span class="num">11</span>DevSecOps Pipeline</a>
+  <a class="nav-item" href="#"><span class="num">12</span>Secrets Management</a>
+  <a class="nav-item" href="#"><span class="num">13</span>Container Security</a>
+  <a class="nav-item" href="#"><span class="num">14</span>Dependency Scanning</a>
+  <a class="nav-item" href="#"><span class="num">15</span>SBOM</a>
+  <div class="sb-sect">Module 5 &mdash; Architecture</div>
+  <a class="nav-item" href="#"><span class="num">16</span>Security Architecture</a>
+  <a class="nav-item" href="#"><span class="num">17</span>Supply Chain Security</a>
+  <a class="nav-item" href="#"><span class="num">18</span>WAF</a>
+  <a class="nav-item" href="#"><span class="num">19</span>Code Review</a>
+  <a class="nav-item" href="#"><span class="num">20</span>RASP</a>
+</nav>
+
+<div class="main">
+<div class="topbar">
+  <div class="bc">appsec-engineer / module-4 / <span>devsecops-pipeline</span></div>
+  <div class="top-badge">Lesson 11 / 20</div>
+</div>
+<div class="content">
+
+<div class="hero">
+  <div class="hero-meta">
+    <span class="tag t-beg">Beginner &rarr; Advanced</span>
+    <span class="tag t-frm">Pipeline</span>
+    <span class="tag t-time">~70 min</span>
+  </div>
+  <h1>DevSecOps<br><span class="hl">Pipeline</span></h1>
+  <p class="hero-sub">DevSecOps is the practice of embedding security controls directly into the software delivery pipeline so that security becomes automatic, continuous, and fast rather than a manual gate at the end. This lesson builds a complete DevSecOps pipeline from first principles: what it is and why it matters, each security gate in the CI/CD pipeline, how to tune gates to minimise friction, how to measure programme maturity, and a complete GitHub Actions implementation you can drop into any project.</p>
+  <div class="level-strip">
+    <div class="lv-cell"><div class="lv-pip" style="background:var(--accent)"></div><div class="lv-label">Beginner</div><div class="lv-title">What DevSecOps is</div><div class="lv-desc">Dev vs DevOps vs DevSecOps, why "security at the end" fails, shift-left explained, the security feedback loop</div></div>
+    <div class="lv-cell"><div class="lv-pip" style="background:var(--yellow)"></div><div class="lv-label">Intermediate</div><div class="lv-title">Every security gate in depth</div><div class="lv-desc">Pre-commit, SAST, SCA, secrets scanning, DAST, container scanning, IaC scanning &mdash; each gate configured end-to-end</div></div>
+    <div class="lv-cell"><div class="lv-pip" style="background:var(--red)"></div><div class="lv-label">Advanced</div><div class="lv-title">Full pipeline &amp; metrics</div><div class="lv-desc">Complete GitHub Actions workflow, tuning false positives, security-as-policy, DORA metrics, maturity model</div></div>
+  </div>
+</div>
+
+<!-- BEGINNER: WHAT IS DEVSECOPS -->
+<div class="section">
+  <div class="eyebrow">&#x1F7E2; Beginner &mdash; What DevSecOps Is</div>
+  <div class="sec-title">From "security at the end" to "security everywhere"</div>
+  <div class="sec-sub">Traditional security is a tollgate at the end of a release. DevSecOps is a distribution of small security checks throughout every stage of the delivery pipeline. The cost difference is enormous.</div>
+
+  <div class="callout cl-warn">
+    <div class="cl-icon">&#x26A0;&#xFE0F;</div>
+    <div class="cl-text"><strong>The cost of late detection:</strong> A vulnerability found by a developer in their IDE costs 5 minutes to fix. The same vulnerability found during a security review costs 1 hour (context switch, ticket, review, fix, re-review). Found in production after a breach: $4.45M average cost (IBM 2023). DevSecOps is fundamentally about moving detection as early as possible. The earlier you find it, the cheaper it is.</div>
+  </div>
+
+  <div class="panel" id="pan-evolution">
+    <div class="panel-h" onclick="tp('pan-evolution')">
+      <div class="panel-dot" style="background:var(--blue)"></div>
+      <div class="panel-title">Dev &rarr; DevOps &rarr; DevSecOps &mdash; the evolution</div>
+      <div class="panel-sub">Understanding where DevSecOps came from and why the previous models failed</div>
+      <div class="panel-tog">&#x25BC;</div>
+    </div>
+    <div class="panel-body">
+      <table>
+        <tr><th>Era</th><th>Model</th><th>Security approach</th><th>Problem</th></tr>
+        <tr><td style="font-weight:700;color:var(--blue)">Pre-2010</td><td>Waterfall Dev</td><td>Security team does a pentest before release. One big audit per year.</td><td>Releases are 6-12 months apart. Pentest finds 50 issues 2 weeks before go-live. Ship anyway or delay. Dev team has no security context.</td></tr>
+        <tr><td style="font-weight:700;color:var(--purple)">2010&ndash;2018</td><td>DevOps</td><td>Dev and Ops merged into one pipeline. Security still a separate "throw it over the wall" function.</td><td>Teams deploy 50x/day. Security can't review each deployment. Security becomes a bottleneck or gets bypassed entirely.</td></tr>
+        <tr><td style="font-weight:700;color:var(--accent)">2018&ndash;now</td><td>DevSecOps</td><td>Security controls embedded in the pipeline. Every commit triggers automated security checks. Security team writes policy-as-code, not manual reviews.</td><td>Still evolving. Challenge: tuning automated tools to minimise false positives and developer friction.</td></tr>
+      </table>
+      <h4>The shift-left principle</h4>
+      <p>A CI/CD pipeline runs from left (code commit) to right (production deployment). "Shift left" means moving security checks earlier in that pipeline &mdash; closer to the moment the code is written. Each step left dramatically reduces the cost of fixing a finding: pre-commit hooks catch issues before they're even committed to the repository. SAST in CI catches them before peer review. DAST in staging catches them before release. Production monitoring catches them after release &mdash; when they're most expensive.</p>
+    </div>
+  </div>
+
+  <div class="panel" id="pan-principles">
+    <div class="panel-h" onclick="tp('pan-principles')">
+      <div class="panel-dot" style="background:var(--accent)"></div>
+      <div class="panel-title">The 5 DevSecOps principles every AppSec engineer must know</div>
+      <div class="panel-sub">These principles distinguish effective DevSecOps programmes from checkbox compliance</div>
+      <div class="panel-tog">&#x25BC;</div>
+    </div>
+    <div class="panel-body">
+      <table>
+        <tr><th>Principle</th><th>What it means</th><th>What it looks like in practice</th></tr>
+        <tr><td style="font-weight:700;color:var(--accent)">Security as Code</td><td>Security policies, rules, and configurations live in version-controlled files, not in manual processes or people's heads</td><td>Semgrep rules in .semgrep/, SAST config in .semgrep.yml, vulnerability policies in .snyk, network policies in Terraform &mdash; all in the repo, reviewed in PRs</td></tr>
+        <tr><td style="font-weight:700;color:var(--blue)">Fail Fast</td><td>Security gates should fail early and specifically, with actionable output that tells the developer exactly what to fix</td><td>Not "security scan failed" but "SQLi in views.py line 42: user input directly interpolated into SQL query. Fix: use parameterized query. Docs: [link]"</td></tr>
+        <tr><td style="font-weight:700;color:var(--purple)">Developer First</td><td>Security tooling must serve the developer experience. A tool that produces 200 false positives will be ignored or disabled</td><td>Tune every tool to near-zero false positives before enforcing. Provide IDE plugins so developers find issues before CI does. Make fixing the easy path.</td></tr>
+        <tr><td style="font-weight:700;color:var(--yellow)">Continuous &amp; Automatic</td><td>Security checks run on every commit, every PR, every merge, and on a schedule &mdash; not just before releases</td><td>Pre-commit hooks run locally. CI gates run on every PR. Scheduled scans run daily to catch newly published CVEs. Production monitoring runs continuously.</td></tr>
+        <tr><td style="font-weight:700;color:var(--teal)">Shared Ownership</td><td>Security is not the security team's job alone. Developers own fixing vulnerabilities in their code. Security team writes policy and mentors.</td><td>Vulnerability findings create tickets in the development team's backlog, not the security team's queue. Security team reviews the rules, developers fix the findings.</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="panel" id="pan-pipeline-overview">
+    <div class="panel-h" onclick="tp('pan-pipeline-overview')">
+      <div class="panel-dot" style="background:var(--yellow)"></div>
+      <div class="panel-title">The complete DevSecOps pipeline &mdash; every stage and every gate</div>
+      <div class="panel-sub">What runs where, in what order, and why</div>
+      <div class="panel-tog">&#x25BC;</div>
+    </div>
+    <div class="panel-body">
+      <table>
+        <tr><th>Stage</th><th>When</th><th>Security gates</th><th>What it catches</th><th>Who sees it first</th></tr>
+        <tr><td style="font-weight:700;color:var(--accent)">Pre-commit</td><td>Before git commit</td><td>Pre-commit hooks: secrets scan, linting, basic SAST</td><td>Hardcoded secrets, obvious code quality issues, trivial injection patterns</td><td>The developer who wrote the code</td></tr>
+        <tr><td style="font-weight:700;color:var(--blue)">Pull Request</td><td>On every PR open/update</td><td>Full SAST, SCA, secrets scan, IaC scan, license check</td><td>Injection, auth flaws, CVEs in new dependencies, misconfigs in Terraform</td><td>Developer + reviewer before merge</td></tr>
+        <tr><td style="font-weight:700;color:var(--purple)">Merge to main</td><td>After PR merges</td><td>Container image scan, SBOM generation, signed artifact creation</td><td>Vulnerabilities in base images, OS packages, runtime dependencies</td><td>Security team + DevOps</td></tr>
+        <tr><td style="font-weight:700;color:var(--yellow)">Staging deploy</td><td>Before production</td><td>DAST, API security testing, performance tests</td><td>Runtime vulnerabilities, business logic flaws, auth bypasses needing a live app</td><td>Security team + QA</td></tr>
+        <tr><td style="font-weight:700;color:var(--teal)">Production</td><td>Continuous</td><td>RASP, WAF, SIEM, anomaly detection, CVE monitoring</td><td>Live attacks, newly disclosed CVEs in deployed packages, anomalous behaviour</td><td>SOC + on-call engineers</td></tr>
+      </table>
+    </div>
+  </div>
+</div>
+<!-- INTERMEDIATE: EVERY GATE IN DEPTH -->
+<div class="section">
+  <div class="eyebrow">&#x1F7E1; Intermediate &mdash; Every Security Gate in Depth</div>
+  <div class="sec-title">The 7 DevSecOps security gates</div>
+  <div class="sec-sub">Each gate below covers: what it is, what tool to use, how to configure it, what it catches and misses, and how to tune it to avoid developer friction.</div>
+
+  <div class="gate-list">
+
+    <!-- GATE 1: PRE-COMMIT -->
+    <div class="gate" id="g1">
+      <div class="gate-h" onclick="toggleGate('g1')">
+        <div class="gate-num" style="background:var(--accent-bg);color:var(--accent)">1</div>
+        <div class="gate-title">Pre-commit hooks &mdash; catch issues before they hit the repo</div>
+        <div class="gate-badge">Fastest feedback &bull; Developer's machine</div>
+        <div class="gate-tog">&#x25BC;</div>
+      </div>
+      <div class="gate-body">
+        <p>Pre-commit hooks run on the developer's local machine before every <code>git commit</code>. They are the fastest possible feedback loop &mdash; the developer finds the issue before the code ever leaves their laptop. The pre-commit framework (pre-commit.com) manages hooks written in any language and ensures the same checks run on every developer's machine consistently.</p>
+        <h5>What to put in pre-commit hooks</h5>
+        <table>
+          <tr><th>Hook</th><th>What it catches</th><th>Speed</th><th>Why here</th></tr>
+          <tr><td style="font-weight:600">Secrets scanning (detect-secrets, gitleaks)</td><td>AWS keys, API tokens, passwords in code</td><td>Fast (&lt;2s)</td><td>Secrets committed to git are impossible to fully remove &mdash; git history is permanent. Catch before commit.</td></tr>
+          <tr><td style="font-weight:600">Basic SAST (Semgrep fast rules)</td><td>Obvious SQLi, hardcoded passwords, dangerous function calls</td><td>Fast (&lt;5s on changed files only)</td><td>Immediate feedback before context switch. Developer can fix in the same coding session.</td></tr>
+          <tr><td style="font-weight:600">Linting / formatting</td><td>Code quality, style violations</td><td>Very fast</td><td>Keeps code review focused on logic, not style.</td></tr>
+          <tr><td style="font-weight:600">Large file check</td><td>Accidentally committed binaries, datasets</td><td>Instant</td><td>Prevents repository bloat and potential data leaks.</td></tr>
+        </table>
+<pre>
+<span class="ctag">.pre-commit-config.yaml</span>
+<span class="cm"># Install: pip install pre-commit && pre-commit install</span>
+repos:
+  <span class="cm"># Secrets scanning &mdash; fastest, most critical gate</span>
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.18.0
+    hooks:
+      - id: gitleaks
+
+  <span class="cm"># Detect-secrets (alternative with allowlist support)</span>
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.4.0
+    hooks:
+      - id: detect-secrets
+        args: [<span class="cs">'--baseline'</span>, <span class="cs">'.secrets.baseline'</span>]
+
+  <span class="cm"># Semgrep &mdash; run only fast rules on changed files</span>
+  - repo: https://github.com/returntocorp/semgrep
+    rev: v1.45.0
+    hooks:
+      - id: semgrep
+        args: [
+          <span class="cs">'--config=p/python'</span>,         <span class="cm"># Python security rules</span>
+          <span class="cs">'--severity=ERROR'</span>,          <span class="cm"># only block on errors, not warnings</span>
+          <span class="cs">'--quiet'</span>,                   <span class="cm"># minimal output (developer-friendly)</span>
+        ]
+
+  <span class="cm"># Built-in pre-commit hooks</span>
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: check-added-large-files    <span class="cm"># blocks files > 500KB</span>
+        args: [<span class="cs">'--maxkb=500'</span>]
+      - id: check-merge-conflict       <span class="cm"># blocks unresolved merge conflicts</span>
+      - id: no-commit-to-branch        <span class="cm"># prevents committing directly to main</span>
+        args: [<span class="cs">'--branch'</span>, <span class="cs">'main'</span>]
+</pre>
+        <div class="callout cl-tip" style="margin-top:.75rem;">
+          <div class="cl-icon">&#x1F4A1;</div>
+          <div class="cl-text"><strong>Developer experience tip:</strong> Pre-commit hooks that take more than 5 seconds will be bypassed with <code>git commit --no-verify</code>. Keep pre-commit hooks fast by only scanning changed files (<code>--diff</code> mode in Semgrep) and only running the fastest rules. Save comprehensive scans for CI.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- GATE 2: SAST -->
+    <div class="gate" id="g2">
+      <div class="gate-h" onclick="toggleGate('g2')">
+        <div class="gate-num" style="background:var(--blue-bg);color:var(--blue)">2</div>
+        <div class="gate-title">SAST &mdash; Static Application Security Testing on every PR</div>
+        <div class="gate-badge">Semgrep &bull; CodeQL &bull; Bandit</div>
+        <div class="gate-tog">&#x25BC;</div>
+      </div>
+      <div class="gate-body">
+        <p>SAST analyses source code without executing it, looking for patterns that indicate security vulnerabilities. In CI it runs on every PR, scanning the full codebase rather than just changed files. Unlike pre-commit hooks, CI SAST runs comprehensive rulesets and performs inter-procedural analysis (tracking data flow across functions).</p>
+        <h5>Choosing the right SAST tool</h5>
+        <table>
+          <tr><th>Tool</th><th>Languages</th><th>Strengths</th><th>When to use</th></tr>
+          <tr><td style="font-weight:700;color:var(--accent)">Semgrep</td><td>Python, JS, Go, Java, Ruby, C, PHP, 30+</td><td>Fast, customisable rules, excellent developer UX, free tier generous</td><td>First choice for most teams. Write custom rules for your codebase.</td></tr>
+          <tr><td style="font-weight:700;color:var(--blue)">CodeQL</td><td>Python, JS, Java, C/C++, Go, Ruby, Swift</td><td>Deep dataflow analysis, finds complex multi-hop vulnerabilities, GitHub native</td><td>GitHub-hosted repos, need deep analysis, complement to Semgrep</td></tr>
+          <tr><td style="font-weight:700;color:var(--yellow)">Bandit</td><td>Python only</td><td>Lightweight, fast, Python-specific, no setup</td><td>Python projects wanting fast baseline scanning</td></tr>
+          <tr><td style="font-weight:700;color:var(--purple)">SonarQube</td><td>25+ languages</td><td>Code quality + security, rich dashboards, self-hosted</td><td>Enterprise environments needing code quality metrics alongside security</td></tr>
+        </table>
+<pre>
+<span class="ctag">GitHub Actions &mdash; SAST gate</span>
+<span class="cm"># .github/workflows/sast.yml</span>
+name: SAST
+
+on:
+  pull_request: { branches: [main] }
+  push: { branches: [main] }
+
+jobs:
+  semgrep:
+    runs-on: ubuntu-latest
+    container: { image: returntocorp/semgrep }
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Semgrep SAST scan
+        run: |
+          semgrep ci \
+            --config=p/python \
+            --config=p/django \
+            --config=p/secrets \
+            --config=.semgrep/custom-rules.yml \   <span class="cm"># your org's custom rules</span>
+            --severity=ERROR \
+            --json > semgrep-results.json
+        env:
+          SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
+
+      - name: Enforce gate &mdash; fail on new findings
+        run: |
+          NEW=$(cat semgrep-results.json | \
+            python3 -c "import json,sys; d=json.load(sys.stdin);
+            new=[r for r in d['results'] if not r.get('is_ignored')];
+            print(len(new))")
+          echo "New findings: $NEW"
+          [ "$NEW" -eq "0" ] || { echo "SAST gate FAILED"; exit 1; }
+
+      - name: Upload SARIF to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with: { sarif_file: semgrep-results.sarif }
+
+  codeql:
+    runs-on: ubuntu-latest
+    permissions: { security-events: write, contents: read }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: github/codeql-action/init@v3
+        with: { languages: python }
+      - uses: github/codeql-action/autobuild@v3
+      - uses: github/codeql-action/analyze@v3
+        with: { category: /language:python }
+</pre>
+        <h5>Writing custom Semgrep rules for your codebase</h5>
+<pre>
+<span class="ctag">.semgrep/custom-rules.yml</span>
+rules:
+  <span class="cm"># Rule 1: Detect our internal audit logging bypass</span>
+  - id: missing-audit-log
+    patterns:
+      - pattern: |
+          def $FUNC(request, ...):
+            ...
+            return ...
+      - pattern-not: |
+          def $FUNC(request, ...):
+            ...
+            audit_log(...)
+            ...
+    message: >
+      API handler $FUNC does not call audit_log().
+      All handlers that modify data must log the action.
+    languages: [python]
+    severity: WARNING
+    paths: { include: [<span class="cs">"*/views.py"</span>, <span class="cs">"*/api/*.py"</span>] }
+
+  <span class="cm"># Rule 2: Detect our unsafe serialiser pattern</span>
+  - id: unsafe-serializer-all-fields
+    pattern: |
+      class $SERIALIZER(ModelSerializer):
+        class Meta:
+          fields = "__all__"
+    message: >
+      $SERIALIZER uses fields="__all__" which exposes all model fields.
+      Use an explicit field list to prevent data exposure.
+    languages: [python]
+    severity: ERROR
+</pre>
+      </div>
+    </div>
+
+    <!-- GATE 3: SECRETS SCANNING -->
+    <div class="gate" id="g3">
+      <div class="gate-h" onclick="toggleGate('g3')">
+        <div class="gate-num" style="background:var(--red-bg);color:var(--red)">3</div>
+        <div class="gate-title">Secrets scanning &mdash; the highest ROI gate in DevSecOps</div>
+        <div class="gate-badge">TruffleHog &bull; Gitleaks &bull; GitHub Secret Scanning</div>
+        <div class="gate-tog">&#x25BC;</div>
+      </div>
+      <div class="gate-body">
+        <p>Hardcoded secrets in code are among the most common and most damaging security failures. A developer commits an AWS key in a test file, it gets pushed to GitHub, a secret-scanning bot finds it within seconds, and cloud resources are compromised within minutes. In 2023 GitGuardian found that 10 million secrets were exposed on GitHub. The fix &mdash; never commit secrets &mdash; costs nothing. Detecting leaks is fast and cheap. The impact of missing them is catastrophic.</p>
+        <h5>What to scan for</h5>
+<pre>
+<span class="ctag">.github/workflows/secrets-scan.yml</span>
+name: Secrets Scan
+
+on:
+  pull_request: {}
+  push: { branches: [main] }
+  schedule:
+    - cron: <span class="cs">'0 2 * * *'</span>   <span class="cm"># daily scan of full git history</span>
+
+jobs:
+  trufflehog:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }   <span class="cm"># fetch ALL history for full scan</span>
+
+      - name: TruffleHog scan (full git history)
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: ${{ github.event.repository.default_branch }}
+          head: HEAD
+          extra_args: >-
+            --only-verified
+            --json
+            --results=verified,unknown
+
+      <span class="cm"># Also: enable GitHub Secret Scanning (free for public repos)</span>
+      <span class="cm"># Settings > Security > Secret scanning > Enable</span>
+      <span class="cm"># Automatically notifies when AWS keys, GCP creds, etc. are detected</span>
+</pre>
+        <h5>Responding to a detected secret</h5>
+<pre>
+<span class="cm"># Emergency response: secret found in git history</span>
+
+<span class="cm"># Step 1: IMMEDIATELY revoke the credential (before any cleanup)</span>
+<span class="cm"># AWS: IAM > Users > Access keys > Deactivate</span>
+<span class="cm"># GitHub: Settings > Developer settings > Personal access tokens > Revoke</span>
+<span class="cm"># The secret is already out. Revoking is the only thing that matters first.</span>
+
+<span class="cm"># Step 2: Audit access logs for the compromised credential</span>
+<span class="cm"># AWS: CloudTrail > Event history > filter by access key ID</span>
+<span class="cm"># Determine if the credential was used by anyone other than the owner</span>
+
+<span class="cm"># Step 3: Remove from git history (after revoking)</span>
+$ git filter-branch --force --index-filter \
+    "git rm --cached --ignore-unmatch config/secrets.py" \
+    --prune-empty --tag-name-filter cat -- --all
+$ git push origin --force --all
+
+<span class="cm"># Better: use BFG Repo Cleaner (faster than filter-branch)</span>
+$ java -jar bfg.jar --delete-files secrets.py
+$ git reflog expire --expire=now --all
+$ git gc --prune=now --aggressive
+$ git push --force
+
+<span class="cm"># Step 4: Add the secret pattern to your .secrets.baseline
+# so it's recognised as a known false-positive if the cleaned version stays</span>
+
+<span class="cm"># Prevention: store secrets in environment variables or secrets managers</span>
+<span class="cm"># Never hardcode: AWS_SECRET_KEY, DATABASE_URL, API_KEY, PRIVATE_KEY</span>
+</pre>
+        <div class="pill-row"><span class="pill pr">Highest ROI gate</span><span class="pill py">Scan full git history, not just HEAD</span><span class="pill pg">Revoke first, clean second</span></div>
+      </div>
+    </div>
+
+    <!-- GATE 4: SCA -->
+    <div class="gate" id="g4">
+      <div class="gate-h" onclick="toggleGate('g4')">
+        <div class="gate-num" style="background:var(--purple-bg);color:var(--purple)">4</div>
+        <div class="gate-title">SCA &mdash; dependency vulnerability scanning</div>
+        <div class="gate-badge">Snyk &bull; pip-audit &bull; npm audit &bull; Dependabot</div>
+        <div class="gate-tog">&#x25BC;</div>
+      </div>
+      <div class="gate-body">
+        <p>SCA checks every package in your dependency tree against CVE databases. Covered in depth in Lesson 6. In the DevSecOps pipeline context: SCA must run on PRs AND on a daily schedule. The PR scan catches new vulnerable packages being introduced. The daily scheduled scan catches newly published CVEs in your existing dependencies.</p>
+<pre>
+<span class="ctag">GitHub Actions &mdash; SCA gate</span>
+jobs:
+  sca:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: <span class="cs">'3.12'</span> }
+
+      <span class="cm"># pip-audit: Python dependencies</span>
+      - name: pip-audit
+        run: |
+          pip install pip-audit
+          pip-audit -r requirements.txt \
+            --format json \
+            --output pip-audit.json \
+            --ignore-vuln PYSEC-2022-237    <span class="cm"># known false positive, documented</span>
+          python3 -c "
+          import json, sys
+          data = json.load(open('pip-audit.json'))
+          vulns = [v for d in data.get('dependencies',[])
+                   for v in d.get('vulns',[]) if v.get('fix_versions')]
+          print(f'Fixable vulnerabilities: {len(vulns)}')
+          sys.exit(1 if vulns else 0)
+          "
+
+      <span class="cm"># npm audit: Node.js dependencies</span>
+      - name: npm audit
+        run: |
+          npm ci
+          npm audit --audit-level=high --json > npm-audit.json || true
+          HIGH=$(cat npm-audit.json | jq \
+            '.metadata.vulnerabilities.high + .metadata.vulnerabilities.critical')
+          [ "$HIGH" -eq "0" ] || { echo "npm HIGH/CRITICAL vulns: $HIGH"; exit 1; }
+</pre>
+      </div>
+    </div>
+
+    <!-- GATE 5: IaC SCANNING -->
+    <div class="gate" id="g5">
+      <div class="gate-h" onclick="toggleGate('g5')">
+        <div class="gate-num" style="background:var(--yellow-bg);color:var(--yellow)">5</div>
+        <div class="gate-title">IaC scanning &mdash; infrastructure security before it deploys</div>
+        <div class="gate-badge">Checkov &bull; tfsec &bull; Trivy &bull; KICS</div>
+        <div class="gate-tog">&#x25BC;</div>
+      </div>
+      <div class="gate-body">
+        <p>Infrastructure as Code (Terraform, CloudFormation, Kubernetes YAML, Dockerfile) defines your entire cloud environment. Misconfigurations in IaC are responsible for the majority of cloud breaches. IaC scanning runs in CI before any infrastructure is provisioned, catching misconfigs like open S3 buckets, unrestricted security groups, and missing encryption at rest before they reach the cloud.</p>
+        <h5>Most common IaC misconfigurations</h5>
+        <table>
+          <tr><th>Misconfiguration</th><th>IaC type</th><th>Impact</th><th>Checkov rule</th></tr>
+          <tr><td style="font-weight:600">S3 bucket public access</td><td>Terraform / CloudFormation</td><td>Public data exposure</td><td>CKV_AWS_20</td></tr>
+          <tr><td style="font-weight:600">Security group open to 0.0.0.0/0</td><td>Terraform</td><td>All ports exposed to internet</td><td>CKV_AWS_24</td></tr>
+          <tr><td style="font-weight:600">RDS instance not encrypted</td><td>Terraform</td><td>Data at rest unencrypted</td><td>CKV_AWS_17</td></tr>
+          <tr><td style="font-weight:600">Container running as root</td><td>Dockerfile, Kubernetes</td><td>Container escape privilege escalation</td><td>CKV_DOCKER_4, CKV_K8S_6</td></tr>
+          <tr><td style="font-weight:600">No resource limits on K8s pods</td><td>Kubernetes</td><td>DoS via resource exhaustion</td><td>CKV_K8S_11, CKV_K8S_12</td></tr>
+          <tr><td style="font-weight:600">IAM wildcard permissions</td><td>Terraform / CloudFormation</td><td>Privilege escalation to admin</td><td>CKV_AWS_40</td></tr>
+        </table>
+<pre>
+<span class="ctag">GitHub Actions &mdash; IaC scan</span>
+  iac-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      <span class="cm"># Checkov: Terraform + Kubernetes + Dockerfile + CloudFormation</span>
+      - name: Checkov IaC scan
+        uses: bridgecrewio/checkov-action@master
+        with:
+          directory: .
+          framework: terraform,kubernetes,dockerfile
+          output_format: sarif
+          output_file_path: checkov.sarif
+          soft_fail: false
+          check: >-
+            CKV_AWS_20,CKV_AWS_24,CKV_AWS_17,
+            CKV_DOCKER_4,CKV_K8S_6,CKV_K8S_11
+
+      <span class="cm"># Trivy: Dockerfile + K8s manifests + Terraform</span>
+      - name: Trivy IaC scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: config
+          scan-ref: .
+          severity: HIGH,CRITICAL
+          exit-code: 1
+          format: sarif
+          output: trivy-iac.sarif
+
+      - name: Upload SARIF results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with: { sarif_file: checkov.sarif }
+</pre>
+      </div>
+    </div>
+
+    <!-- GATE 6: CONTAINER SCANNING -->
+    <div class="gate" id="g6">
+      <div class="gate-h" onclick="toggleGate('g6')">
+        <div class="gate-num" style="background:var(--teal-bg);color:var(--teal)">6</div>
+        <div class="gate-title">Container image scanning &mdash; every layer before it ships</div>
+        <div class="gate-badge">Trivy &bull; Grype &bull; Docker Scout</div>
+        <div class="gate-tog">&#x25BC;</div>
+      </div>
+      <div class="gate-body">
+        <p>Container images contain: your application code, all its dependencies, the OS base image, and system packages. Any of these layers can contain vulnerabilities. Container scanning checks every layer against CVE databases. It runs after the image is built but before it is pushed to a registry or deployed.</p>
+<pre>
+<span class="ctag">GitHub Actions &mdash; container scan</span>
+  container-scan:
+    runs-on: ubuntu-latest
+    needs: [test]   <span class="cm"># only scan after tests pass</span>
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build image
+        run: docker build -t myapp:${{ github.sha }} .
+
+      <span class="cm"># Trivy &mdash; scans OS packages, app dependencies, secrets in image</span>
+      - name: Trivy container scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: myapp:${{ github.sha }}
+          severity: CRITICAL,HIGH
+          exit-code: 1
+          ignore-unfixed: true        <span class="cm"># skip CVEs with no fix yet</span>
+          format: sarif
+          output: trivy-image.sarif
+
+      <span class="cm"># Also scan the Dockerfile for best practice violations</span>
+      - name: Hadolint Dockerfile lint
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: Dockerfile
+          failure-threshold: warning
+
+      - name: Push to registry only if clean
+        if: success()
+        run: |
+          docker tag myapp:${{ github.sha }} registry.io/myapp:${{ github.sha }}
+          docker push registry.io/myapp:${{ github.sha }}
+</pre>
+        <h5>Secure Dockerfile best practices</h5>
+<pre>
+<span class="ctag">Dockerfile</span>
+<span class="cm"># BAD: large base image, root user, no pinned versions</span>
+<span class="lb">FROM python:latest</span>
+<span class="lb">COPY . /app</span>
+<span class="lb">RUN pip install -r requirements.txt</span>
+<span class="lb">CMD ["python", "app.py"]</span>
+
+<span class="cm"># GOOD: minimal base, pinned versions, non-root user, multi-stage</span>
+<span class="lg">FROM python:3.12-slim-bookworm AS builder  <span class="cm"># pinned, minimal</span></span>
+WORKDIR /app
+COPY requirements.txt .
+<span class="lg">RUN pip install --no-cache-dir -r requirements.txt</span>
+
+<span class="lg">FROM python:3.12-slim-bookworm AS runtime</span>
+<span class="lg">WORKDIR /app</span>
+<span class="lg">COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages</span>
+<span class="lg">COPY --from=builder /app /app</span>
+<span class="lg">RUN adduser --disabled-password --gecos "" appuser   <span class="cm"># non-root user</span></span>
+<span class="lg">USER appuser</span>
+<span class="lg">EXPOSE 8000</span>
+<span class="lg">CMD ["gunicorn", "app.wsgi:application"]</span>
+</pre>
+      </div>
+    </div>
+
+    <!-- GATE 7: DAST -->
+    <div class="gate" id="g7">
+      <div class="gate-h" onclick="toggleGate('g7')">
+        <div class="gate-num" style="background:var(--orange-bg);color:var(--orange)">7</div>
+        <div class="gate-title">DAST &mdash; runtime security testing in staging</div>
+        <div class="gate-badge">OWASP ZAP &bull; Nuclei &bull; Burp Suite Enterprise</div>
+        <div class="gate-tog">&#x25BC;</div>
+      </div>
+      <div class="gate-body">
+        <p>DAST attacks a running application from the outside, finding vulnerabilities that static analysis cannot. DAST runs in a staging environment after deployment but before production release. It finds: authentication bypasses, injection vulnerabilities that require a live database, misconfigured security headers, and business logic flaws in running API flows.</p>
+<pre>
+<span class="ctag">GitHub Actions &mdash; DAST gate (staging)</span>
+  dast:
+    runs-on: ubuntu-latest
+    environment: staging
+    needs: [deploy-staging]
+    steps:
+      - uses: actions/checkout@v4
+
+      <span class="cm"># Get auth token for authenticated scanning</span>
+      - name: Get auth token
+        id: auth
+        run: |
+          TOKEN=$(curl -s -X POST \
+            https://staging.api.myapp.com/api/auth/login \
+            -H "Content-Type: application/json" \
+            -d '{"email":"dast@test.com","password":"${{ secrets.DAST_PASSWORD }}"}' \
+            | jq -r '.token')
+          echo "token=$TOKEN" >> $GITHUB_OUTPUT
+
+      <span class="cm"># ZAP API scan against OpenAPI spec</span>
+      - name: ZAP API scan
+        run: |
+          docker run --rm \
+            ghcr.io/zaproxy/zaproxy:stable zap-api-scan.py \
+            -t https://staging.api.myapp.com/openapi.json \
+            -f openapi \
+            -r zap-report.html \
+            -J zap-report.json \
+            -H "Authorization: Bearer ${{ steps.auth.outputs.token }}" \
+            -z "-config scanner.strength=HIGH"
+
+      <span class="cm"># Parse ZAP results and enforce gate</span>
+      - name: Enforce DAST gate
+        run: |
+          HIGH=$(cat zap-report.json | jq \
+            '[.site[].alerts[] | select(.riskdesc | startswith("High") or startswith("Critical"))] | length')
+          echo "High/Critical findings: $HIGH"
+          [ "$HIGH" -eq "0" ] || { echo "DAST gate FAILED: $HIGH issues"; exit 1; }
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: dast-report, path: zap-report.html }
+</pre>
+      </div>
+    </div>
+
+  </div>
+</div>
+<!-- ADVANCED: COMPLETE PIPELINE -->
+<div class="section">
+  <div class="eyebrow">&#x1F534; Advanced &mdash; The Complete Pipeline</div>
+  <div class="sec-title">Full DevSecOps pipeline in one GitHub Actions workflow</div>
+  <div class="sec-sub">All 7 gates assembled into a single, production-ready workflow file with proper job dependencies, environment promotion, and artefact upload.</div>
+
+  <div class="panel" id="pan-full-pipeline">
+    <div class="panel-h" onclick="tp('pan-full-pipeline')">
+      <div class="panel-dot" style="background:var(--accent)"></div>
+      <div class="panel-title">Complete GitHub Actions DevSecOps pipeline</div>
+      <div class="panel-sub">PR checks, merge pipeline, staging deploy, DAST, production deploy</div>
+      <div class="panel-tog">&#x25BC;</div>
+    </div>
+    <div class="panel-body">
+<pre>
+<span class="ctag">.github/workflows/devsecops.yml</span>
+name: DevSecOps Pipeline
+
+on:
+  pull_request: { branches: [main] }
+  push: { branches: [main] }
+
+<span class="cm"># ═══ PERMISSIONS ═══════════════════════════════════════════════</span>
+permissions:
+  contents: read
+  security-events: write    <span class="cm"># upload SARIF to GitHub Security tab</span>
+  pull-requests: write      <span class="cm"># comment findings on PRs</span>
+
+jobs:
+
+<span class="cm"># ─────────────────────────────────────────────────────────────────
+# GATE 1+3: Secrets scanning (fastest &mdash; runs first, blocks everything)
+# ─────────────────────────────────────────────────────────────────</span>
+  secrets-scan:
+    name: Secrets Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - name: TruffleHog
+        uses: trufflesecurity/trufflehog@main
+        with: { path: ./, base: main, head: HEAD, extra_args: --only-verified }
+
+<span class="cm"># ─────────────────────────────────────────────────────────────────
+# GATE 2: SAST
+# ─────────────────────────────────────────────────────────────────</span>
+  sast:
+    name: SAST (Semgrep + CodeQL)
+    runs-on: ubuntu-latest
+    needs: [secrets-scan]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Semgrep
+        uses: returntocorp/semgrep-action@v1
+        with:
+          config: >-
+            p/python
+            p/django
+            p/owasp-top-ten
+            .semgrep/custom-rules.yml
+          generateSarif: "1"
+      - uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with: { sarif_file: semgrep.sarif }
+
+      - uses: github/codeql-action/init@v3
+        with: { languages: python }
+      - uses: github/codeql-action/autobuild@v3
+      - uses: github/codeql-action/analyze@v3
+
+<span class="cm"># ─────────────────────────────────────────────────────────────────
+# GATE 4: SCA
+# ─────────────────────────────────────────────────────────────────</span>
+  sca:
+    name: SCA (Dependency Scanning)
+    runs-on: ubuntu-latest
+    needs: [secrets-scan]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: <span class="cs">'3.12'</span> }
+      - run: pip install pip-audit
+      - name: pip-audit
+        run: |
+          pip-audit -r requirements.txt --format json -o pip-audit.json
+          python3 -c "
+          import json,sys
+          d=json.load(open('pip-audit.json'))
+          v=[x for dep in d.get('dependencies',[]) for x in dep.get('vulns',[]) if x.get('fix_versions')]
+          sys.exit(1 if v else 0)"
+      - name: Snyk
+        uses: snyk/actions/python@master
+        env: { SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }} }
+        with: { args: --severity-threshold=high --fail-on=upgradable }
+
+<span class="cm"># ─────────────────────────────────────────────────────────────────
+# GATE 5: IaC scanning
+# ─────────────────────────────────────────────────────────────────</span>
+  iac-scan:
+    name: IaC Scan (Checkov + Trivy)
+    runs-on: ubuntu-latest
+    needs: [secrets-scan]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Checkov
+        uses: bridgecrewio/checkov-action@master
+        with: { directory: ., framework: terraform,kubernetes,dockerfile, soft_fail: false }
+      - name: Trivy config
+        uses: aquasecurity/trivy-action@master
+        with: { scan-type: config, severity: HIGH,CRITICAL, exit-code: 1 }
+
+<span class="cm"># ─────────────────────────────────────────────────────────────────
+# Build + GATE 6: Container scan (only on merge to main)
+# ─────────────────────────────────────────────────────────────────</span>
+  build-and-scan:
+    name: Build &amp; Container Scan
+    runs-on: ubuntu-latest
+    needs: [sast, sca, iac-scan]
+    if: github.ref == 'refs/heads/main'
+    outputs:
+      image-tag: ${{ steps.meta.outputs.tags }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build image
+        id: build
+        run: docker build -t myapp:${{ github.sha }} .
+      - name: Trivy container scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: myapp:${{ github.sha }}
+          severity: CRITICAL,HIGH
+          exit-code: 1
+          ignore-unfixed: true
+      - name: Generate SBOM
+        uses: anchore/sbom-action@v0
+        with: { image: myapp:${{ github.sha }}, format: cyclonedx-json }
+      - name: Push to registry
+        if: success()
+        run: |
+          echo ${{ secrets.REGISTRY_PASSWORD }} | docker login -u ${{ secrets.REGISTRY_USER }} --password-stdin
+          docker tag myapp:${{ github.sha }} registry.io/myapp:${{ github.sha }}
+          docker push registry.io/myapp:${{ github.sha }}
+
+<span class="cm"># ─────────────────────────────────────────────────────────────────
+# Deploy to staging
+# ─────────────────────────────────────────────────────────────────</span>
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: [build-and-scan]
+    environment: staging
+    steps:
+      - name: Deploy
+        run: |
+          kubectl set image deployment/myapp myapp=registry.io/myapp:${{ github.sha }}
+          kubectl rollout status deployment/myapp --timeout=300s
+
+<span class="cm"># ─────────────────────────────────────────────────────────────────
+# GATE 7: DAST against staging
+# ─────────────────────────────────────────────────────────────────</span>
+  dast:
+    name: DAST (ZAP)
+    runs-on: ubuntu-latest
+    needs: [deploy-staging]
+    steps:
+      - uses: actions/checkout@v4
+      - name: ZAP API Scan
+        run: |
+          docker run --rm \
+            ghcr.io/zaproxy/zaproxy:stable zap-api-scan.py \
+            -t https://staging.myapp.com/openapi.json \
+            -f openapi -r zap.html -J zap.json \
+            -H "Authorization: Bearer ${{ secrets.STAGING_DAST_TOKEN }}"
+          HIGH=$(cat zap.json | jq '[.site[].alerts[] | select(.riskdesc | test("High|Critical"))] | length')
+          [ "$HIGH" -eq "0" ] || { echo "DAST FAILED: $HIGH high/critical issues"; exit 1; }
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: dast-report, path: zap.html }
+
+<span class="cm"># ─────────────────────────────────────────────────────────────────
+# Production deploy (only if ALL gates pass)
+# ─────────────────────────────────────────────────────────────────</span>
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [dast]
+    environment:
+      name: production
+      url: https://myapp.com
+    steps:
+      - name: Deploy
+        run: |
+          kubectl set image deployment/myapp-prod myapp=registry.io/myapp:${{ github.sha }}
+          kubectl rollout status deployment/myapp-prod --timeout=300s
+
+      - name: Create GitHub Release
+        uses: actions/create-release@v1
+        with:
+          tag_name: v${{ github.run_number }}
+          release_name: Release ${{ github.run_number }}
+          body: "All security gates passed. Image: registry.io/myapp:${{ github.sha }}"
+</pre>
+    </div>
+  </div>
+</div>
+
+<!-- ADVANCED: TUNING & FALSE POSITIVES -->
+<div class="section">
+  <div class="eyebrow">&#x1F534; Advanced &mdash; Tuning &amp; Reducing Friction</div>
+  <div class="sec-title">Making security gates developers actually respect</div>
+  <div class="sec-sub">A security gate that produces constant false positives will be disabled or bypassed. Tuning is the most important operational skill in DevSecOps. Here is the systematic approach.</div>
+
+  <div class="callout cl-purple">
+    <div class="cl-icon">&#x1F4CC;</div>
+    <div class="cl-text"><strong>The 90/10 rule of security tooling:</strong> Untuned security tools produce 80-90% false positives. An untuned Semgrep scan on a Django project generates 200 findings &mdash; of which 180 are false positives. Developers learn to ignore the output entirely. The correct approach: spend 2-3 weeks after introduction tuning every rule category to below 10% false positive rate before enforcing as a hard block.</div>
+  </div>
+
+  <div class="panel" id="pan-tuning">
+    <div class="panel-h" onclick="tp('pan-tuning')">
+      <div class="panel-dot" style="background:var(--yellow)"></div>
+      <div class="panel-title">Systematic tuning process &mdash; from 80% FP to near zero</div>
+      <div class="panel-sub">The 6-step process for making every security gate trustworthy</div>
+      <div class="panel-tog">&#x25BC;</div>
+    </div>
+    <div class="panel-body">
+      <table>
+        <tr><th>Step</th><th>Action</th><th>Time investment</th></tr>
+        <tr><td style="font-weight:700;color:var(--accent)">1. Run in monitor mode</td><td>Enable the tool but don't block on its output. Collect findings for 2 weeks against real PRs.</td><td>Zero developer time. 2 weeks elapsed.</td></tr>
+        <tr><td style="font-weight:700;color:var(--blue)">2. Categorise findings</td><td>For each finding category: is it a real vulnerability or false positive? Document the verdict and reasoning.</td><td>1-2 days (security engineer)</td></tr>
+        <tr><td style="font-weight:700;color:var(--purple)">3. Write suppressions</td><td>For confirmed false positives: add inline suppression comments with justification, or add to the tool's ignore config.</td><td>1 day</td></tr>
+        <tr><td style="font-weight:700;color:var(--yellow)">4. Start with warn-only</td><td>Enable blocking only on CRITICAL/HIGH with near-zero false positive rates. WARNING findings appear but don't block.</td><td>0 developer time</td></tr>
+        <tr><td style="font-weight:700;color:var(--orange)">5. Expand blocking</td><td>After 2 weeks of blocking CRITICAL/HIGH with zero complaints, expand blocking to MEDIUM for specific high-confidence rules.</td><td>Incremental</td></tr>
+        <tr><td style="font-weight:700;color:var(--teal)">6. Monitor and iterate</td><td>Track false positive rate as a metric. Target: &lt;5% FP rate for any blocking rule. Review suppressions quarterly &mdash; some may become valid when code changes.</td><td>30 min/month</td></tr>
+      </table>
+<pre>
+<span class="cm"># Semgrep: suppress a finding with justification</span>
+<span class="cm"># Add inline comment directly above or on the flagged line</span>
+cursor.execute(sql, params)  <span class="cm"># nosemgrep: django.db.models.query.QuerySet.execute -- reason: parameterized</span>
+
+<span class="cm"># Or in .semgrep.yml: suppress at rule level for a specific path</span>
+rules:
+  - id: dangerous-exec
+    pattern: exec(...)
+    paths:
+      exclude:
+        - tests/          <span class="cm"># test files are not deployed to prod</span>
+        - scripts/admin/  <span class="cm"># internal scripts run by ops, not user-controlled input</span>
+
+<span class="cm"># Semgrep global ignores (.semgrepignore)</span>
+tests/
+migrations/
+*.min.js
+vendor/
+
+<span class="cm"># Track suppression debt: count all suppressions over time</span>
+$ grep -r "nosemgrep" . | wc -l   <span class="cm"># should decrease over time, not increase</span>
+</pre>
+    </div>
+  </div>
+
+  <!-- Policy as Code -->
+  <div class="panel" id="pan-policy">
+    <div class="panel-h" onclick="tp('pan-policy')">
+      <div class="panel-dot" style="background:var(--accent)"></div>
+      <div class="panel-title">Security-as-Policy &mdash; blocking deployment with Open Policy Agent</div>
+      <div class="panel-sub">Codifying your security requirements as machine-enforceable policies</div>
+      <div class="panel-tog">&#x25BC;</div>
+    </div>
+    <div class="panel-body">
+      <p>Open Policy Agent (OPA) + Rego lets you write security policies as code that evaluate structured data (JSON results from your security tools) and return a pass/fail decision. This separates policy from tooling: you can change tools without changing your blocking logic, and you can audit exactly what rules caused a deployment to be blocked.</p>
+<pre>
+<span class="ctag">Rego / OPA</span>
+<span class="cm"># security-policy.rego</span>
+package devsecops
+
+<span class="cm"># Policy: block deployment if any CRITICAL findings exist</span>
+deny[msg] {
+    finding := input.sast_results[_]
+    finding.severity == "CRITICAL"
+    msg := sprintf("SAST CRITICAL: %s at %s:%d",
+        [finding.message, finding.path, finding.line])
+}
+
+<span class="cm"># Policy: block if any CVE with available fix exists</span>
+deny[msg] {
+    dep := input.sca_results.dependencies[_]
+    vuln := dep.vulns[_]
+    count(vuln.fix_versions) > 0
+    msg := sprintf("SCA: %s has %s, fix: %s",
+        [dep.name, vuln.id, vuln.fix_versions[0]])
+}
+
+<span class="cm"># Policy: block if secrets found</span>
+deny[msg] {
+    secret := input.secrets_results[_]
+    msg := sprintf("Secret detected: %s in %s",
+        [secret.type, secret.file])
+}
+
+<span class="cm"># Policy: block if container image runs as root</span>
+deny[msg] {
+    input.container_scan.image_config.User == ""
+    msg := "Container image runs as root (no USER directive)"
+}
+
+allow {
+    count(deny) == 0
+}
+</pre>
+<pre>
+<span class="ctag">GitHub Actions &mdash; OPA enforcement</span>
+      - name: Evaluate security policy
+        run: |
+          <span class="cm"># Collect all tool outputs into one JSON</span>
+          python3 -c "
+          import json
+          policy_input = {
+            'sast_results': json.load(open('semgrep-results.json'))['results'],
+            'sca_results': json.load(open('pip-audit.json')),
+            'secrets_results': json.load(open('trufflehog.json')),
+          }
+          json.dump(policy_input, open('policy-input.json','w'))
+          "
+          <span class="cm"># Evaluate policy</span>
+          docker run --rm \
+            -v $(pwd):/data openpolicyagent/opa:latest \
+            eval --input /data/policy-input.json \
+                 --data /data/security-policy.rego \
+                 "data.devsecops.allow" | \
+            python3 -c "import json,sys; d=json.load(sys.stdin);
+            sys.exit(0 if d['result'][0]['expressions'][0]['value'] else 1)"
+</pre>
+    </div>
+  </div>
+</div>
+
+<!-- ADVANCED: METRICS -->
+<div class="section">
+  <div class="eyebrow">&#x1F534; Advanced &mdash; Measuring DevSecOps</div>
+  <div class="sec-title">Metrics that prove your programme is working</div>
+  <div class="sec-sub">Without measurement, DevSecOps is theatre. These are the metrics that show real improvement over time and that resonate with both engineering managers and CISOs.</div>
+
+  <div class="panel" id="pan-metrics">
+    <div class="panel-h" onclick="tp('pan-metrics')">
+      <div class="panel-dot" style="background:var(--blue)"></div>
+      <div class="panel-title">The 8 DevSecOps metrics that matter</div>
+      <div class="panel-sub">DORA security metrics + AppSec-specific KPIs</div>
+      <div class="panel-tog">&#x25BC;</div>
+    </div>
+    <div class="panel-body">
+      <table>
+        <tr><th>Metric</th><th>Definition</th><th>Target</th><th>Why it matters</th></tr>
+        <tr><td style="font-weight:700;color:var(--accent)">Mean Time to Detect (MTTD)</td><td>Average time from when a vulnerability is introduced to when it is detected</td><td>&lt;1 hour (CI catches on every commit)</td><td>Proves shift-left is working. If MTTD is 3 months, shift-left has failed.</td></tr>
+        <tr><td style="font-weight:700;color:var(--blue)">Mean Time to Remediate (MTTR)</td><td>Average time from detection to verified fix in production</td><td>CRITICAL &lt;24h, HIGH &lt;7 days</td><td>Measures how quickly the dev team responds. Large MTTR = broken SLA process.</td></tr>
+        <tr><td style="font-weight:700;color:var(--yellow)">False Positive Rate</td><td>% of scanner findings that are not real vulnerabilities</td><td>&lt;5% per blocking rule</td><td>High FPR = developers ignore tool output = gates are bypassed.</td></tr>
+        <tr><td style="font-weight:700;color:var(--purple)">Security Debt</td><td>Total count of open, unresolved vulnerabilities above SLA threshold</td><td>Zero above SLA age threshold</td><td>Accumulating debt means the programme is not keeping up with development pace.</td></tr>
+        <tr><td style="font-weight:700;color:var(--red)">Secrets Exposure Rate</td><td>Number of secrets detected in code per month</td><td>Trending to zero</td><td>Measures whether training and tooling are changing developer behaviour.</td></tr>
+        <tr><td style="font-weight:700;color:var(--teal)">Deployment Frequency</td><td>How often code ships to production (DORA metric)</td><td>DevSecOps should not decrease this</td><td>If adding security gates slows deployments, gates are too slow or too noisy.</td></tr>
+        <tr><td style="font-weight:700;color:var(--orange)">Gate Pass Rate</td><td>% of PR/CI runs that pass all security gates on first attempt</td><td>&gt;90%</td><td>Low rate means developers are writing insecure code. Trigger additional training.</td></tr>
+        <tr><td style="font-weight:700;color:var(--accent)">Coverage</td><td>% of repositories with all required security gates enabled</td><td>100% for production repos</td><td>Security controls only work if every repo has them. Shadow pipelines are a blind spot.</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="panel" id="pan-maturity">
+    <div class="panel-h" onclick="tp('pan-maturity')">
+      <div class="panel-dot" style="background:var(--purple)"></div>
+      <div class="panel-title">DevSecOps maturity model &mdash; where is your programme?</div>
+      <div class="panel-sub">Use this to identify the next improvement for your organisation</div>
+      <div class="panel-tog">&#x25BC;</div>
+    </div>
+    <div class="panel-body">
+      <table>
+        <tr><th>Level</th><th>Characteristics</th><th>What to add to reach next level</th></tr>
+        <tr>
+          <td style="font-weight:700;color:var(--red)">Level 1 &mdash; Ad-hoc</td>
+          <td>No automated security scanning. Manual pentests once a year. Vulnerabilities discovered post-production.</td>
+          <td>Add: (1) secrets scanning pre-commit and CI. (2) SCA on every PR. These two gates alone catch the most common, highest-impact issues with minimal setup.</td>
+        </tr>
+        <tr>
+          <td style="font-weight:700;color:var(--orange)">Level 2 &mdash; Defined</td>
+          <td>Secrets scanning and SCA in CI. SAST running but untuned, high false positive rate. Developers tolerate or bypass tooling.</td>
+          <td>Add: (1) Tune SAST to &lt;10% FP. (2) IaC scanning for Terraform/K8s. (3) Container scanning on image build. (4) Written SLAs for vulnerability remediation.</td>
+        </tr>
+        <tr>
+          <td style="font-weight:700;color:var(--yellow)">Level 3 &mdash; Integrated</td>
+          <td>All 7 gates active and tuned. Gates block deployments. Developers have IDE plugins. DAST runs in staging. Metrics tracked.</td>
+          <td>Add: (1) DAST with authenticated scanning of all API endpoints. (2) Security-as-policy (OPA). (3) SBOM generation on every build. (4) Threat modelling integrated into design phase.</td>
+        </tr>
+        <tr>
+          <td style="font-weight:700;color:var(--accent)">Level 4 &mdash; Optimised</td>
+          <td>All gates with near-zero FP. Metrics trending right. MTTD under 1 hour. Security training driven by gate findings. Developers fix first, ask questions later.</td>
+          <td>Add: (1) Runtime protection (RASP) in production. (2) Automated vulnerability triage and ticket creation. (3) Custom SAST rules for your application's specific risk patterns. (4) Security champions programme.</td>
+        </tr>
+      </table>
+    </div>
+  </div>
+</div>
+<!-- QUIZ -->
+<div class="section">
+  <div class="eyebrow">Knowledge Check</div>
+  <div class="sec-title">DevSecOps interview questions</div>
+  <div class="sec-sub">These questions appear in DevSecOps engineer and AppSec engineer interviews.</div>
+
+  <div class="quiz-block">
+    <div class="quiz-q">Q1. A developer asks: "Why do we need secrets scanning in CI if we already have pre-commit hooks?" What is the correct answer?</div>
+    <div class="quiz-opts" id="q1">
+      <div class="qo" onclick="doQ('q1',this,'wrong')">We don't &mdash; pre-commit hooks are sufficient if all developers have them installed</div>
+      <div class="qo" onclick="doQ('q1',this,'correct')">Pre-commit hooks can be bypassed with git commit --no-verify, skipped on a new developer's machine before setup, or absent when code is committed from a CI bot or IDE without the hook installed. CI secrets scanning runs on every push unconditionally and cannot be bypassed. Defence in depth: pre-commit for fast feedback, CI for enforcement.</div>
+      <div class="qo" onclick="doQ('q1',this,'wrong')">CI scanning is only needed for scanning third-party code, not developer-written code</div>
+      <div class="qo" onclick="doQ('q1',this,'wrong')">Pre-commit hooks scan for secrets but CI scans for vulnerabilities &mdash; they are different tools</div>
+    </div>
+    <div class="quiz-exp" id="q1-exp">Pre-commit hooks are the first line of defence and provide the fastest feedback (developer's machine). But they are voluntary &mdash; any developer can bypass them. New developers may not have them installed. CI/CD automation often commits code without running local hooks. The correct model: pre-commit for fast developer feedback, CI for unconditional enforcement. Both are needed. The same principle applies to all security gates: local tooling accelerates developer feedback, CI provides the hard gate that cannot be bypassed.</div>
+  </div>
+
+  <div class="quiz-block">
+    <div class="quiz-q">Q2. Your SAST tool produces 200 findings per PR, 80% of which are false positives. The development team has stopped reading the output. What is your remediation plan?</div>
+    <div class="quiz-opts" id="q2">
+      <div class="qo" onclick="doQ('q2',this,'wrong')">Switch to a different SAST tool that has fewer findings</div>
+      <div class="qo" onclick="doQ('q2',this,'wrong')">Lower the severity threshold so fewer findings are reported</div>
+      <div class="qo" onclick="doQ('q2',this,'correct')">Switch to monitor mode (don't block), categorise all 200 findings, add suppression comments with justification for confirmed false positives, reduce blocking to only CRITICAL with near-zero FP rate, then gradually expand. The goal is developer trust: every finding they see must be real. One trusted real finding is worth 100 ignored false positives.</div>
+      <div class="qo" onclick="doQ('q2',this,'wrong')">Make findings mandatory for developers to review and close before merging</div>
+    </div>
+    <div class="quiz-exp" id="q2-exp">This is the most common DevSecOps failure mode. The instinct to add more gates and more rules produces noise that gets ignored. The correct response is to step back: disable blocking temporarily, run in monitor/warn mode, and spend time categorising every finding. Suppress confirmed false positives with documented justification. Only then re-enable blocking, starting with only your highest-confidence rules. The measure of success is not "findings reported" but "findings that changed developer behaviour." A low-volume, high-precision scanner changes behaviour. A high-volume, low-precision scanner trains developers to ignore security output.</div>
+  </div>
+
+  <div class="quiz-block">
+    <div class="quiz-q">Q3. What is the difference between SAST and DAST in a DevSecOps pipeline, and why do you need both? Give a concrete example of a vulnerability that one finds but the other misses.</div>
+    <div class="quiz-opts" id="q3">
+      <div class="qo" onclick="doQ('q3',this,'wrong')">SAST is for web apps, DAST is for APIs. You use whichever matches your architecture.</div>
+      <div class="qo" onclick="doQ('q3',this,'wrong')">SAST finds all vulnerabilities; DAST just confirms them. You only need SAST.</div>
+      <div class="qo" onclick="doQ('q3',this,'correct')">SAST analyses code without running it; DAST attacks a running application. SAST finds code-level patterns (SQLi in source code, hardcoded secrets) but has high false positives and misses runtime issues. DAST finds runtime issues (misconfigured headers, auth bypass flows requiring a live session) but cannot analyse code quality. Example: SAST finds a potential SQLi from a pattern match. DAST finds a missing CSRF token only discoverable by making actual cross-origin requests to a live app. Both are required for comprehensive coverage.</div>
+      <div class="qo" onclick="doQ('q3',this,'wrong')">SAST runs in development, DAST runs in production. They are the same technology at different stages.</div>
+    </div>
+    <div class="quiz-exp" id="q3-exp">SAST (Static AST) reads your code looking for vulnerability patterns. It runs early (pre-commit or CI) and is fast. It finds: SQL injection code patterns, hardcoded secrets, dangerous function calls, insecure configurations. It misses: vulnerabilities that only manifest at runtime, authentication flows requiring a live session, response header misconfigurations, business logic flaws. DAST (Dynamic AST) sends HTTP requests to a running application. It finds: live authentication bypasses, missing security headers (X-Frame-Options, CSP), CSRF (by actually making cross-origin requests), and runtime injection (by observing actual server behaviour). It misses: code-level quality issues, things not triggered by its probe requests. Together: SAST gives you early, code-level coverage. DAST gives you runtime, end-to-end coverage. Complementary, not substitutable.</div>
+  </div>
+</div>
+
+<!-- CHALLENGE -->
+<div class="challenge">
+  <div class="ch-ey">Capstone Challenge &mdash; Design a Complete DevSecOps Programme</div>
+  <div class="ch">
+    <h3>Build the pipeline for this organisation</h3>
+    <p class="ch-desc">You have just joined as the first AppSec engineer at a fintech startup. They have 25 developers, 40 GitHub repositories (mix of Python/Django APIs and React frontends), deploy to AWS with Terraform, run on Kubernetes, and ship to production 3 times per week. They currently have no security tooling. The CTO has given you 3 months and one sprint of developer time to build their DevSecOps programme. Design it.</p>
+    <div class="scenario">
+      <p><strong>Constraints:</strong> Budget is limited &mdash; prefer free/OSS tools where possible. Developers are fast-moving and will push back on anything that slows them down by more than 5 minutes per PR. The company handles payment card data (PCI-DSS scope). There have been no known security incidents, but no penetration test has ever been run.<br><br>
+      <strong>Your task:</strong> Write your complete plan covering: (1) Which 7 security gates you implement, with which tools, in what order, and why that order. (2) Your month-by-month rollout plan. (3) How you handle the developer friction problem. (4) Which 3 metrics you track first and why. (5) What you do in Month 3 assuming the first 2 months went well.</p>
+    </div>
+    <textarea id="ch-ans" placeholder="Gates and tools:
+1. ...
+2. ...
+
+Rollout plan:
+Month 1: ...
+Month 2: ...
+Month 3: ...
+
+Developer friction strategy: ...
+
+First 3 metrics: ...
+
+Month 3 advanced work: ..."></textarea>
+    <div class="btn-row">
+      <button class="btn btn-p" onclick="checkCh()">Submit</button>
+      <button class="btn btn-g" onclick="revealCh()">Reveal model answer</button>
+    </div>
+    <div class="ch-fb" id="ch-fb"></div>
+  </div>
+</div>
+
+<!-- SUMMARY TABLE -->
+<div class="section">
+  <div class="eyebrow">Quick Reference</div>
+  <div class="sec-title">DevSecOps pipeline cheat sheet</div>
+  <table>
+    <tr><th>Gate</th><th>When</th><th>Tool (OSS)</th><th>Finds</th><th>Blocks on</th></tr>
+    <tr><td style="font-weight:700;color:var(--accent)">Secrets scan</td><td>Pre-commit + every PR + daily</td><td>Gitleaks, TruffleHog</td><td>API keys, tokens, passwords in code</td><td>Any verified secret</td></tr>
+    <tr><td style="font-weight:700;color:var(--blue)">SAST</td><td>Every PR</td><td>Semgrep, CodeQL, Bandit</td><td>SQLi, XSS, hardcoded creds, weak crypto patterns</td><td>CRITICAL/HIGH after tuning</td></tr>
+    <tr><td style="font-weight:700;color:var(--purple)">SCA</td><td>Every PR + daily scheduled</td><td>pip-audit, npm audit, Snyk</td><td>CVEs in dependencies</td><td>HIGH/CRITICAL with available fix</td></tr>
+    <tr><td style="font-weight:700;color:var(--yellow)">IaC scan</td><td>Every PR touching infra</td><td>Checkov, Trivy, tfsec</td><td>Open S3 buckets, root containers, missing encryption</td><td>HIGH/CRITICAL misconfigs</td></tr>
+    <tr><td style="font-weight:700;color:var(--teal)">Container scan</td><td>Post-build before push</td><td>Trivy, Grype</td><td>CVEs in OS packages, image layers, Dockerfile issues</td><td>CRITICAL with fix available</td></tr>
+    <tr><td style="font-weight:700;color:var(--orange)">DAST</td><td>Staging deploy</td><td>OWASP ZAP, Nuclei</td><td>Runtime auth bypass, header misconfig, injection in live app</td><td>HIGH/CRITICAL findings</td></tr>
+    <tr><td style="font-weight:700;color:var(--red)">SBOM + signing</td><td>Every merge to main</td><td>Syft, cosign</td><td>Inventory + attestation for supply chain</td><td>Missing attestation</td></tr>
+  </table>
+</div>
+
+<!-- NAV FOOTER -->
+<div class="nav-footer">
+  <a class="nf-btn" href="#"><span class="nf-dir">&larr; Previous</span><span class="nf-title">10 &mdash; GraphQL Security</span></a>
+  <a class="nf-btn next" href="#"><span class="nf-dir">Next Lesson &rarr;</span><span class="nf-title">12 &mdash; Secrets Management</span></a>
+</div>
+
+</div>
+</div>
+
+<!-- REVEAL HTML in hidden DOM -->
+<div id="reveal-html" style="display:none">
+<strong>Model Answer &mdash; DevSecOps Programme for Fintech Startup</strong><br><br>
+<strong>Gates and Tools (ordered by ROI and ease of implementation):</strong><br>
+1. Secrets scanning (Gitleaks pre-commit + TruffleHog CI): Highest ROI. One leaked AWS key can cost $50K+. Zero false positives on verified secrets. Zero developer friction. Start here.<br>
+2. SCA (pip-audit + npm audit): Free tools, instant setup, catches Log4Shell-class CVEs automatically. Daily scheduled scan catches newly published CVEs. Minor developer friction only when a vulnerable dep has a fix available.<br>
+3. SAST (Semgrep free tier): Start with p/python and p/django rules. Run in warn-only mode for 2 weeks to baseline FP rate before blocking. Fintech-specific: add custom rules for PCI-DSS requirements (no card data in logs, encrypted storage).<br>
+4. IaC scanning (Checkov): Free, zero setup, catches open S3 buckets and unencrypted RDS &mdash; both PCI-DSS failures. Run on every Terraform PR.<br>
+5. Container scanning (Trivy): Free, fast, catches CVEs in base images and OS packages. Run post-build before push to registry.<br>
+6. DAST (OWASP ZAP): Deploy to staging, run ZAP API scan. Requires more setup but catches runtime auth issues and misconfigured headers.<br>
+7. SBOM generation (Syft): Generate on every merge to main. Critical for PCI-DSS audit trail and zero-day response speed.<br><br>
+<strong>Rollout Plan:</strong><br>
+Month 1 (foundation, no developer friction): Install Gitleaks pre-commit across all 40 repos via a central .pre-commit-config.yaml in a shared config repo. Enable TruffleHog in GitHub Actions on all repos. Enable GitHub Secret Scanning (free, instant). Enable Dependabot on all repos. Enable pip-audit and npm audit in CI in warn mode. Deliverable: baseline report of secrets and CVE debt. Most importantly: no blocking yet &mdash; just measuring.<br><br>
+Month 2 (enforce with tuning): Enable SCA blocking for CRITICAL with available fix. Enable Semgrep in warn mode on all repos and spend 2 weeks categorising FPs. For PCI-DSS repos: enable Checkov blocking for S3 and encryption rules. Run Trivy on all container builds. Deliverable: all PRs now show security warnings. No blocking except secrets and critical CVEs. Track: secrets exposure rate (should drop to near zero in Month 1), false positive rate per tool.<br><br>
+Month 3 (mature and automate): Enable Semgrep blocking for CRITICAL/HIGH rules with confirmed low FP rates. Add DAST to staging deployment pipeline. Write 3 custom Semgrep rules for fintech-specific patterns (PAN data in logs, unencrypted card fields). Generate SBOM on every build. Set up vulnerability remediation SLAs and tracking dashboard. Deliverable: full 7-gate pipeline active, metrics dashboard live.<br><br>
+<strong>Developer Friction Strategy:</strong><br>
+(1) Introduce tools one at a time, not all at once. (2) Run every new tool in warn mode for 2 weeks before blocking &mdash; give developers time to see findings without pressure. (3) Make the fix path easier than the bypass path: IDE plugins (Semgrep VS Code extension) show findings inline before CI does. (4) Never block on a finding without providing: the exact file/line, what the vulnerability is, how to fix it, and a link to documentation. (5) Set up a #security-help Slack channel where developers can ask "is this a false positive?" and get a same-day answer. (6) Track and celebrate: publish monthly "PRs caught by security gate" as a positive metric, not a blame metric.<br><br>
+<strong>First 3 Metrics:</strong><br>
+1. Secrets exposure rate (count/month): Direct measure of whether pre-commit and CI scanning are working. Should trend to zero within 4 weeks. Easy to explain to the CTO.<br>
+2. SCA critical vulnerability age (days open): Measures whether discovered CVEs are actually being fixed. PCI-DSS requires timely remediation. Set alert if any CRITICAL CVE is open for &gt;7 days.<br>
+3. Gate pass rate on first attempt (% of PRs passing all enabled gates without changes): Measures whether the developer population is learning. Start at maybe 60%, should reach 90%+ within 3 months. Low rate triggers targeted training.<br><br>
+<strong>Month 3 Advanced Work:</strong><br>
+With 2 months of data: identify which Semgrep rules have the best signal-to-noise ratio and write 3 custom rules for the fintech codebase. Add DAST with authenticated scanning of payment API endpoints. Implement OPA-based policy evaluation to centralise blocking logic across all tools. Run the first internal threat modelling session on the payment processing service. Begin planning the first external penetration test (now that you have a baseline and can compare findings). Brief the CTO on PCI-DSS compliance posture improvement.
+</div>
+
+<!-- JAVASCRIPT -->
+<script>
+function tp(id) {
+  document.getElementById(id).classList.toggle('open');
+}
+document.getElementById('pan-evolution').classList.add('open');
+document.getElementById('pan-pipeline-overview').classList.add('open');
+
+function toggleGate(id) {
+  document.getElementById(id).classList.toggle('open');
+}
+document.getElementById('g1').classList.add('open');
+
+function switchTab(btn, paneId) {
+  var bar = btn.parentElement;
+  bar.querySelectorAll('.ttab').forEach(function(t) { t.classList.remove('active'); });
+  btn.classList.add('active');
+  var wrap = bar.parentElement;
+  wrap.querySelectorAll('.tool-pane').forEach(function(p) { p.classList.remove('active'); });
+  var pane = document.getElementById(paneId);
+  if (pane) { pane.classList.add('active'); }
+}
+
+function doQ(qid, el, result) {
+  var container = document.getElementById(qid);
+  container.querySelectorAll('.qo').forEach(function(o) { o.onclick = null; });
+  el.classList.add(result === 'correct' ? 'correct' : 'wrong');
+  var exp = document.getElementById(qid + '-exp');
+  if (exp) { exp.classList.add('show'); }
+}
+
+function checkCh() {
+  var ans = document.getElementById('ch-ans').value.toLowerCase();
+  var fb  = document.getElementById('ch-fb');
+  var checks = [
+    ans.includes('secret') && (ans.includes('gitleak') || ans.includes('trufflehog') || ans.includes('first') || ans.includes('roi')),
+    ans.includes('sca') || ans.includes('dependency') || ans.includes('pip-audit') || ans.includes('snyk'),
+    ans.includes('sast') || ans.includes('semgrep'),
+    ans.includes('iac') || ans.includes('checkov') || ans.includes('terraform'),
+    ans.includes('container') || ans.includes('trivy') || ans.includes('docker'),
+    ans.includes('warn') || ans.includes('monitor') || ans.includes('false positive') || ans.includes('friction'),
+    ans.includes('metric') || ans.includes('mttd') || ans.includes('mttr') || ans.includes('measure'),
+    ans.includes('pci') || ans.includes('fintech') || ans.includes('payment')
+  ];
+  var score = checks.filter(Boolean).length;
+  fb.className = 'ch-fb show ' + (score >= 6 ? 'good' : 'hint');
+  if (score >= 6) {
+    fb.textContent = 'Excellent — ' + score + '/8 key areas covered. You are thinking like a DevSecOps engineer: balancing security coverage with developer experience, and prioritising by ROI not by comprehensiveness. The PCI-DSS context is important: secrets scanning and SCA are not optional for a company handling payment card data — they are compliance requirements. Checkov for IaC is also directly relevant because unencrypted RDS and open S3 buckets are automatic PCI-DSS failures.';
+  } else if (score >= 4) {
+    fb.textContent = 'Good work — ' + score + '/8 covered. Key things to add: (1) Start with secrets scanning, not SAST — secrets scanning has the highest ROI, zero false positives on verified findings, and zero developer friction. (2) Always run new tools in warn/monitor mode before blocking — jumping straight to blocking with an untuned tool destroys developer trust. (3) The PCI-DSS context means IaC scanning for encryption controls is a compliance requirement, not just a nice-to-have.';
+  } else {
+    fb.textContent = 'Think through the order of implementation based on ROI and developer friction. Which gate catches the most critical issues with the fewest false positives? Secrets scanning (no false positives on verified secrets, catastrophic impact). Then SCA (daily CVE tracking with near-zero noise). Only then SAST (requires tuning to be trustworthy). Build trust before enforcing.';
+  }
+}
+
+function revealCh() {
+  var fb  = document.getElementById('ch-fb');
+  var src = document.getElementById('reveal-html');
+  fb.className = 'ch-fb show reveal';
+  fb.innerHTML = src ? src.innerHTML : 'Model answer unavailable.';
+}
+</script>
+</body>
+</html>

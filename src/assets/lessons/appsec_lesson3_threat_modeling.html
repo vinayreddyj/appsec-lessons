@@ -1,0 +1,1668 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AppSec Engineer — Lesson 3: Threat Modeling</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Fira+Code:wght@400;500;600&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #09090f;
+  --surface: #0f0f1a;
+  --surface2: #141426;
+  --surface3: #1a1a2e;
+  --border: #1e1e35;
+  --border2: #252540;
+  --ink: #e8e6ff;
+  --ink2: #9b99cc;
+  --ink3: #5a587a;
+  --accent: #7c6fff;
+  --accent-glow: rgba(124,111,255,0.15);
+  --red: #ff5757;
+  --red-bg: rgba(255,87,87,0.08);
+  --green: #4ade80;
+  --green-bg: rgba(74,222,128,0.08);
+  --yellow: #fbbf24;
+  --yellow-bg: rgba(251,191,36,0.08);
+  --blue: #60a5fa;
+  --blue-bg: rgba(96,165,250,0.08);
+  --purple: #c084fc;
+  --purple-bg: rgba(192,132,252,0.08);
+  --orange: #fb923c;
+  --orange-bg: rgba(251,146,60,0.08);
+  --teal: #2dd4bf;
+  --teal-bg: rgba(45,212,191,0.08);
+  --stride-s: #ff6b9d;
+  --stride-t: #ff9f43;
+  --stride-r: #ffd166;
+  --stride-i: #06d6a0;
+  --stride-d: #4cc9f0;
+  --stride-e: #c77dff;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{
+  background:var(--bg);
+  color:var(--ink);
+  font-family:'Outfit',sans-serif;
+  font-size:15px;
+  line-height:1.8;
+}
+
+/* SIDEBAR */
+.sidebar{
+  position:fixed;left:0;top:0;bottom:0;width:248px;
+  background:var(--surface);
+  border-right:1px solid var(--border);
+  overflow-y:auto;z-index:100;
+}
+.sb-brand{
+  padding:1.4rem 1.2rem 1rem;
+  border-bottom:1px solid var(--border);
+}
+.sb-badge{
+  font-family:'Fira Code',monospace;font-size:9px;
+  background:var(--accent);color:#fff;padding:2px 8px;
+  border-radius:3px;letter-spacing:.1em;display:inline-block;
+  margin-bottom:7px;text-transform:uppercase;
+}
+.sb-brand h2{font-size:13px;font-weight:600;color:var(--ink2);line-height:1.4;}
+.sb-sect{
+  padding:.7rem 1.2rem .2rem;font-size:9px;font-weight:600;
+  letter-spacing:.14em;text-transform:uppercase;color:var(--ink3);
+  margin-top:.3rem;
+}
+.nav-item{
+  display:flex;align-items:center;gap:9px;
+  padding:.38rem 1.2rem;cursor:pointer;
+  border-left:2px solid transparent;
+  font-size:12.5px;color:var(--ink3);
+  text-decoration:none;transition:all .15s;
+}
+.nav-item:hover{color:var(--ink2);background:var(--surface2);}
+.nav-item.done{color:var(--ink3);}
+.nav-item.active{color:var(--accent);border-left-color:var(--accent);background:var(--accent-glow);}
+.nav-item .num{font-family:'Fira Code',monospace;font-size:10px;min-width:22px;opacity:.4;}
+.nav-item.active .num{opacity:1;color:var(--accent);}
+
+/* MAIN */
+.main{margin-left:248px;}
+.topbar{
+  position:sticky;top:0;
+  background:rgba(9,9,15,.94);backdrop-filter:blur(14px);
+  border-bottom:1px solid var(--border);
+  padding:.65rem 2.5rem;
+  display:flex;align-items:center;justify-content:space-between;
+  z-index:50;
+}
+.bc{font-family:'Fira Code',monospace;font-size:11px;color:var(--ink3);}
+.bc span{color:var(--accent);}
+.top-badge{
+  font-family:'Fira Code',monospace;font-size:10px;
+  padding:3px 10px;background:var(--surface2);
+  border:1px solid var(--border2);color:var(--ink2);border-radius:3px;
+}
+
+.content{padding:3rem 2.5rem 5rem;max-width:940px;}
+
+/* HERO */
+.hero{margin-bottom:3.5rem;padding-bottom:2.5rem;border-bottom:1px solid var(--border);}
+.hero-top{display:flex;align-items:flex-start;justify-content:space-between;gap:2rem;margin-bottom:1.25rem;}
+.hero-meta{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:.9rem;}
+.tag{
+  font-family:'Fira Code',monospace;font-size:10px;
+  padding:3px 10px;border-radius:3px;
+  font-weight:500;letter-spacing:.04em;
+}
+.t-adv{background:var(--red-bg);color:var(--red);border:1px solid rgba(255,87,87,.2);}
+.t-frm{background:var(--blue-bg);color:var(--blue);border:1px solid rgba(96,165,250,.2);}
+.t-beg{background:var(--green-bg);color:var(--green);border:1px solid rgba(74,222,128,.2);}
+.t-time{background:var(--purple-bg);color:var(--purple);border:1px solid rgba(192,132,252,.2);}
+.hero h1{
+  font-size:3.2rem;font-weight:900;line-height:1.1;
+  letter-spacing:-.02em;
+  color:var(--ink);margin-bottom:.9rem;
+}
+.hero h1 .hl{
+  background:linear-gradient(90deg,var(--accent),var(--purple));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;
+}
+.hero-sub{font-size:14.5px;color:var(--ink2);max-width:600px;line-height:1.75;margin-bottom:1.5rem;}
+.level-map{
+  display:grid;grid-template-columns:repeat(3,1fr);
+  gap:1px;background:var(--border);
+  border:1px solid var(--border);border-radius:8px;overflow:hidden;
+}
+.level-cell{background:var(--surface);padding:1rem 1.1rem;}
+.level-dot{width:8px;height:8px;border-radius:50%;margin-bottom:8px;}
+.level-label{font-family:'Fira Code',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink3);margin-bottom:4px;}
+.level-title{font-size:13.5px;font-weight:600;color:var(--ink);margin-bottom:3px;}
+.level-desc{font-size:12px;color:var(--ink3);line-height:1.5;}
+
+/* SECTIONS */
+.section{margin-bottom:3.5rem;}
+.eyebrow{
+  font-family:'Fira Code',monospace;font-size:10px;
+  text-transform:uppercase;letter-spacing:.14em;
+  color:var(--accent);margin-bottom:5px;font-weight:500;
+}
+.sec-title{
+  font-size:1.7rem;font-weight:800;color:var(--ink);
+  line-height:1.2;letter-spacing:-.01em;margin-bottom:.35rem;
+}
+.sec-sub{font-size:14px;color:var(--ink2);max-width:620px;line-height:1.7;margin-bottom:1.5rem;}
+
+/* CALLOUTS */
+.callout{
+  border-radius:6px;padding:.9rem 1.1rem;
+  margin:1rem 0;display:flex;gap:10px;align-items:flex-start;
+}
+.cl-warn{background:var(--red-bg);border:1px solid rgba(255,87,87,.2);}
+.cl-info{background:var(--blue-bg);border:1px solid rgba(96,165,250,.2);}
+.cl-tip{background:var(--green-bg);border:1px solid rgba(74,222,128,.2);}
+.cl-note{background:var(--yellow-bg);border:1px solid rgba(251,191,36,.2);}
+.cl-icon{font-size:15px;flex-shrink:0;margin-top:1px;}
+.cl-text{font-size:13.5px;color:var(--ink2);line-height:1.7;}
+.cl-text strong{color:var(--ink);}
+.cl-text code{
+  font-family:'Fira Code',monospace;font-size:11.5px;
+  background:rgba(255,255,255,.06);padding:1px 5px;border-radius:3px;
+}
+
+/* PRE / CODE */
+pre{
+  background:#050508;border:1px solid var(--border2);
+  border-radius:8px;padding:1.25rem;
+  font-family:'Fira Code',monospace;font-size:12.5px;
+  line-height:1.8;overflow-x:auto;margin:.8rem 0;
+  position:relative;
+}
+.cl2{color:#7c6fff;} .cr{color:#ff5757;} .cg{color:#4ade80;}
+.cy{color:#fbbf24;} .cb{color:#60a5fa;} .cp{color:#c084fc;}
+.co{color:#fb923c;} .ct{color:#2dd4bf;} .cm{color:#4a4870;}
+.cs{color:#86efac;} .cw{color:#f9a8d4;}
+.lb{display:block;background:rgba(255,87,87,.08);border-left:2px solid var(--red);margin:0 -1.25rem;padding:0 1.25rem;}
+.lg{display:block;background:rgba(74,222,128,.07);border-left:2px solid var(--green);margin:0 -1.25rem;padding:0 1.25rem;}
+.lw{display:block;background:rgba(251,191,36,.07);border-left:2px solid var(--yellow);margin:0 -1.25rem;padding:0 1.25rem;}
+.code-tag{
+  position:absolute;top:10px;right:12px;
+  font-family:'Fira Code',monospace;font-size:9px;
+  color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;
+}
+
+/* STRIDE CARDS */
+.stride-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.85rem;margin:1.25rem 0;}
+.stride-card{
+  border-radius:8px;padding:1.1rem;
+  border:1px solid var(--border2);background:var(--surface);
+  cursor:pointer;transition:all .2s;
+}
+.stride-card:hover{border-color:var(--border2);transform:translateY(-2px);}
+.stride-letter{
+  font-size:2.8rem;font-weight:900;line-height:1;
+  margin-bottom:.4rem;font-family:'Outfit',sans-serif;letter-spacing:-.02em;
+}
+.stride-name{font-size:13px;font-weight:700;margin-bottom:.35rem;}
+.stride-short{font-size:12px;color:var(--ink3);line-height:1.5;}
+.stride-card.open{transform:none;}
+
+/* STRIDE EXPAND */
+.stride-expand{
+  background:var(--surface2);border:1px solid var(--border2);
+  border-radius:8px;padding:1.25rem;margin-bottom:1.25rem;
+  display:none;
+}
+.stride-expand.show{display:block;}
+.se-header{display:flex;align-items:center;gap:12px;margin-bottom:1rem;}
+.se-letter{
+  font-size:2rem;font-weight:900;font-family:'Outfit',sans-serif;
+  width:52px;height:52px;border-radius:8px;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.se-title{font-size:1.1rem;font-weight:700;margin-bottom:2px;}
+.se-def{font-size:13px;color:var(--ink2);}
+.se-body h4{
+  font-family:'Fira Code',monospace;font-size:10px;
+  text-transform:uppercase;letter-spacing:.1em;
+  color:var(--ink3);margin:1rem 0 .5rem;font-weight:500;
+}
+.se-body p{font-size:13.5px;color:var(--ink2);line-height:1.75;margin-bottom:.7rem;}
+
+/* TABLE */
+table{width:100%;border-collapse:collapse;font-size:13px;margin:1rem 0;}
+th{
+  padding:.55rem .9rem;text-align:left;
+  background:var(--surface2);border:1px solid var(--border2);
+  font-family:'Fira Code',monospace;font-size:10px;
+  text-transform:uppercase;letter-spacing:.08em;color:var(--ink3);
+}
+td{
+  padding:.55rem .9rem;border:1px solid var(--border);
+  color:var(--ink2);line-height:1.5;vertical-align:top;
+}
+tr:hover td{background:var(--surface2);}
+
+/* DFD DIAGRAM */
+.dfd-wrap{
+  background:var(--surface);border:1px solid var(--border2);
+  border-radius:10px;padding:1.5rem;margin:1.25rem 0;
+  overflow-x:auto;
+}
+.dfd-title{
+  font-family:'Fira Code',monospace;font-size:10px;
+  text-transform:uppercase;letter-spacing:.1em;
+  color:var(--ink3);margin-bottom:1rem;
+}
+.dfd-canvas{
+  display:flex;flex-direction:column;gap:1.25rem;
+  min-width:600px;
+}
+.dfd-row{display:flex;align-items:center;gap:0;justify-content:center;}
+.dfd-ext{
+  border:2px solid var(--border2);border-radius:4px;
+  padding:.55rem .9rem;font-size:12px;font-weight:600;
+  background:var(--surface2);color:var(--ink2);
+  text-align:center;min-width:100px;
+}
+.dfd-proc{
+  border:2px solid var(--accent);border-radius:50%;
+  padding:.55rem .85rem;font-size:12px;font-weight:600;
+  background:var(--accent-glow);color:var(--accent);
+  text-align:center;min-width:110px;
+}
+.dfd-store{
+  border-top:2px solid var(--blue);border-bottom:2px solid var(--blue);
+  padding:.55rem .9rem;font-size:12px;font-weight:600;
+  background:var(--blue-bg);color:var(--blue);
+  text-align:center;min-width:110px;
+}
+.dfd-boundary{
+  border:1.5px dashed var(--red);border-radius:8px;
+  padding:.4rem .8rem;font-size:11px;color:var(--red);
+  background:var(--red-bg);display:inline-block;margin-bottom:.5rem;
+}
+.dfd-arrow{
+  display:flex;align-items:center;color:var(--ink3);
+  padding:0 .5rem;position:relative;
+}
+.dfd-arrow .arr-label{
+  position:absolute;bottom:calc(100% + 2px);left:50%;
+  transform:translateX(-50%);
+  font-size:10px;color:var(--ink3);white-space:nowrap;
+  font-family:'Fira Code',monospace;background:var(--bg);padding:0 4px;
+}
+.dfd-arrow-line{height:1px;background:var(--border2);width:40px;position:relative;}
+.dfd-arrow-line::after{
+  content:'▶';position:absolute;right:-8px;top:-8px;
+  font-size:12px;color:var(--border2);
+}
+
+/* THREAT TABLE ROWS */
+.threat-row{
+  background:var(--surface);border:1px solid var(--border2);
+  border-radius:6px;padding:.85rem 1rem;margin-bottom:.6rem;
+  cursor:pointer;display:flex;align-items:flex-start;gap:.85rem;
+  transition:border-color .15s;
+}
+.threat-row:hover{border-color:var(--accent);}
+.tr-badge{
+  font-family:'Fira Code',monospace;font-size:10px;
+  font-weight:700;padding:3px 9px;border-radius:3px;
+  flex-shrink:0;margin-top:1px;white-space:nowrap;
+}
+.tr-content{flex:1;}
+.tr-title{font-size:13.5px;font-weight:600;color:var(--ink);margin-bottom:3px;}
+.tr-desc{font-size:12.5px;color:var(--ink3);line-height:1.5;}
+.tr-expand{
+  display:none;margin-top:.85rem;padding-top:.85rem;
+  border-top:1px solid var(--border);
+}
+.tr-expand.show{display:block;}
+.tr-severity{display:flex;gap:8px;margin-bottom:.75rem;flex-wrap:wrap;}
+
+/* DREAD SCORING */
+.dread-wrap{
+  background:var(--surface);border:1px solid var(--border2);
+  border-radius:8px;overflow:hidden;margin:1.25rem 0;
+}
+.dread-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:.85rem 1.1rem;background:var(--surface2);
+  border-bottom:1px solid var(--border2);
+  cursor:pointer;user-select:none;
+}
+.dread-title{font-size:13.5px;font-weight:700;}
+.dread-toggle{color:var(--ink3);transition:transform .2s;}
+.dread-wrap.open .dread-toggle{transform:rotate(180deg);}
+.dread-body{display:none;padding:1.1rem;}
+.dread-wrap.open .dread-body{display:block;}
+.dread-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:.6rem;margin-bottom:1rem;}
+.dread-box{text-align:center;padding:.7rem .5rem;background:var(--surface2);border:1px solid var(--border2);border-radius:5px;}
+.dread-letter{font-size:1.4rem;font-weight:900;margin-bottom:3px;}
+.dread-word{font-size:10px;color:var(--ink3);font-family:'Fira Code',monospace;text-transform:uppercase;letter-spacing:.06em;}
+.dread-range{display:flex;align-items:center;gap:.6rem;margin:.4rem 0;}
+.dread-range input[type=range]{flex:1;accent-color:var(--accent);}
+.dread-range .dv{
+  font-family:'Fira Code',monospace;font-size:13px;
+  font-weight:700;color:var(--accent);min-width:20px;text-align:center;
+}
+.dread-score{
+  font-size:2rem;font-weight:900;color:var(--accent);
+  font-family:'Fira Code',monospace;
+}
+
+/* PASTA STEPS */
+.pasta-timeline{display:flex;flex-direction:column;gap:0;margin:1.25rem 0;}
+.pasta-step{
+  display:flex;gap:1rem;position:relative;
+  padding-left:2rem;
+}
+.pasta-step::before{
+  content:'';position:absolute;left:.7rem;top:2rem;bottom:0;
+  width:1px;background:var(--border2);
+}
+.pasta-step:last-child::before{display:none;}
+.pasta-node{
+  width:1.4rem;height:1.4rem;border-radius:50%;
+  background:var(--accent);flex-shrink:0;margin-top:.6rem;
+  position:absolute;left:0;
+  display:flex;align-items:center;justify-content:center;
+  font-size:10px;font-weight:700;color:#fff;font-family:'Fira Code',monospace;
+}
+.pasta-content{padding:0 0 2rem;flex:1;}
+.pasta-content h4{
+  font-size:13.5px;font-weight:700;color:var(--ink);margin-bottom:.35rem;
+}
+.pasta-content p{font-size:13px;color:var(--ink2);line-height:1.7;}
+.pasta-content .pasta-output{
+  font-family:'Fira Code',monospace;font-size:11.5px;
+  color:var(--ink3);margin-top:.4rem;
+}
+.pasta-content .pasta-output strong{color:var(--teal);}
+
+/* ATTACK TREE */
+.tree-wrap{
+  background:var(--surface);border:1px solid var(--border2);
+  border-radius:8px;padding:1.25rem;margin:1.25rem 0;
+  overflow-x:auto;
+}
+.tree-node{
+  display:inline-block;border:1px solid var(--border2);
+  border-radius:5px;padding:.45rem .75rem;
+  font-size:12px;font-family:'Fira Code',monospace;
+  background:var(--surface2);color:var(--ink2);
+  white-space:nowrap;
+}
+.tree-node.root{border-color:var(--red);color:var(--red);background:var(--red-bg);}
+.tree-node.leaf-bad{border-color:var(--orange);color:var(--orange);background:var(--orange-bg);}
+.tree-node.leaf-good{border-color:var(--green);color:var(--green);background:var(--green-bg);}
+.tree-level{display:flex;gap:.75rem;justify-content:center;margin:.7rem 0;flex-wrap:wrap;}
+.tree-connector{text-align:center;color:var(--border2);font-size:12px;}
+
+/* RISK MATRIX */
+.risk-matrix{
+  display:grid;grid-template-columns:auto repeat(5,1fr);
+  gap:2px;margin:1.25rem 0;background:var(--border2);
+  border:1px solid var(--border2);border-radius:6px;overflow:hidden;
+}
+.rm-header{
+  background:var(--surface2);padding:.5rem .4rem;text-align:center;
+  font-family:'Fira Code',monospace;font-size:10px;color:var(--ink3);
+  text-transform:uppercase;letter-spacing:.06em;
+}
+.rm-label{
+  background:var(--surface2);padding:.4rem .6rem;
+  font-family:'Fira Code',monospace;font-size:10px;color:var(--ink3);
+  text-transform:uppercase;letter-spacing:.06em;
+  display:flex;align-items:center;justify-content:flex-end;
+  writing-mode:initial;
+}
+.rm-cell{
+  padding:.5rem .3rem;text-align:center;font-size:11px;
+  font-weight:700;font-family:'Fira Code',monospace;
+  display:flex;align-items:center;justify-content:center;
+  cursor:default;
+}
+.rm-low{background:rgba(74,222,128,.12);color:var(--green);}
+.rm-med{background:rgba(251,191,36,.12);color:var(--yellow);}
+.rm-high{background:rgba(251,146,60,.18);color:var(--orange);}
+.rm-crit{background:rgba(255,87,87,.18);color:var(--red);}
+
+/* PANELS */
+.panel{
+  background:var(--surface);border:1px solid var(--border2);
+  border-radius:8px;overflow:hidden;margin-bottom:.75rem;
+}
+.panel-h{
+  display:flex;align-items:center;gap:10px;padding:.9rem 1.1rem;
+  cursor:pointer;transition:background .15s;user-select:none;
+}
+.panel-h:hover{background:var(--surface2);}
+.panel-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.panel-title{font-size:13.5px;font-weight:700;flex:1;}
+.panel-sub{font-size:12px;color:var(--ink3);}
+.panel-toggle{color:var(--ink3);font-size:13px;transition:transform .2s;}
+.panel.open .panel-toggle{transform:rotate(180deg);}
+.panel-body{display:none;padding:0 1.1rem 1.1rem;border-top:1px solid var(--border2);}
+.panel.open .panel-body{display:block;}
+.panel-body h4{
+  font-family:'Fira Code',monospace;font-size:10px;
+  text-transform:uppercase;letter-spacing:.1em;color:var(--ink3);
+  margin:1rem 0 .5rem;font-weight:500;
+}
+.panel-body p{font-size:13.5px;color:var(--ink2);line-height:1.75;margin-top:.6rem;}
+
+/* QUIZ */
+.quiz-block{
+  background:var(--surface);border:1px solid var(--border2);
+  border-radius:8px;padding:1.25rem;margin-bottom:1rem;
+}
+.quiz-q{font-size:14.5px;font-weight:600;color:var(--ink);margin-bottom:.85rem;line-height:1.55;}
+.quiz-opts{display:flex;flex-direction:column;gap:7px;margin-bottom:.75rem;}
+.qo{
+  padding:.65rem 1rem;border:1px solid var(--border2);
+  border-radius:5px;cursor:pointer;font-size:13.5px;
+  color:var(--ink2);background:var(--surface2);transition:all .15s;
+}
+.qo:hover{border-color:var(--accent);color:var(--ink);}
+.qo.correct{border-color:var(--green);color:var(--green);background:var(--green-bg);cursor:default;}
+.qo.wrong{border-color:var(--red);color:var(--red);background:var(--red-bg);cursor:default;}
+.quiz-exp{
+  font-size:13px;color:var(--ink2);line-height:1.7;
+  padding:.75rem 1rem;background:var(--surface2);
+  border-radius:5px;border-left:3px solid var(--green);
+  display:none;margin-top:.5rem;
+}
+.quiz-exp.show{display:block;}
+.quiz-exp code{font-family:'Fira Code',monospace;font-size:11.5px;background:rgba(255,255,255,.06);padding:1px 5px;border-radius:3px;}
+
+/* CHALLENGE */
+.challenge{
+  background:var(--surface);border:1px solid var(--accent);
+  border-radius:12px;padding:2rem;margin:3rem 0;
+  position:relative;overflow:hidden;
+}
+.challenge::before{
+  content:'';position:absolute;top:-60px;right:-60px;
+  width:200px;height:200px;
+  background:radial-gradient(circle,var(--accent-glow) 0%,transparent 70%);
+  pointer-events:none;
+}
+.ch-ey{font-family:'Fira Code',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.15em;color:var(--accent);margin-bottom:.5rem;}
+.ch h3{font-size:1.3rem;font-weight:800;color:var(--ink);margin-bottom:.7rem;letter-spacing:-.01em;}
+.ch-desc{font-size:13.5px;color:var(--ink2);line-height:1.7;margin-bottom:1.25rem;}
+.scenario{
+  background:var(--surface2);border:1px solid var(--border2);
+  border-radius:6px;padding:1rem 1.1rem;margin-bottom:1.25rem;
+}
+.scenario p{font-size:13px;color:var(--ink2);line-height:1.7;}
+.scenario strong{color:var(--ink);}
+.challenge textarea{
+  width:100%;min-height:160px;
+  background:rgba(255,255,255,.03);border:1px solid var(--border2);
+  border-radius:5px;padding:1rem;
+  font-family:'Fira Code',monospace;font-size:12.5px;
+  color:var(--ink);resize:vertical;outline:none;
+  transition:border-color .2s;margin-bottom:1rem;
+}
+.challenge textarea:focus{border-color:var(--accent);}
+.challenge textarea::placeholder{color:var(--ink3);}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap;}
+.btn{
+  padding:9px 20px;border-radius:5px;font-size:13px;
+  font-family:'Outfit',sans-serif;font-weight:600;cursor:pointer;
+  border:1px solid;transition:all .15s;
+}
+.btn-p{background:var(--accent);color:#fff;border-color:var(--accent);}
+.btn-p:hover{background:#6b5ef7;}
+.btn-g{background:transparent;color:var(--ink2);border-color:var(--border2);}
+.btn-g:hover{border-color:var(--accent);color:var(--ink);}
+.ch-fb{
+  margin-top:1rem;padding:1rem 1.1rem;border-radius:6px;
+  font-size:13.5px;line-height:1.7;display:none;
+}
+.ch-fb.show{display:block;}
+.ch-fb.good{background:var(--green-bg);border:1px solid rgba(74,222,128,.25);color:var(--green);}
+.ch-fb.hint{background:var(--yellow-bg);border:1px solid rgba(251,191,36,.25);color:var(--yellow);}
+.ch-fb.reveal{background:var(--surface2);border:1px solid var(--border2);color:var(--ink2);}
+.ch-fb strong{color:var(--ink);}
+.ch-fb code{font-family:'Fira Code',monospace;font-size:11.5px;background:rgba(255,255,255,.06);padding:1px 5px;border-radius:3px;}
+
+/* PILL */
+.pill{font-size:11px;padding:3px 9px;border-radius:3px;font-family:'Fira Code',monospace;font-weight:500;}
+.pr{background:var(--red-bg);color:var(--red);border:1px solid rgba(255,87,87,.2);}
+.pg{background:var(--green-bg);color:var(--green);border:1px solid rgba(74,222,128,.2);}
+.py{background:var(--yellow-bg);color:var(--yellow);border:1px solid rgba(251,191,36,.2);}
+.pb{background:var(--blue-bg);color:var(--blue);border:1px solid rgba(96,165,250,.2);}
+.pp{background:var(--purple-bg);color:var(--purple);border:1px solid rgba(192,132,252,.2);}
+.po{background:var(--orange-bg);color:var(--orange);border:1px solid rgba(251,146,60,.2);}
+.pill-row{display:flex;flex-wrap:wrap;gap:7px;margin:.5rem 0;}
+
+/* TWO COL */
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin:1rem 0;}
+.compare-b{background:var(--red-bg);border:1px solid rgba(255,87,87,.15);border-radius:6px;padding:1rem;}
+.compare-g{background:var(--green-bg);border:1px solid rgba(74,222,128,.15);border-radius:6px;padding:1rem;}
+.cmp-lbl{font-family:'Fira Code',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.12em;font-weight:700;margin-bottom:.6rem;}
+.compare-b .cmp-lbl{color:var(--red);}
+.compare-g .cmp-lbl{color:var(--green);}
+
+/* SCROLLBAR */
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px;}
+code{font-family:'Fira Code',monospace;font-size:12px;background:rgba(255,255,255,.06);padding:1px 5px;border-radius:3px;color:var(--accent);}
+pre code{background:none;padding:0;color:inherit;font-size:inherit;}
+
+/* NAV FOOTER */
+.nav-footer{
+  display:flex;justify-content:space-between;
+  margin-top:4rem;padding-top:2rem;border-top:1px solid var(--border);
+}
+.nf-btn{
+  padding:.85rem 1.5rem;border:1px solid var(--border2);
+  border-radius:6px;font-size:13px;cursor:pointer;
+  background:var(--surface);color:var(--ink2);
+  text-align:left;transition:all .15s;text-decoration:none;display:block;
+}
+.nf-btn:hover{border-color:var(--accent);}
+.nf-btn.next{background:var(--accent);color:#fff;border-color:var(--accent);text-align:right;}
+.nf-btn.next:hover{background:#6b5ef7;}
+.nf-dir{font-family:'Fira Code',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.4);display:block;margin-bottom:3px;}
+.nf-btn:not(.next) .nf-dir{color:var(--ink3);}
+.nf-title{font-weight:700;display:block;font-size:13.5px;}
+
+@media(max-width:860px){
+  .sidebar{display:none;}.main{margin-left:0;}
+  .content{padding:1.5rem 1.1rem 3rem;}
+  .stride-grid{grid-template-columns:1fr 1fr;}
+  .two-col{grid-template-columns:1fr;}
+  .level-map{grid-template-columns:1fr;}
+  .dread-grid{grid-template-columns:repeat(3,1fr);}
+}
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<nav class="sidebar">
+  <div class="sb-brand">
+    <div class="sb-badge">AppSec Engineer</div>
+    <h2>Application Security<br>Learning Path</h2>
+  </div>
+  <div class="sb-sect">Module 1 — Foundations</div>
+  <a class="nav-item done" href="#"><span class="num">01</span>OWASP Top 10 2021</a>
+  <a class="nav-item done" href="#"><span class="num">02</span>Secure SDLC</a>
+  <a class="nav-item active" href="#"><span class="num">03</span>Threat Modeling</a>
+  <div class="sb-sect">Module 2 — Testing Tools</div>
+  <a class="nav-item" href="#"><span class="num">04</span>SAST</a>
+  <a class="nav-item" href="#"><span class="num">05</span>DAST</a>
+  <a class="nav-item" href="#"><span class="num">06</span>SCA</a>
+  <a class="nav-item" href="#"><span class="num">07</span>IAST &amp; RASP</a>
+  <div class="sb-sect">Module 3 — API Security</div>
+  <a class="nav-item" href="#"><span class="num">08</span>OWASP API Top 10</a>
+  <a class="nav-item" href="#"><span class="num">09</span>API Security Testing</a>
+  <a class="nav-item" href="#"><span class="num">10</span>GraphQL Security</a>
+  <div class="sb-sect">Module 4 — DevSecOps</div>
+  <a class="nav-item" href="#"><span class="num">11</span>DevSecOps Pipeline</a>
+  <a class="nav-item" href="#"><span class="num">12</span>Secrets Management</a>
+  <a class="nav-item" href="#"><span class="num">13</span>Container Security</a>
+  <a class="nav-item" href="#"><span class="num">14</span>Dependency Scanning</a>
+  <a class="nav-item" href="#"><span class="num">15</span>SBOM</a>
+  <div class="sb-sect">Module 5 — Architecture</div>
+  <a class="nav-item" href="#"><span class="num">16</span>Security Architecture</a>
+  <a class="nav-item" href="#"><span class="num">17</span>Supply Chain Security</a>
+  <a class="nav-item" href="#"><span class="num">18</span>WAF</a>
+  <a class="nav-item" href="#"><span class="num">19</span>Code Review</a>
+  <a class="nav-item" href="#"><span class="num">20</span>RASP</a>
+</nav>
+
+<div class="main">
+<div class="topbar">
+  <div class="bc">appsec-engineer / module-1 / <span>threat-modeling</span></div>
+  <div class="top-badge">Lesson 03 / 20</div>
+</div>
+
+<div class="content">
+
+<!-- ═══ HERO ═══ -->
+<div class="hero">
+  <div class="hero-meta">
+    <span class="tag t-beg">Beginner → Advanced</span>
+    <span class="tag t-frm">Framework</span>
+    <span class="tag t-time">~70 min</span>
+  </div>
+  <h1>Threat<br><span class="hl">Modeling</span></h1>
+  <p class="hero-sub">Threat modeling is the practice of thinking like an attacker before any code is written. It answers four questions: What are we building? What can go wrong? What are we going to do about it? Did we do a good job? This lesson takes you from absolute beginner — what is a threat? — all the way to advanced: running a full PASTA analysis, scoring threats with DREAD, and building attack trees.</p>
+  <div class="level-map">
+    <div class="level-cell">
+      <div class="level-dot" style="background:var(--green)"></div>
+      <div class="level-label">Beginner</div>
+      <div class="level-title">Foundations</div>
+      <div class="level-desc">What threats are, why they matter, the 4 questions framework, assets, trust boundaries, and your first DFD</div>
+    </div>
+    <div class="level-cell">
+      <div class="level-dot" style="background:var(--yellow)"></div>
+      <div class="level-label">Intermediate</div>
+      <div class="level-title">STRIDE in depth</div>
+      <div class="level-desc">All 6 STRIDE categories with real attacks, code examples, DREAD scoring, and threat-to-control mapping</div>
+    </div>
+    <div class="level-cell">
+      <div class="level-dot" style="background:var(--red)"></div>
+      <div class="level-label">Advanced</div>
+      <div class="level-title">PASTA + Attack Trees</div>
+      <div class="level-desc">The 7-stage PASTA methodology, attack tree construction, risk matrices, and running a real threat model session</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ BEGINNER: WHAT IS THREAT MODELING ═══ -->
+<div class="section">
+  <div class="eyebrow">🟢 Beginner — Level 1</div>
+  <div class="sec-title">What is threat modeling?</div>
+  <div class="sec-sub">Start here if you've never done it before. This section explains the concept from scratch.</div>
+
+  <p style="font-size:14.5px;color:var(--ink2);line-height:1.8;margin-bottom:1rem;">Imagine you are building a bank vault. Before you pour the concrete, you would ask: <em>Who would try to break in? How would they do it? What are we protecting? What happens if they succeed?</em> Threat modeling is exactly that — but for software systems, done before you write the first line of code.</p>
+
+  <div class="callout cl-tip">
+    <div class="cl-icon">💡</div>
+    <div class="cl-text"><strong>The simplest definition:</strong> Threat modeling is a structured process for identifying security problems in a system's design before building it. It answers: what could go wrong, and what should we do about it?</div>
+  </div>
+
+  <div class="callout cl-warn">
+    <div class="cl-icon">⚠️</div>
+    <div class="cl-text"><strong>Why "I'll just fix bugs after testing" doesn't work:</strong> Security flaws found in design cost $80 to fix. The same flaw found after a production breach costs $80,000–$8,000,000. You cannot bolt good security onto a poorly designed system. The architecture must be correct from the start — and threat modeling is how you make it correct.</div>
+  </div>
+
+  <!-- The 4 Questions -->
+  <div style="margin-top:1.5rem;">
+    <div class="eyebrow">The Framework</div>
+    <div class="sec-title" style="font-size:1.2rem;">The 4 questions every threat model must answer</div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin:1rem 0;">
+    <div style="background:var(--surface);border:1px solid var(--border2);border-radius:8px;padding:1.25rem;">
+      <div style="font-family:'Fira Code',monospace;font-size:2rem;font-weight:900;color:var(--accent);line-height:1;margin-bottom:.5rem;">Q1</div>
+      <div style="font-size:14px;font-weight:700;color:var(--ink);margin-bottom:.4rem;">What are we building?</div>
+      <div style="font-size:13px;color:var(--ink2);line-height:1.7;">Draw a Data Flow Diagram (DFD). Show every component, every data store, every user, and every data flow between them. Without this diagram, your team is arguing about an imaginary system.</div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border2);border-radius:8px;padding:1.25rem;">
+      <div style="font-family:'Fira Code',monospace;font-size:2rem;font-weight:900;color:var(--red);line-height:1;margin-bottom:.5rem;">Q2</div>
+      <div style="font-size:14px;font-weight:700;color:var(--ink);margin-bottom:.4rem;">What can go wrong?</div>
+      <div style="font-size:13px;color:var(--ink2);line-height:1.7;">Apply a threat categorization framework (STRIDE, PASTA, LINDDUN) to every element in your diagram. For each element, ask: how could an attacker abuse this? What assumptions are we making that might be wrong?</div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border2);border-radius:8px;padding:1.25rem;">
+      <div style="font-family:'Fira Code',monospace;font-size:2rem;font-weight:900;color:var(--green);line-height:1;margin-bottom:.5rem;">Q3</div>
+      <div style="font-size:14px;font-weight:700;color:var(--ink);margin-bottom:.4rem;">What are we going to do about it?</div>
+      <div style="font-size:13px;color:var(--ink2);line-height:1.7;">For each threat identified, decide: mitigate (add a control), accept (document the risk and why), transfer (cyber insurance, third-party), or eliminate (remove the feature). Every threat needs a documented decision.</div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border2);border-radius:8px;padding:1.25rem;">
+      <div style="font-family:'Fira Code',monospace;font-size:2rem;font-weight:900;color:var(--blue);line-height:1;margin-bottom:.5rem;">Q4</div>
+      <div style="font-size:14px;font-weight:700;color:var(--ink);margin-bottom:.4rem;">Did we do a good job?</div>
+      <div style="font-size:13px;color:var(--ink2);line-height:1.7;">Review the threat model. Are the threats plausible? Did we miss any? Are the controls actually implemented? Threat models must be living documents — updated when the system changes, not filed away and forgotten.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ BEGINNER: ASSETS, TRUST BOUNDARIES, DFD ═══ -->
+<div class="section">
+  <div class="eyebrow">🟢 Beginner — Level 2</div>
+  <div class="sec-title">Assets, trust boundaries &amp; the DFD</div>
+  <div class="sec-sub">Three foundational concepts you must understand before applying any threat framework.</div>
+
+  <!-- Assets -->
+  <div class="panel" id="pan-assets">
+    <div class="panel-h" onclick="toggleP('pan-assets')">
+      <div class="panel-dot" style="background:var(--green)"></div>
+      <div class="panel-title">Assets — what are you protecting?</div>
+      <div class="panel-sub">Without knowing your assets, you don't know what to defend</div>
+      <div class="panel-toggle">▼</div>
+    </div>
+    <div class="panel-body">
+      <p>An asset is anything of value that an attacker would want to steal, destroy, or manipulate. Before you can identify threats, you must list your assets — because every threat targets an asset.</p>
+      <h4>Asset types</h4>
+      <table>
+        <tr><th>Asset Type</th><th>Examples</th><th>Impact if compromised</th><th>Classification</th></tr>
+        <tr><td style="color:var(--red);font-weight:600">Data assets</td><td>User PII, passwords, payment cards, medical records, API keys</td><td>Data breach, regulatory fines, identity theft</td><td>Confidential / Restricted</td></tr>
+        <tr><td style="color:var(--orange);font-weight:600">System assets</td><td>Web servers, databases, CI/CD pipeline, cloud credentials</td><td>Service disruption, ransomware, data destruction</td><td>Critical / High</td></tr>
+        <tr><td style="color:var(--yellow);font-weight:600">Business assets</td><td>Reputation, customer trust, IP, trade secrets, source code</td><td>Long-term business damage, competitive disadvantage</td><td>Confidential</td></tr>
+        <tr><td style="color:var(--blue);font-weight:600">Process assets</td><td>Deployment pipeline, CI/CD, build process, authentication flow</td><td>Supply chain attack, backdoor injection</td><td>Critical</td></tr>
+      </table>
+      <div class="callout cl-info">
+        <div class="cl-icon">ℹ️</div>
+        <div class="cl-text"><strong>Asset-first threat modeling:</strong> Always start by listing assets, then threats. "What could go wrong?" is unanswerable without knowing what you're protecting. "What could go wrong with user passwords?" is answerable. This simple shift makes threat modeling 10× more productive.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Trust Boundaries -->
+  <div class="panel" id="pan-trust">
+    <div class="panel-h" onclick="toggleP('pan-trust')">
+      <div class="panel-dot" style="background:var(--yellow)"></div>
+      <div class="panel-title">Trust boundaries — where attacks cross</div>
+      <div class="panel-sub">Every security failure happens when data crosses a trust boundary without validation</div>
+      <div class="panel-toggle">▼</div>
+    </div>
+    <div class="panel-body">
+      <p>A trust boundary is a line on your diagram where data moves between two components that have different trust levels. The internet is untrusted. Your database is highly trusted. When data moves from the internet to your database — it crosses a trust boundary, and that crossing is where attacks happen.</p>
+      <h4>Trust boundary examples</h4>
+      <table>
+        <tr><th>Boundary</th><th>Lower Trust Side</th><th>Higher Trust Side</th><th>Required Control</th></tr>
+        <tr><td>Internet → App Server</td><td>Any user on the internet</td><td>Your application logic</td><td>Input validation, WAF, rate limiting, TLS</td></tr>
+        <tr><td>App Server → Database</td><td>Application code (could be compromised)</td><td>Database with production data</td><td>Parameterized queries, read-only user, network firewall</td></tr>
+        <tr><td>User → Admin function</td><td>Authenticated regular user</td><td>Admin functionality</td><td>Role-based access control, MFA for privileged actions</td></tr>
+        <tr><td>Third-party API → Your app</td><td>External service response (could be tampered with)</td><td>Your data processing</td><td>Response validation, HMAC verification, allowlist</td></tr>
+        <tr><td>Container → Host OS</td><td>Container process</td><td>Host kernel and filesystem</td><td>Non-root user, seccomp, read-only filesystem, no --privileged</td></tr>
+      </table>
+      <div class="callout cl-warn">
+        <div class="cl-icon">⚠️</div>
+        <div class="cl-text"><strong>The golden rule:</strong> Any data that crosses a trust boundary from lower to higher trust must be <strong>validated, sanitized, and authorized</strong> before use. SQL injection, XSS, command injection — all of them are caused by failing this rule. The attacker sends malicious data from their untrusted browser into your trusted database without validation at the boundary.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DFD -->
+  <div class="panel" id="pan-dfd">
+    <div class="panel-h" onclick="toggleP('pan-dfd')">
+      <div class="panel-dot" style="background:var(--blue)"></div>
+      <div class="panel-title">Data Flow Diagrams (DFD) — the foundation of threat modeling</div>
+      <div class="panel-sub">You cannot threat model what you haven't drawn</div>
+      <div class="panel-toggle">▼</div>
+    </div>
+    <div class="panel-body">
+      <p>A Data Flow Diagram shows how data moves through your system. It has 4 elements: External Entities (users, third parties), Processes (code that does something), Data Stores (databases, caches, files), and Data Flows (arrows showing data movement). Trust boundaries are drawn as dashed lines around groups of components at the same trust level.</p>
+
+      <h4>DFD notation</h4>
+      <table>
+        <tr><th>Shape</th><th>Meaning</th><th>Example</th><th>In threat modeling</th></tr>
+        <tr><td><strong>Rectangle</strong></td><td>External entity — outside your control</td><td>Browser, mobile app, payment provider</td><td>Source of untrusted input</td></tr>
+        <tr><td><strong>Circle/Oval</strong></td><td>Process — code that transforms data</td><td>Auth service, order processor, API handler</td><td>Where logic vulnerabilities live</td></tr>
+        <tr><td><strong>Two parallel lines</strong></td><td>Data store — persisted data</td><td>PostgreSQL, Redis cache, S3 bucket, logs</td><td>Target asset for attackers</td></tr>
+        <tr><td><strong>Arrow</strong></td><td>Data flow — data in transit</td><td>HTTP request, DB query, API call</td><td>Where interception/tampering happens</td></tr>
+        <tr><td><strong>Dashed box</strong></td><td>Trust boundary — privilege level change</td><td>Internet ↔ DMZ, DMZ ↔ internal</td><td>Where every crossing needs validation</td></tr>
+      </table>
+
+      <h4>Example DFD — e-commerce checkout flow</h4>
+      <div class="dfd-wrap">
+        <div class="dfd-title">DFD — Checkout Payment Flow (Level 1)</div>
+        <pre style="font-size:12px;background:transparent;border:none;padding:0;color:var(--ink2);">
+<span class="cm">┌─── TRUST BOUNDARY: Internet ────────────────────────────────────────────────────┐</span>
+│                                                                                  │
+│  [Browser]  ─── HTTPS POST /checkout ──▶  [Order Service]                       │
+│  (ext entity)     card details, cart          (process)                          │
+│                                                │                                 │
+<span class="cm">└────────────────────────────────────────────────│────────────────────────────────┘</span>
+                                                 │
+<span class="cm">┌─── TRUST BOUNDARY: Internal Network ───────────│────────────────────────────────┐</span>
+│                                                 ▼                                │
+│  [User DB] ◀─── Read user + card token ─── [Order Service] ──▶ [Payment API]   │
+│  (data store)                                   │              (Stripe/ext)      │
+│                                                 │                                │
+│                                                 ▼                                │
+│                                           [Orders DB]                            │
+│                                           (data store)                           │
+│                                                 │                                │
+│                                                 ▼                                │
+│                                           [Audit Log]                            │
+│                                           (data store)                           │
+<span class="cm">└──────────────────────────────────────────────────────────────────────────────────┘</span>
+
+<span class="cy">Threat analysts ask about EVERY arrow and node:</span>
+<span class="cg">Arrow: HTTPS POST /checkout</span>   → Can attacker intercept? (T) Can they forge? (S) Can they flood? (D)
+<span class="cg">Process: Order Service</span>        → Can attacker inject via inputs? (I) Bypass auth? (E) Crash it? (D)
+<span class="cg">Data Store: Orders DB</span>         → Can attacker read others' orders? (I) Modify order amounts? (T)
+<span class="cg">Boundary crossing</span>             → Is all input from browser validated before hitting Order Service?</pre>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ INTERMEDIATE: STRIDE ═══ -->
+<div class="section">
+  <div class="eyebrow">🟡 Intermediate — STRIDE Framework</div>
+  <div class="sec-title">STRIDE — the most used threat categorization model</div>
+  <div class="sec-sub">STRIDE was created by Microsoft engineers Loren Kohnfelder and Praerit Garg in 1999. It gives you a mnemonic to systematically ask "what can go wrong?" for every component and data flow in your DFD. Click each letter to expand the full breakdown.</div>
+
+  <div class="stride-grid">
+    <div class="stride-card" onclick="openSTRIDE('S')" id="sc-S">
+      <div class="stride-letter" style="color:var(--stride-s)">S</div>
+      <div class="stride-name" style="color:var(--stride-s)">Spoofing</div>
+      <div class="stride-short">Pretending to be someone or something else</div>
+    </div>
+    <div class="stride-card" onclick="openSTRIDE('T')" id="sc-T">
+      <div class="stride-letter" style="color:var(--stride-t)">T</div>
+      <div class="stride-name" style="color:var(--stride-t)">Tampering</div>
+      <div class="stride-short">Modifying data or code without authorization</div>
+    </div>
+    <div class="stride-card" onclick="openSTRIDE('R')" id="sc-R">
+      <div class="stride-letter" style="color:var(--stride-r)">R</div>
+      <div class="stride-name" style="color:var(--stride-r)">Repudiation</div>
+      <div class="stride-short">Denying having performed an action</div>
+    </div>
+    <div class="stride-card" onclick="openSTRIDE('I')" id="sc-I">
+      <div class="stride-letter" style="color:var(--stride-i)">I</div>
+      <div class="stride-name" style="color:var(--stride-i)">Information Disclosure</div>
+      <div class="stride-short">Exposing information to unauthorized parties</div>
+    </div>
+    <div class="stride-card" onclick="openSTRIDE('D')" id="sc-D">
+      <div class="stride-letter" style="color:var(--stride-d)">D</div>
+      <div class="stride-name" style="color:var(--stride-d)">Denial of Service</div>
+      <div class="stride-short">Making a system unavailable to legitimate users</div>
+    </div>
+    <div class="stride-card" onclick="openSTRIDE('E')" id="sc-E">
+      <div class="stride-letter" style="color:var(--stride-e)">E</div>
+      <div class="stride-name" style="color:var(--stride-e)">Elevation of Privilege</div>
+      <div class="stride-short">Gaining capabilities beyond what's authorized</div>
+    </div>
+  </div>
+
+  <!-- S -->
+  <div class="stride-expand" id="se-S">
+    <div class="se-header">
+      <div class="se-letter" style="background:rgba(255,107,157,.12);color:var(--stride-s)">S</div>
+      <div>
+        <div class="se-title" style="color:var(--stride-s)">Spoofing — "I am not who I claim to be"</div>
+        <div class="se-def">Violates: Authentication. The attacker pretends to be a legitimate user, service, or system to gain unauthorized access.</div>
+      </div>
+    </div>
+    <div class="se-body">
+      <h4>What spoofing attacks look like</h4>
+      <table>
+        <tr><th>Attack</th><th>How it works</th><th>Example</th></tr>
+        <tr><td style="color:var(--stride-s)">Credential theft</td><td>Attacker steals a valid user's session token or password and uses it</td><td>Phishing email → user enters credentials → attacker logs in as them</td></tr>
+        <tr><td style="color:var(--stride-s)">Session fixation</td><td>Attacker sets the victim's session ID before login, then uses the same ID after</td><td>App sets session cookie before auth → attacker knows the cookie → logs in as victim</td></tr>
+        <tr><td style="color:var(--stride-s)">JWT forgery</td><td>Attacker crafts a JWT with forged claims</td><td>Weak secret → attacker brute forces HMAC key → signs arbitrary {"role":"admin"} token</td></tr>
+        <tr><td style="color:var(--stride-s)">DNS spoofing</td><td>Attacker returns fake DNS responses to redirect traffic to their server</td><td>api.bank.com resolves to attacker IP → all API calls go to attacker's server</td></tr>
+        <tr><td style="color:var(--stride-s)">IP spoofing</td><td>Attacker fakes source IP to bypass IP-based allow-lists</td><td>Internal API only allows 10.0.0.0/8 → attacker spoofs source IP header</td></tr>
+      </table>
+      <h4>Vulnerable code and the fix</h4>
+<pre>
+<span class="cm"># SPOOFING: JWT algorithm confusion attack</span>
+<span class="cm"># Attacker changes alg from RS256 to HS256 and signs with the PUBLIC key</span>
+
+<span class="cb">import</span> jwt
+
+<span class="cb">def</span> <span class="cg">verify_token_vulnerable</span>(token):
+<span class="lb">    <span class="cm"># VULNERABLE: accepts ANY algorithm the token claims</span></span>
+<span class="lb">    decoded = jwt.decode(token, PUBLIC_KEY, algorithms=<span class="cy">None</span>)</span>
+<span class="lb">    <span class="cm"># Attacker sets alg=HS256, signs with PUBLIC_KEY (which they have)</span></span>
+<span class="lb">    <span class="cm"># → Server verifies with PUBLIC_KEY using HMAC → accepts forged token!</span></span>
+    <span class="cb">return</span> decoded
+
+<span class="cm"># FIXED: algorithm is specified server-side and NEVER from the token</span>
+<span class="cb">def</span> <span class="cg">verify_token_fixed</span>(token):
+<span class="lg">    decoded = jwt.decode(</span>
+<span class="lg">        token,</span>
+<span class="lg">        PUBLIC_KEY,</span>
+<span class="lg">        algorithms=[<span class="cs">"RS256"</span>],   <span class="cm"># ← hardcoded server-side, not from token</span></span>
+<span class="lg">        options={<span class="cs">"require"</span>: [<span class="cs">"exp"</span>, <span class="cs">"iat"</span>, <span class="cs">"sub"</span>]}  <span class="cm"># ← required claims</span></span>
+<span class="lg">    )</span>
+    <span class="cb">return</span> decoded
+</pre>
+      <h4>Controls for Spoofing threats</h4>
+      <div class="pill-row">
+        <span class="pill pg">Strong authentication (MFA)</span>
+        <span class="pill pg">Short-lived tokens with rotation</span>
+        <span class="pill pg">Certificate pinning for service-to-service</span>
+        <span class="pill pg">HTTPS with HSTS — prevent downgrade</span>
+        <span class="pill pg">Algorithm pinning in JWT verification</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- T -->
+  <div class="stride-expand" id="se-T">
+    <div class="se-header">
+      <div class="se-letter" style="background:rgba(255,159,67,.12);color:var(--stride-t)">T</div>
+      <div>
+        <div class="se-title" style="color:var(--stride-t)">Tampering — "I changed something I shouldn't have"</div>
+        <div class="se-def">Violates: Integrity. The attacker modifies data, code, or configuration without authorization — in transit, at rest, or in process.</div>
+      </div>
+    </div>
+    <div class="se-body">
+      <h4>Tampering attack categories</h4>
+      <table>
+        <tr><th>Target</th><th>Attack</th><th>Example</th><th>Control</th></tr>
+        <tr><td style="color:var(--stride-t)">Data in transit</td><td>Man-in-the-middle: intercept and modify HTTP traffic</td><td>Change amount=100 to amount=1 in a payment request</td><td>TLS, HMAC request signing, certificate pinning</td></tr>
+        <tr><td style="color:var(--stride-t)">Data at rest</td><td>Directly modify database records</td><td>Change account balance, alter order status</td><td>DB write permissions least-privilege, audit logging, DB-level encryption</td></tr>
+        <tr><td style="color:var(--stride-t)">Code</td><td>Inject malicious code into a build artifact or library</td><td>SolarWinds: attacker inserted backdoor in software update</td><td>Code signing, reproducible builds, SCA, artifact hash verification</td></tr>
+        <tr><td style="color:var(--stride-t)">Parameters</td><td>Modify hidden form fields, cookies, or JWT payload</td><td>Change role=user to role=admin in JWT body (if not signed)</td><td>Signed/encrypted tokens, server-side state, HMAC</td></tr>
+        <tr><td style="color:var(--stride-t)">Logs</td><td>Inject false log entries to cover tracks or cause SIEM confusion</td><td>Inject newlines into log: "user\nADMIN_ACTION: delete all users"</td><td>Structured logging (JSON), log sanitization, append-only log storage</td></tr>
+      </table>
+<pre>
+<span class="cm"># TAMPERING: parameter manipulation — price tampering</span>
+<span class="cm"># Attacker modifies the price in the request body</span>
+
+<span class="cb">@app.route</span>(<span class="cs">'/checkout'</span>, methods=[<span class="cs">'POST'</span>])
+<span class="cb">def</span> <span class="cg">checkout</span>():
+<span class="lb">    item_id = request.json[<span class="cs">'item_id'</span>]</span>
+<span class="lb">    price   = request.json[<span class="cs">'price'</span>]        <span class="cm"># ← TAMPERED: attacker sends price=0.01</span></span>
+<span class="lb">    charge_card(price)                        <span class="cm"># charges $0.01 instead of $99.99</span></span>
+
+<span class="cm"># FIXED: NEVER trust user-supplied price. Look it up server-side.</span>
+<span class="cb">@app.route</span>(<span class="cs">'/checkout'</span>, methods=[<span class="cs">'POST'</span>])
+<span class="cb">def</span> <span class="cg">checkout_fixed</span>():
+    item_id = request.json[<span class="cs">'item_id'</span>]
+<span class="lg">    item  = Product.query.get_or_404(item_id)  <span class="cm"># ← price from DB, not request</span></span>
+<span class="lg">    price = item.price                          <span class="cm"># ← attacker cannot influence this</span></span>
+    charge_card(price)
+</pre>
+    </div>
+  </div>
+
+  <!-- R -->
+  <div class="stride-expand" id="se-R">
+    <div class="se-header">
+      <div class="se-letter" style="background:rgba(255,209,102,.12);color:var(--stride-r)">R</div>
+      <div>
+        <div class="se-title" style="color:var(--stride-r)">Repudiation — "I didn't do that, prove it"</div>
+        <div class="se-def">Violates: Non-repudiation. The attacker (or malicious insider) performs an action and then claims they didn't. Without proper audit logs, you cannot prove otherwise.</div>
+      </div>
+    </div>
+    <div class="se-body">
+      <p>Repudiation is the only STRIDE threat where the <em>absence</em> of a control creates the vulnerability. If you have no immutable audit log, you have a repudiation problem — even if no attacker ever exploits it. A malicious employee could transfer money, delete data, or leak PII and then deny it completely.</p>
+      <h4>What good audit logging looks like</h4>
+<pre>
+<span class="cm"># BAD: No audit log — repudiation trivially possible</span>
+<span class="cb">@app.route</span>(<span class="cs">'/admin/delete-user'</span>, methods=[<span class="cs">'POST'</span>])
+<span class="cb">def</span> <span class="cg">delete_user</span>():
+<span class="lb">    user_id = request.json[<span class="cs">'user_id'</span>]</span>
+<span class="lb">    User.query.filter_by(id=user_id).delete()   <span class="cm"># ← no record of who did this, when</span></span>
+<span class="lb">    db.session.commit()</span>
+    <span class="cb">return</span> <span class="cs">'deleted'</span>
+
+<span class="cm"># GOOD: Immutable audit trail — non-repudiation</span>
+<span class="cb">@app.route</span>(<span class="cs">'/admin/delete-user'</span>, methods=[<span class="cs">'POST'</span>])
+<span class="cb">@login_required</span>
+<span class="cb">@require_role</span>(<span class="cs">'admin'</span>)
+<span class="cb">def</span> <span class="cg">delete_user_fixed</span>():
+    user_id = request.json[<span class="cs">'user_id'</span>]
+    target  = User.query.get_or_404(user_id)
+<span class="lg">    AuditLog.create(                            <span class="cm"># ← written BEFORE the action</span></span>
+<span class="lg">        actor_id   = current_user.id,</span>
+<span class="lg">        actor_ip   = request.remote_addr,</span>
+<span class="lg">        action     = <span class="cs">'USER_DELETE'</span>,</span>
+<span class="lg">        target_id  = user_id,</span>
+<span class="lg">        target_email = target.email,            <span class="cm"># capture state BEFORE deletion</span></span>
+<span class="lg">        timestamp  = datetime.utcnow(),</span>
+<span class="lg">        session_id = current_user.session_id</span>
+<span class="lg">    )</span>
+<span class="lg">    User.query.filter_by(id=user_id).delete()</span>
+    db.session.commit()
+    <span class="cm"># AuditLog stored in append-only table — cannot be deleted by app code</span>
+    <span class="cm"># Replicated to immutable S3 bucket for forensic use</span>
+</pre>
+      <div class="callout cl-info">
+        <div class="cl-icon">ℹ️</div>
+        <div class="cl-text"><strong>What "immutable" means for logs:</strong> Logs must be written by the application to a destination where the application cannot delete or modify them — an append-only database table, AWS CloudWatch Logs with resource policies, or an S3 bucket with Object Lock. If an attacker (or malicious admin) can delete the logs after the fact, you have no non-repudiation.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- I -->
+  <div class="stride-expand" id="se-I">
+    <div class="se-header">
+      <div class="se-letter" style="background:rgba(6,214,160,.12);color:var(--stride-i)">I</div>
+      <div>
+        <div class="se-title" style="color:var(--stride-i)">Information Disclosure — "I can see things I shouldn't"</div>
+        <div class="se-def">Violates: Confidentiality. Sensitive data is exposed to unauthorized parties — through error messages, APIs returning excess data, unencrypted storage, or side-channel leaks.</div>
+      </div>
+    </div>
+    <div class="se-body">
+      <h4>Information disclosure sources</h4>
+      <table>
+        <tr><th>Source</th><th>Example</th><th>What leaks</th><th>Fix</th></tr>
+        <tr><td style="color:var(--stride-i)">Verbose error messages</td><td>Stack trace returned to user on 500 error</td><td>File paths, library versions, SQL queries, internal hostnames</td><td>Generic error messages in prod; log details server-side only</td></tr>
+        <tr><td style="color:var(--stride-i)">API over-fetching</td><td>GET /user returns password_hash, ssn, internal_notes in JSON</td><td>Password hashes, PII, internal state</td><td>Response schemas: explicit field allowlist, never return * from ORM</td></tr>
+        <tr><td style="color:var(--stride-i)">Timing attacks</td><td>"User not found" vs "Wrong password" — different response times</td><td>Valid usernames enumerated by measuring response time difference</td><td>Constant-time comparison; always run bcrypt regardless of user existence</td></tr>
+        <tr><td style="color:var(--stride-i)">Directory listing</td><td>nginx with autoindex on → lists all files in /uploads/</td><td>All uploaded files, internal structure</td><td>Disable autoindex; serve files through authenticated endpoint</td></tr>
+        <tr><td style="color:var(--stride-i)">Source code in response</td><td>Server returns .git/config or .env file when requested</td><td>API keys, DB credentials, git history</td><td>Web server config: never serve .git, .env, node_modules</td></tr>
+      </table>
+<pre>
+<span class="cm"># INFORMATION DISCLOSURE: API returning too much data</span>
+<span class="cb">class</span> <span class="cp">User</span>(db.Model):
+    id            = db.Column(db.Integer)
+    email         = db.Column(db.String)
+    password_hash = db.Column(db.String)    <span class="cm"># bcrypt hash</span>
+    ssn           = db.Column(db.String)    <span class="cm"># Social Security Number</span>
+    internal_notes= db.Column(db.Text)      <span class="cm"># admin-only notes</span>
+
+<span class="cb">@app.route</span>(<span class="cs">'/api/user/&lt;int:uid&gt;'</span>)
+<span class="cb">def</span> <span class="cg">get_user_bad</span>(uid):
+<span class="lb">    user = User.query.get(uid)</span>
+<span class="lb">    <span class="cb">return</span> jsonify(user.__dict__)   <span class="cm"># ← returns ALL fields including password_hash, ssn!</span></span>
+
+<span class="cm"># FIXED: explicit response schema — only return what clients need</span>
+<span class="cb">from</span> marshmallow <span class="cb">import</span> Schema, fields
+
+<span class="cb">class</span> <span class="cp">UserPublicSchema</span>(Schema):
+<span class="lg">    id    = fields.Int()</span>
+<span class="lg">    email = fields.Email()            <span class="cm"># ← only these two fields</span></span>
+<span class="lg">    <span class="cm"># password_hash, ssn, internal_notes: NOT included → never in response</span></span>
+
+<span class="cb">@app.route</span>(<span class="cs">'/api/user/&lt;int:uid&gt;'</span>)
+<span class="cb">def</span> <span class="cg">get_user_fixed</span>(uid):
+    user = User.query.get_or_404(uid)
+<span class="lg">    <span class="cb">return</span> jsonify(UserPublicSchema().dump(user))   <span class="cm"># ← schema enforces allowlist</span></span>
+</pre>
+    </div>
+  </div>
+
+  <!-- D -->
+  <div class="stride-expand" id="se-D">
+    <div class="se-header">
+      <div class="se-letter" style="background:rgba(76,201,240,.12);color:var(--stride-d)">D</div>
+      <div>
+        <div class="se-title" style="color:var(--stride-d)">Denial of Service — "I make the system unavailable"</div>
+        <div class="se-def">Violates: Availability. Attacker prevents legitimate users from accessing the system by exhausting resources — CPU, memory, connections, bandwidth, or by crashing the process.</div>
+      </div>
+    </div>
+    <div class="se-body">
+      <h4>DoS categories and mitigations</h4>
+      <table>
+        <tr><th>Type</th><th>How attacker does it</th><th>Resource exhausted</th><th>Primary control</th></tr>
+        <tr><td style="color:var(--stride-d)">Volumetric DDoS</td><td>Botnet floods with millions of requests</td><td>Network bandwidth</td><td>CDN (Cloudflare), upstream scrubbing</td></tr>
+        <tr><td style="color:var(--stride-d)">Application-layer DoS</td><td>Requests that are expensive to process (complex GraphQL queries, file uploads)</td><td>CPU, memory</td><td>Query complexity limits, timeout, rate limiting per endpoint</td></tr>
+        <tr><td style="color:var(--stride-d)">ReDoS (Regex DoS)</td><td>Crafted input causes catastrophic regex backtracking</td><td>CPU — single thread pegged at 100%</td><td>Avoid nested quantifiers, use re2 engine, set timeout on regex</td></tr>
+        <tr><td style="color:var(--stride-d)">Slowloris</td><td>Opens many connections and sends data very slowly — never completes</td><td>Connection pool exhausted</td><td>Request timeout, connection limits, reverse proxy (nginx)</td></tr>
+        <tr><td style="color:var(--stride-d)">bcrypt DoS</td><td>Floods login endpoint — each bcrypt call takes 250ms, CPU maxes out</td><td>CPU</td><td>Rate limit login endpoint BEFORE bcrypt verification</td></tr>
+      </table>
+<pre>
+<span class="cm"># DoS: No rate limiting on bcrypt login — CPU exhaustion attack</span>
+<span class="cm"># bcrypt takes ~250ms per check. 100 concurrent requests = 25s CPU time.</span>
+
+<span class="cb">@app.route</span>(<span class="cs">'/login'</span>, methods=[<span class="cs">'POST'</span>])
+<span class="cb">def</span> <span class="cg">login_bad</span>():
+    user = User.query.filter_by(email=request.json[<span class="cs">'email'</span>]).first()
+<span class="lb">    <span class="cb">if</span> user <span class="cb">and</span> bcrypt.check(request.json[<span class="cs">'pwd'</span>], user.hash):  <span class="cm"># no rate limit!</span></span>
+        <span class="cb">return</span> <span class="cs">'ok'</span>
+
+<span class="cm"># FIXED: rate limit BEFORE bcrypt, plus account lockout</span>
+<span class="cb">from</span> flask_limiter <span class="cb">import</span> Limiter
+
+limiter = Limiter(app, key_func=get_remote_address)
+
+<span class="cb">@app.route</span>(<span class="cs">'/login'</span>, methods=[<span class="cs">'POST'</span>])
+<span class="lg">@limiter.limit(<span class="cs">"5 per minute"</span>)           <span class="cm"># ← rate limit runs BEFORE bcrypt</span></span>
+<span class="lg">@limiter.limit(<span class="cs">"20 per hour"</span>)             <span class="cm"># ← dual limits: per-minute AND per-hour</span></span>
+<span class="cb">def</span> <span class="cg">login_fixed</span>():
+    user = User.query.filter_by(email=request.json[<span class="cs">'email'</span>]).first()
+<span class="lg">    <span class="cb">if</span> user <span class="cb">and</span> user.locked_until &gt; datetime.utcnow():  <span class="cm"># ← check lockout</span></span>
+<span class="lg">        abort(<span class="co">429</span>, <span class="cs">"Account temporarily locked"</span>)</span>
+    <span class="cb">if</span> user <span class="cb">and</span> bcrypt.check(request.json[<span class="cs">'pwd'</span>], user.hash):
+        <span class="cb">return</span> <span class="cs">'ok'</span>
+</pre>
+    </div>
+  </div>
+
+  <!-- E -->
+  <div class="stride-expand" id="se-E">
+    <div class="se-header">
+      <div class="se-letter" style="background:rgba(199,125,255,.12);color:var(--stride-e)">E</div>
+      <div>
+        <div class="se-title" style="color:var(--stride-e)">Elevation of Privilege — "I have more power than I should"</div>
+        <div class="se-def">Violates: Authorization. The attacker gains capabilities beyond what they were granted — regular user becomes admin, read-only becomes read-write, or unauthenticated becomes authenticated.</div>
+      </div>
+    </div>
+    <div class="se-body">
+      <h4>Privilege escalation types</h4>
+      <table>
+        <tr><th>Type</th><th>Definition</th><th>Attack example</th><th>Fix</th></tr>
+        <tr><td style="color:var(--stride-e)">Vertical escalation</td><td>Lower-privilege user accesses higher-privilege function</td><td>Regular user accesses /admin/users endpoint and deletes accounts</td><td>Role check on every privileged endpoint, not just UI hiding</td></tr>
+        <tr><td style="color:var(--stride-e)">Horizontal escalation</td><td>User accesses another user's resources at same privilege level</td><td>User A reads User B's medical records by changing patient_id</td><td>Ownership check: record.owner_id == current_user.id</td></tr>
+        <tr><td style="color:var(--stride-e)">Kernel/container escape</td><td>Process inside container gains host OS access</td><td>Container runs as root + --privileged → writes to host /etc/cron.d</td><td>Non-root user in container, drop capabilities, seccomp policy</td></tr>
+        <tr><td style="color:var(--stride-e)">SQL injection to RCE</td><td>SQLi in a DB with xp_cmdshell enabled = OS command execution</td><td>MSSQL: ' ; EXEC xp_cmdshell('whoami')--</td><td>Disable xp_cmdshell; use least-privilege DB user</td></tr>
+      </table>
+<pre>
+<span class="cm"># ELEVATION OF PRIVILEGE: JWT role claim trusted from token</span>
+<span class="cm"># Attacker edits JWT payload to set role=admin</span>
+
+<span class="cb">@app.route</span>(<span class="cs">'/admin/export-users'</span>)
+<span class="cb">def</span> <span class="cg">export_users_bad</span>():
+    token = request.headers.get(<span class="cs">'Authorization'</span>).split()[<span class="co">1</span>]
+<span class="lb">    payload = jwt.decode(token, SECRET, algorithms=[<span class="cs">'HS256'</span>])</span>
+<span class="lb">    <span class="cm"># VULNERABLE: role comes from JWT payload — attacker modifies it</span></span>
+<span class="lb">    <span class="cb">if</span> payload[<span class="cs">'role'</span>] == <span class="cs">'admin'</span>:               <span class="cm"># ← trusting user-supplied claim</span></span>
+<span class="lb">        <span class="cb">return</span> jsonify(User.query.all())</span>
+
+<span class="cm"># FIXED: role looked up from DB using token's user_id</span>
+<span class="cb">@app.route</span>(<span class="cs">'/admin/export-users'</span>)
+<span class="cb">def</span> <span class="cg">export_users_fixed</span>():
+    payload = jwt.decode(token, SECRET, algorithms=[<span class="cs">'HS256'</span>])
+<span class="lg">    user = User.query.get(payload[<span class="cs">'sub'</span>])    <span class="cm"># ← fetch fresh from DB</span></span>
+<span class="lg">    <span class="cb">if</span> user.role != <span class="cs">'admin'</span>:                    <span class="cm"># ← role from DB, not token</span></span>
+<span class="lg">        abort(<span class="co">403</span>)                               <span class="cm"># ← attacker's token change is ignored</span></span>
+    <span class="cb">return</span> jsonify(User.query.all())
+</pre>
+    </div>
+  </div>
+
+  <!-- STRIDE-to-controls table -->
+  <div class="eyebrow" style="margin-top:2rem;">STRIDE Quick Reference</div>
+  <table>
+    <tr><th>STRIDE</th><th>Security Property Violated</th><th>Primary Controls</th><th>OWASP Category</th></tr>
+    <tr><td style="color:var(--stride-s);font-weight:700">Spoofing</td><td>Authentication</td><td>MFA, strong passwords, short-lived tokens, certificate validation</td><td>A07 — Auth Failures</td></tr>
+    <tr><td style="color:var(--stride-t);font-weight:700">Tampering</td><td>Integrity</td><td>TLS, HMAC signing, parameterized queries, input validation</td><td>A03 — Injection</td></tr>
+    <tr><td style="color:var(--stride-r);font-weight:700">Repudiation</td><td>Non-repudiation</td><td>Immutable audit logs, digital signatures, timestamps</td><td>A09 — Logging Failures</td></tr>
+    <tr><td style="color:var(--stride-i);font-weight:700">Info Disclosure</td><td>Confidentiality</td><td>Encryption at rest/transit, response allowlisting, error handling</td><td>A02 — Crypto Failures</td></tr>
+    <tr><td style="color:var(--stride-d);font-weight:700">Denial of Service</td><td>Availability</td><td>Rate limiting, timeouts, resource quotas, CDN, circuit breakers</td><td>A05 — Misconfiguration</td></tr>
+    <tr><td style="color:var(--stride-e);font-weight:700">Elevation of Privilege</td><td>Authorization</td><td>RBAC, ownership checks, deny-by-default, least privilege</td><td>A01 — Broken Access Control</td></tr>
+  </table>
+</div>
+
+<!-- ═══ INTERMEDIATE: DREAD SCORING ═══ -->
+<div class="section">
+  <div class="eyebrow">🟡 Intermediate — Threat Prioritization</div>
+  <div class="sec-title">DREAD — scoring and prioritizing threats</div>
+  <div class="sec-sub">STRIDE tells you <em>what kind</em> of threat it is. DREAD tells you <em>how bad</em> it is. DREAD is a scoring model: each axis gets a score from 1–10 and the average gives the threat's overall risk score.</div>
+
+  <div class="dread-wrap" id="dread-wrap">
+    <div class="dread-header" onclick="toggleDread()">
+      <div class="dread-title">Interactive DREAD Calculator — try scoring a real threat</div>
+      <div class="dread-toggle">▼</div>
+    </div>
+    <div class="dread-body">
+      <div class="dread-grid">
+        <div class="dread-box"><div class="dread-letter" style="color:var(--red)">D</div><div class="dread-word">Damage</div></div>
+        <div class="dread-box"><div class="dread-letter" style="color:var(--orange)">R</div><div class="dread-word">Reproducibility</div></div>
+        <div class="dread-box"><div class="dread-letter" style="color:var(--yellow)">E</div><div class="dread-word">Exploitability</div></div>
+        <div class="dread-box"><div class="dread-letter" style="color:var(--blue)">A</div><div class="dread-word">Affected Users</div></div>
+        <div class="dread-box"><div class="dread-letter" style="color:var(--purple)">D</div><div class="dread-word">Discoverability</div></div>
+      </div>
+
+      <p style="font-size:13px;color:var(--ink2);margin-bottom:1rem;line-height:1.6;">Threat scenario: <strong style="color:var(--ink)">SQL injection on the login endpoint allows authentication bypass</strong>. Score each dimension 1–10:</p>
+
+      <div style="display:flex;flex-direction:column;gap:.75rem;margin-bottom:1.25rem;">
+        <div>
+          <div style="font-size:12.5px;color:var(--ink2);margin-bottom:4px;"><strong style="color:var(--red)">Damage (1–10)</strong> — How bad is the damage if exploited? (1=minimal, 10=complete system compromise)</div>
+          <div class="dread-range"><input type="range" min="1" max="10" value="9" id="d-d" oninput="calcDread()"><span class="dv" id="v-d">9</span></div>
+        </div>
+        <div>
+          <div style="font-size:12.5px;color:var(--ink2);margin-bottom:4px;"><strong style="color:var(--orange)">Reproducibility (1–10)</strong> — How easy to reproduce? (1=very hard, 10=works every time)</div>
+          <div class="dread-range"><input type="range" min="1" max="10" value="10" id="d-r" oninput="calcDread()"><span class="dv" id="v-r">10</span></div>
+        </div>
+        <div>
+          <div style="font-size:12.5px;color:var(--ink2);margin-bottom:4px;"><strong style="color:var(--yellow)">Exploitability (1–10)</strong> — How much skill required? (1=expert only, 10=script kiddie with no skill)</div>
+          <div class="dread-range"><input type="range" min="1" max="10" value="8" id="d-e" oninput="calcDread()"><span class="dv" id="v-e">8</span></div>
+        </div>
+        <div>
+          <div style="font-size:12.5px;color:var(--ink2);margin-bottom:4px;"><strong style="color:var(--blue)">Affected Users (1–10)</strong> — How many users affected? (1=single user, 10=all users)</div>
+          <div class="dread-range"><input type="range" min="1" max="10" value="10" id="d-a" oninput="calcDread()"><span class="dv" id="v-a">10</span></div>
+        </div>
+        <div>
+          <div style="font-size:12.5px;color:var(--ink2);margin-bottom:4px;"><strong style="color:var(--purple)">Discoverability (1–10)</strong> — How easy to find? (1=hard to find, 10=obvious, public endpoint)</div>
+          <div class="dread-range"><input type="range" min="1" max="10" value="9" id="d-disc" oninput="calcDread()"><span class="dv" id="v-disc">9</span></div>
+        </div>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:1.5rem;padding:1rem;background:var(--surface2);border:1px solid var(--border2);border-radius:6px;">
+        <div>
+          <div style="font-family:'Fira Code',monospace;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px;">DREAD Score</div>
+          <div id="dread-score" class="dread-score">9.2</div>
+        </div>
+        <div style="flex:1;">
+          <div id="dread-rating" style="font-size:14px;font-weight:700;color:var(--red);margin-bottom:4px;">CRITICAL</div>
+          <div id="dread-action" style="font-size:13px;color:var(--ink2);">Fix immediately — P0. Block release until resolved. Escalate to security lead and engineering manager.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout cl-note" style="margin-top:1rem;">
+    <div class="cl-icon">📌</div>
+    <div class="cl-text"><strong>DREAD in practice:</strong> Run DREAD scoring on every threat identified in your STRIDE analysis. Then sort by DREAD score. The highest scores go into your sprint backlog as P0/P1 items. Lower scores go to P2/P3 with scheduled fix dates. This transforms your threat model from a list of fears into a prioritized engineering backlog.</div>
+  </div>
+</div>
+
+<!-- ═══ ADVANCED: PASTA ═══ -->
+<div class="section">
+  <div class="eyebrow">🔴 Advanced — PASTA Methodology</div>
+  <div class="sec-title">PASTA — Process for Attack Simulation and Threat Analysis</div>
+  <div class="sec-sub">PASTA is a 7-stage, risk-centric threat modeling methodology created by Tony UcedaVélez and Marco Morana. Unlike STRIDE (which is threat-centric), PASTA is attacker-centric — it simulates actual attack scenarios end-to-end and ties threats to business impact. Used by mature security teams at large organizations.</div>
+
+  <div class="callout cl-info">
+    <div class="cl-icon">ℹ️</div>
+    <div class="cl-text"><strong>STRIDE vs PASTA:</strong> STRIDE asks "what category of threat is this?" — PASTA asks "would a real attacker bother, and what business damage would they cause?" STRIDE is fast and good for developer-level threat modeling. PASTA is deeper, takes longer, and is used for enterprise risk management decisions like "should we build this feature at all?" and "what is the residual risk after controls?"</div>
+  </div>
+
+  <div class="pasta-timeline">
+    <div class="pasta-step">
+      <div class="pasta-node">1</div>
+      <div class="pasta-content">
+        <h4>Stage 1 — Define Business Objectives</h4>
+        <p>Before analyzing any technical threat, understand what the business cares about. What would cause the most business damage? Regulatory fine? Customer churn? Brand damage? IP theft? This stage forces you to connect security to business outcomes — which is essential when presenting findings to executives.</p>
+        <div class="pasta-output">Output: <strong>Business Impact Analysis (BIA)</strong> — ranked list of business risks (revenue, reputation, compliance, operations)</div>
+      </div>
+    </div>
+    <div class="pasta-step">
+      <div class="pasta-node">2</div>
+      <div class="pasta-content">
+        <h4>Stage 2 — Define the Technical Scope</h4>
+        <p>Document the technical infrastructure: application components, third-party dependencies, network topology, cloud services, and data flows. This is equivalent to the DFD in STRIDE but with more technical depth — including OS versions, framework versions, and existing security controls.</p>
+        <div class="pasta-output">Output: <strong>Technical Architecture Document</strong> — full system inventory with trust levels, data classifications, and existing control inventory</div>
+      </div>
+    </div>
+    <div class="pasta-step">
+      <div class="pasta-node">3</div>
+      <div class="pasta-content">
+        <h4>Stage 3 — Application Decomposition</h4>
+        <p>Decompose the application into functional components: identify all use cases, actors (users, admins, services), trust levels, entry points (APIs, web forms, file uploads), and exit points (responses, logs, notifications). Every entry and exit point is a potential attack surface.</p>
+        <div class="pasta-output">Output: <strong>Threat Surface Map</strong> — every entry point, actor, trust level, and data flow. This is the object of your threat analysis.</div>
+      </div>
+    </div>
+    <div class="pasta-step">
+      <div class="pasta-node">4</div>
+      <div class="pasta-content">
+        <h4>Stage 4 — Threat Analysis</h4>
+        <p>Identify threat agents (who attacks you?) and their motives, capabilities, and likely attack vectors. Not all threats are equal — a nation-state APT has different capabilities than an opportunistic script kiddie. Consult threat intelligence: MITRE ATT&CK, historical breach data for your industry, bug bounty reports.</p>
+        <div class="pasta-output">Output: <strong>Threat Agent Profiles</strong> — for each realistic attacker type: motivation, capability level, likely techniques, and probability of targeting your system</div>
+      </div>
+    </div>
+    <div class="pasta-step">
+      <div class="pasta-node">5</div>
+      <div class="pasta-content">
+        <h4>Stage 5 — Vulnerability and Weakness Analysis</h4>
+        <p>Map known weaknesses (from SAST, SCA, pentest findings, CVE databases) to the threat surface identified in Stage 3. This is where you connect attacker capabilities (Stage 4) to actual exploitable weaknesses in your system. Use CWE (Common Weakness Enumeration) as the classification vocabulary.</p>
+        <div class="pasta-output">Output: <strong>Vulnerability Risk Register</strong> — each vulnerability mapped to: threat agent, affected component, CWE ID, CVSS score, exploitability</div>
+      </div>
+    </div>
+    <div class="pasta-step">
+      <div class="pasta-node">6</div>
+      <div class="pasta-content">
+        <h4>Stage 6 — Attack Modeling (Attack Trees)</h4>
+        <p>Build attack trees to model how a real attacker would chain vulnerabilities to achieve their goal. An attack tree starts with the attacker's goal (root) and branches into all the ways they could achieve it, with AND/OR logic. This reveals attack paths that no individual vulnerability scan would find.</p>
+        <div class="pasta-output">Output: <strong>Attack Trees</strong> — visual maps of attack chains from attacker's perspective, with probability and impact at each node</div>
+      </div>
+    </div>
+    <div class="pasta-step">
+      <div class="pasta-node" style="background:var(--green)">7</div>
+      <div class="pasta-content">
+        <h4>Stage 7 — Risk and Impact Analysis</h4>
+        <p>Quantify the residual risk after controls. Use the risk matrix: Likelihood × Impact = Risk Score. Present findings to business stakeholders with business language: "This attack path has a 40% probability of occurring within 12 months and would cost an estimated $2.3M in breach costs, regulatory fines, and customer loss." This is what gets budget approved for security controls.</p>
+        <div class="pasta-output">Output: <strong>Residual Risk Report</strong> — risk matrix, prioritized remediation roadmap, cost-benefit analysis of proposed controls, executive summary</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ ADVANCED: ATTACK TREES ═══ -->
+<div class="section">
+  <div class="eyebrow">🔴 Advanced — Attack Trees</div>
+  <div class="sec-title">Attack trees — modeling attacker logic</div>
+  <div class="sec-sub">An attack tree represents the attacker's goal as a root node and all the ways to achieve it as child nodes. AND nodes mean "attacker needs all children to succeed." OR nodes mean "any one child is enough." They reveal multi-step attack chains no single tool finds.</div>
+
+  <div class="tree-wrap">
+    <div style="font-family:'Fira Code',monospace;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:1rem;">Attack Tree: Goal = Exfiltrate All User Data from Production DB</div>
+    <div class="tree-level">
+      <div class="tree-node root">GOAL: Exfiltrate all user data from production DB</div>
+    </div>
+    <div class="tree-connector">OR — any of these paths succeed</div>
+    <div class="tree-level">
+      <div class="tree-node leaf-bad">Path A: Direct DB access</div>
+      <div class="tree-node leaf-bad">Path B: App-layer SQLi</div>
+      <div class="tree-node leaf-bad">Path C: Compromise admin account</div>
+      <div class="tree-node leaf-bad">Path D: Cloud misconfiguration</div>
+    </div>
+    <div class="tree-connector">Path B expanded — AND (attacker needs all of these)</div>
+    <div class="tree-level">
+      <div class="tree-node leaf-bad">B1: Find SQLi endpoint (recon)</div>
+      <div class="tree-node leaf-bad">B2: Craft UNION SELECT payload</div>
+      <div class="tree-node leaf-bad">B3: Exfiltrate via HTTP response</div>
+    </div>
+    <div class="tree-connector">Controls added — Path B becomes infeasible</div>
+    <div class="tree-level">
+      <div class="tree-node leaf-good">B1 blocked: Parameterized queries — no SQLi possible</div>
+      <div class="tree-node leaf-good">B2 blocked: WAF blocks UNION SELECT patterns</div>
+      <div class="tree-node leaf-good">B3 blocked: Response schema allowlist — DB data not in response</div>
+    </div>
+    <div class="tree-connector">Path A expanded — AND (attacker needs all of these)</div>
+    <div class="tree-level">
+      <div class="tree-node leaf-bad">A1: DB port reachable from internet</div>
+      <div class="tree-node leaf-bad">A2: Brute-force DB credentials OR steal them</div>
+      <div class="tree-node leaf-bad">A3: Execute SELECT * FROM users</div>
+    </div>
+    <div class="tree-connector">Controls — Path A partially blocked</div>
+    <div class="tree-level">
+      <div class="tree-node leaf-good">A1 blocked: DB in private subnet, no internet route</div>
+      <div class="tree-node leaf-bad" style="opacity:.6">A2 still possible if credentials leaked</div>
+      <div class="tree-node leaf-good">A3 partially blocked: read-only user, row-level security</div>
+    </div>
+  </div>
+
+  <div class="callout cl-tip">
+    <div class="cl-icon">💡</div>
+    <div class="cl-text"><strong>Attack trees reveal what individual tools miss:</strong> No SAST tool, no DAST tool, and no SCA tool would detect "DB port open to internet + weak DB password = data exfiltration." But an attack tree that models Path A shows immediately that A1 (DB port open) and A2 (weak creds) together enable the attack — even if each individually might be rated as just "Medium" severity.</div>
+  </div>
+
+  <div class="eyebrow" style="margin-top:2rem;">Risk Matrix</div>
+  <div class="sec-title" style="font-size:1.2rem;">Likelihood × Impact = Risk</div>
+  <p style="font-size:14px;color:var(--ink2);margin-bottom:1rem;line-height:1.7;">After building attack trees and scoring threats with DREAD, plot them on a risk matrix. The position on the matrix determines the priority and escalation path for each threat.</p>
+
+  <div class="risk-matrix">
+    <div class="rm-header"></div>
+    <div class="rm-header">Impact: Minimal</div>
+    <div class="rm-header">Impact: Low</div>
+    <div class="rm-header">Impact: Medium</div>
+    <div class="rm-header">Impact: High</div>
+    <div class="rm-header">Impact: Critical</div>
+
+    <div class="rm-label">Certain</div>
+    <div class="rm-cell rm-med">MED</div><div class="rm-cell rm-high">HIGH</div><div class="rm-cell rm-high">HIGH</div><div class="rm-cell rm-crit">CRIT</div><div class="rm-cell rm-crit">CRIT</div>
+
+    <div class="rm-label">Likely</div>
+    <div class="rm-cell rm-low">LOW</div><div class="rm-cell rm-med">MED</div><div class="rm-cell rm-high">HIGH</div><div class="rm-cell rm-high">HIGH</div><div class="rm-cell rm-crit">CRIT</div>
+
+    <div class="rm-label">Possible</div>
+    <div class="rm-cell rm-low">LOW</div><div class="rm-cell rm-low">LOW</div><div class="rm-cell rm-med">MED</div><div class="rm-cell rm-high">HIGH</div><div class="rm-cell rm-high">HIGH</div>
+
+    <div class="rm-label">Unlikely</div>
+    <div class="rm-cell rm-low">LOW</div><div class="rm-cell rm-low">LOW</div><div class="rm-cell rm-low">LOW</div><div class="rm-cell rm-med">MED</div><div class="rm-cell rm-high">HIGH</div>
+
+    <div class="rm-label">Remote</div>
+    <div class="rm-cell rm-low">LOW</div><div class="rm-cell rm-low">LOW</div><div class="rm-cell rm-low">LOW</div><div class="rm-cell rm-low">LOW</div><div class="rm-cell rm-med">MED</div>
+  </div>
+</div>
+
+<!-- ═══ ADVANCED: RUNNING A REAL SESSION ═══ -->
+<div class="section">
+  <div class="eyebrow">🔴 Advanced — Practical Skills</div>
+  <div class="sec-title">Running a real threat modeling session</div>
+  <div class="sec-sub">Knowing the theory is one thing. Walking into a room with engineers and a whiteboard and running a productive session is another. Here's exactly how to do it.</div>
+
+  <div class="panel" id="pan-who">
+    <div class="panel-h" onclick="toggleP('pan-who')">
+      <div class="panel-dot" style="background:var(--purple)"></div>
+      <div class="panel-title">Who to invite, how long it takes</div>
+      <div class="panel-sub">The wrong participants guarantee a useless threat model</div>
+      <div class="panel-toggle">▼</div>
+    </div>
+    <div class="panel-body">
+      <h4>Required participants</h4>
+      <table>
+        <tr><th>Role</th><th>Why they must be there</th><th>What they contribute</th></tr>
+        <tr><td style="color:var(--purple);font-weight:600">AppSec engineer (you)</td><td>Facilitates, asks the hard questions, knows attack patterns</td><td>STRIDE knowledge, attack experience, control recommendations</td></tr>
+        <tr><td style="color:var(--blue);font-weight:600">Tech lead / senior dev</td><td>Knows how the system actually works (not how the docs say it works)</td><td>Technical accuracy, implementation constraints</td></tr>
+        <tr><td style="color:var(--green);font-weight:600">Product manager</td><td>Understands business requirements and can make risk acceptance decisions</td><td>Business context, feature trade-offs, acceptance criteria</td></tr>
+        <tr><td style="color:var(--yellow);font-weight:600">Architect (if different from dev)</td><td>Understands infrastructure and integration points</td><td>Infrastructure threats, third-party risks, network topology</td></tr>
+      </table>
+      <h4>Time allocation for a new feature</h4>
+<pre style="font-size:12.5px;">
+Step 1: Draw the DFD together (30 min)
+  → Everyone in the room agrees on what's being built before going further
+  → Disagreements here are features, not bugs — document them
+
+Step 2: STRIDE per element (45–60 min)
+  → For each process, data store, and data flow:
+  → "What S/T/R/I/D/E threats apply here?"
+  → Write threats on sticky notes (physical or Miro)
+
+Step 3: DREAD score and prioritize (20 min)
+  → Quick group scoring for each threat
+  → Controversial scores → discuss. Consensus, not dictating.
+
+Step 4: Assign mitigations and owners (20 min)
+  → For each CRITICAL/HIGH threat: who owns the fix? By when?
+  → Create Jira/Linear tickets in the session
+
+Step 5: Document and share (30 min after session)
+  → AppSec engineer writes up the threat model
+  → Stored with the feature spec → reviewed when system changes
+</pre>
+    </div>
+  </div>
+
+  <div class="panel" id="pan-tools">
+    <div class="panel-h" onclick="toggleP('pan-tools')">
+      <div class="panel-dot" style="background:var(--teal)"></div>
+      <div class="panel-title">Tools: Microsoft TMT, OWASP Threat Dragon, and IriusRisk</div>
+      <div class="panel-sub">Don't do threat modeling in PowerPoint</div>
+      <div class="panel-toggle">▼</div>
+    </div>
+    <div class="panel-body">
+      <table>
+        <tr><th>Tool</th><th>Best for</th><th>Key feature</th><th>Cost</th></tr>
+        <tr><td style="color:var(--blue);font-weight:600">Microsoft Threat Modeling Tool</td><td>Windows teams, .NET stacks, beginners</td><td>Drag-and-drop DFD builder. Auto-generates STRIDE threats per element. Free.</td><td>Free</td></tr>
+        <tr><td style="color:var(--green);font-weight:600">OWASP Threat Dragon</td><td>Web-first teams, GitHub integration, CI/CD integration</td><td>Open source. DFD in browser. JSON model stored in git repo alongside code.</td><td>Free / Open source</td></tr>
+        <tr><td style="color:var(--orange);font-weight:600">IriusRisk</td><td>Enterprise, compliance-driven (ISO 27001, PCI-DSS, GDPR)</td><td>Auto-generates countermeasures. Integrates with Jira. Compliance report generation.</td><td>Commercial</td></tr>
+        <tr><td style="color:var(--purple);font-weight:600">Miro / Lucidchart</td><td>Collaborative remote sessions, fast DFD sketching</td><td>Real-time collaboration. Not threat-specific — use STRIDE template.</td><td>Freemium</td></tr>
+      </table>
+      <div class="callout cl-tip">
+        <div class="cl-icon">💡</div>
+        <div class="cl-text"><strong>Start with OWASP Threat Dragon:</strong> It's free, web-based, stores models as JSON in your git repo (so threat models are versioned alongside your code), and has a clean interface. Import it directly: <code>npm install -g threat-dragon</code> or use the hosted version at threatdragon.org.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel" id="pan-mistakes">
+    <div class="panel-h" onclick="toggleP('pan-mistakes')">
+      <div class="panel-dot" style="background:var(--red)"></div>
+      <div class="panel-title">The 5 most common threat modeling mistakes</div>
+      <div class="panel-sub">Junior AppSec engineers make all of these</div>
+      <div class="panel-toggle">▼</div>
+    </div>
+    <div class="panel-body">
+      <table>
+        <tr><th>#</th><th>Mistake</th><th>Why it's a problem</th><th>How to fix it</th></tr>
+        <tr><td style="color:var(--red);font-weight:700">1</td><td>Threat modeling after code is written</td><td>Findings require architecture changes, not code fixes. Developers resist rework.</td><td>Threat model at design phase, before implementation begins.</td></tr>
+        <tr><td style="color:var(--orange);font-weight:700">2</td><td>Too generic ("attacker can inject")</td><td>Developers don't know what to fix. No actionable tickets created.</td><td>Be specific: "Attacker can inject SQL via the username field on POST /login because of string concatenation on line 42. Fix: parameterize the query."</td></tr>
+        <tr><td style="color:var(--yellow);font-weight:700">3</td><td>Not updating the threat model</td><td>The threat model becomes stale the moment the system changes. Old threats closed, new ones uncaptured.</td><td>Threat model is a living document. Review it for every significant feature change, architecture change, or new integration.</td></tr>
+        <tr><td style="color:var(--blue);font-weight:700">4</td><td>Security engineer works alone</td><td>Missing business context. Developers don't buy in. Findings ignored.</td><td>Collaborative session with dev, product, and architecture as described above.</td></tr>
+        <tr><td style="color:var(--purple);font-weight:700">5</td><td>All threats get "mitigate" — no risk acceptance</td><td>Impossible to prioritize. Everything is P1. Team burns out.</td><td>Some threats are acceptable risks. Document why you're accepting them (low likelihood, high cost to fix, compensating control in place). Risk acceptance is legitimate — just document it.</td></tr>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ QUIZ ═══ -->
+<div class="section">
+  <div class="eyebrow">Knowledge Check</div>
+  <div class="sec-title">Threat modeling interview questions</div>
+  <div class="sec-sub">These exact questions appear in AppSec engineer interviews at top companies</div>
+
+  <div class="quiz-block">
+    <div class="quiz-q">Q1. A developer sends an HTTP request to a third-party payment API. The API is not under your control. What STRIDE threats apply to this data flow, and what controls would you require?</div>
+    <div class="quiz-opts" id="q1">
+      <div class="qo" onclick="doQ('q1',this,'wrong')">Only Denial of Service — the third party could go down and disrupt your service</div>
+      <div class="qo" onclick="doQ('q1',this,'wrong')">Only Spoofing and Tampering — because it's an external party</div>
+      <div class="qo" onclick="doQ('q1',this,'correct')">Spoofing (is the API who it claims?), Tampering (can response be modified?), Information Disclosure (does the request leak card data if not encrypted?), Denial of Service (API unavailability). Controls: TLS + cert validation, HMAC response signing, timeout + circuit breaker, response schema validation</div>
+      <div class="qo" onclick="doQ('q1',this,'wrong')">No STRIDE threats — the third party is trusted and out of scope</div>
+    </div>
+    <div class="quiz-exp" id="q1-exp">Every data flow has multiple STRIDE threats. External APIs are NOT trusted — they are external entities. Controls: <strong>Spoofing</strong> → certificate pinning or at minimum verify the TLS certificate. <strong>Tampering</strong> → validate response schema (Marshmallow), use HMAC webhook signing if available. <strong>Information Disclosure</strong> → ensure TLS is enforced (no HTTP fallback), don't log full API responses if they contain card data. <strong>DoS</strong> → set request timeout (e.g., 5s), implement circuit breaker pattern (if API is down, fail gracefully, don't cascade).</div>
+  </div>
+
+  <div class="quiz-block">
+    <div class="quiz-q">Q2. What is the difference between Vertical and Horizontal Privilege Escalation? Give a code-level example of each.</div>
+    <div class="quiz-opts" id="q2">
+      <div class="qo" onclick="doQ('q2',this,'wrong')">Vertical = gaining more bandwidth. Horizontal = gaining more features</div>
+      <div class="qo" onclick="doQ('q2',this,'correct')">Vertical = lower privilege user accesses higher privilege function (user → admin). Horizontal = same privilege user accesses another user's resource (User A → User B's data). Both are Elevation of Privilege in STRIDE.</div>
+      <div class="qo" onclick="doQ('q2',this,'wrong')">Vertical = OS-level escalation. Horizontal = application-level escalation. They require different STRIDE categories.</div>
+      <div class="qo" onclick="doQ('q2',this,'wrong')">Vertical escalation is in STRIDE-E. Horizontal escalation is in STRIDE-I (Information Disclosure).</div>
+    </div>
+    <div class="quiz-exp" id="q2-exp">Both are Elevation of Privilege (E in STRIDE). <strong>Vertical</strong>: <code>GET /admin/users</code> — regular user accesses admin function (no role check). Fix: <code>if current_user.role != 'admin': abort(403)</code>. <strong>Horizontal</strong>: <code>GET /invoice/1042</code> — User A reads User B's invoice by changing the ID. Fix: <code>if invoice.owner_id != current_user.id: abort(403)</code>. Beginners often categorize horizontal escalation as Information Disclosure — but the root cause is authorization failure (E), and the information leak is the consequence, not the category.</div>
+  </div>
+
+  <div class="quiz-block">
+    <div class="quiz-q">Q3. What is the key difference between STRIDE and PASTA, and when would you use each?</div>
+    <div class="quiz-opts" id="q3">
+      <div class="qo" onclick="doQ('q3',this,'wrong')">STRIDE is for web apps, PASTA is for mobile apps</div>
+      <div class="qo" onclick="doQ('q3',this,'wrong')">STRIDE is automated, PASTA requires a manual session</div>
+      <div class="qo" onclick="doQ('q3',this,'correct')">STRIDE is threat-centric (categorizes threat types, fast, good for developer sessions). PASTA is attacker-centric and risk-centric (simulates real attack scenarios, ties to business impact, 7 stages, used for enterprise risk decisions). Use STRIDE in sprint planning for new features. Use PASTA for annual risk assessments and new product launches.</div>
+      <div class="qo" onclick="doQ('q3',this,'wrong')">They are equivalent — PASTA is just a newer version of STRIDE</div>
+    </div>
+    <div class="quiz-exp" id="q3-exp">STRIDE: fast, prescriptive, developer-friendly. 1–2 hour session. Identifies threat categories per DFD element. Output: list of threats with mitigations. <strong>Best for</strong>: agile teams, new features, developer training. PASTA: thorough, business-aligned, attacker-simulating. 2–5 day engagement for complex systems. Output: risk register, attack trees, residual risk report, executive briefing. <strong>Best for</strong>: new product launches, compliance requirements, executive risk reporting, high-value systems. Many teams use STRIDE at the sprint level and PASTA quarterly for their most critical systems.</div>
+  </div>
+</div>
+
+<!-- ═══ CHALLENGE ═══ -->
+<div class="challenge">
+  <div class="ch-ey">Capstone Challenge — Beginner to Advanced</div>
+  <div class="ch">
+    <h3>Run a full STRIDE threat model on this system</h3>
+    <p class="ch-desc">You are the AppSec engineer for a healthcare startup. Below is the system description. Your job: draw the DFD elements (in text), apply STRIDE to at least 4 elements, score the 2 highest threats with DREAD, and specify the mitigation for each.</p>
+    <div class="scenario">
+      <p><strong>System: Patient Medical Record Portal</strong><br><br>
+      Patients log in via username/password (no MFA currently). After login, they can view their medical records (stored in PostgreSQL), download lab results as PDFs (stored in AWS S3), and message their doctor through a chat interface. Messages are stored in a Redis cache for 24 hours, then archived to PostgreSQL. Doctors have a separate admin panel at /admin/records that allows them to upload new test results. The app is built with Django, runs in Docker containers on AWS EC2. There is no WAF. Lab result PDFs are stored with publicly accessible S3 URLs (for "easy sharing").<br><br>
+      <strong>Your task:</strong> Identify the 5 most serious threats, state the STRIDE category for each, score the worst one with DREAD, and give the fix.</p>
+    </div>
+    <textarea id="ch-ans" placeholder="STRIDE Analysis:
+
+Element 1: [Name the element] — STRIDE category: [S/T/R/I/D/E]
+  Threat: What could happen?
+  Attack: How would an attacker do it?
+  Fix: What control prevents it?
+
+Element 2: ...
+
+DREAD Score for worst threat:
+  D (Damage): /10
+  R (Reproducibility): /10
+  E (Exploitability): /10
+  A (Affected Users): /10
+  D (Discoverability): /10
+  Total: /10 — Priority: CRITICAL/HIGH/MEDIUM/LOW"></textarea>
+    <div class="btn-row">
+      <button class="btn btn-p" onclick="checkCh()">Submit</button>
+      <button class="btn btn-g" onclick="revealCh()">Reveal model answer</button>
+    </div>
+    <div class="ch-fb" id="ch-fb"></div>
+  </div>
+</div>
+
+<!-- SUMMARY TABLE -->
+<div class="section">
+  <div class="eyebrow">Quick Reference</div>
+  <div class="sec-title">Threat modeling cheat sheet</div>
+  <table>
+    <tr><th>Concept</th><th>What it is</th><th>When you use it</th><th>Key output</th></tr>
+    <tr><td style="color:var(--green);font-weight:700">4 Questions</td><td>Framework: What/What wrong/What to do/Did we do well?</td><td>Every threat modeling session</td><td>Threat model document</td></tr>
+    <tr><td style="color:var(--blue);font-weight:700">DFD</td><td>Data Flow Diagram: visual map of system components and data flows</td><td>Before applying any framework</td><td>Diagram with trust boundaries</td></tr>
+    <tr><td style="color:var(--yellow);font-weight:700">STRIDE</td><td>6-category threat taxonomy: S T R I D E</td><td>Sprint-level, developer sessions, new features</td><td>Threat list per DFD element</td></tr>
+    <tr><td style="color:var(--orange);font-weight:700">DREAD</td><td>Scoring model: D R E A D, each 1–10, averaged</td><td>After STRIDE, to prioritize which threats to fix first</td><td>Priority-ordered backlog</td></tr>
+    <tr><td style="color:var(--red);font-weight:700">PASTA</td><td>7-stage attacker-centric process: Objectives → Scope → Decompose → Threats → Vulns → Attack Trees → Risk</td><td>Annual reviews, new products, enterprise risk decisions</td><td>Risk register, attack trees, residual risk report</td></tr>
+    <tr><td style="color:var(--purple);font-weight:700">Attack Trees</td><td>Tree diagram: attacker's goal as root, attack paths as branches (AND/OR logic)</td><td>Modeling multi-step attack chains, PASTA Stage 6</td><td>Visual attack chain map</td></tr>
+    <tr><td style="color:var(--teal);font-weight:700">Risk Matrix</td><td>Likelihood × Impact grid with risk levels</td><td>After scoring, to communicate risk to stakeholders</td><td>Prioritized risk register</td></tr>
+  </table>
+</div>
+
+<!-- NAV FOOTER -->
+<div class="nav-footer">
+  <a class="nf-btn" href="#">
+    <span class="nf-dir">← Previous</span>
+    <span class="nf-title">02 — Secure SDLC Implementation</span>
+  </a>
+  <a class="nf-btn next" href="#">
+    <span class="nf-dir">Next Lesson →</span>
+    <span class="nf-title">04 — SAST (Static Application Security Testing)</span>
+  </a>
+</div>
+
+</div><!-- /content -->
+</div><!-- /main -->
+
+<script>
+// STRIDE panels
+const strideData = {S:true,T:false,R:false,I:false,D:false,E:false};
+function openSTRIDE(letter) {
+  Object.keys(strideData).forEach(k => {
+    document.getElementById('se-'+k).classList.remove('show');
+    document.getElementById('sc-'+k).classList.remove('open');
+  });
+  const el = document.getElementById('se-'+letter);
+  const card = document.getElementById('sc-'+letter);
+  if(el && card) {
+    el.classList.add('show');
+    card.classList.add('open');
+    el.scrollIntoView({behavior:'smooth',block:'nearest'});
+  }
+}
+openSTRIDE('S');
+
+// Panel toggle
+function toggleP(id) {
+  document.getElementById(id).classList.toggle('open');
+}
+document.getElementById('pan-assets').classList.add('open');
+
+// DREAD calculator
+function calcDread() {
+  const d = parseInt(document.getElementById('d-d').value);
+  const r = parseInt(document.getElementById('d-r').value);
+  const e = parseInt(document.getElementById('d-e').value);
+  const a = parseInt(document.getElementById('d-a').value);
+  const disc = parseInt(document.getElementById('d-disc').value);
+  document.getElementById('v-d').textContent = d;
+  document.getElementById('v-r').textContent = r;
+  document.getElementById('v-e').textContent = e;
+  document.getElementById('v-a').textContent = a;
+  document.getElementById('v-disc').textContent = disc;
+  const score = ((d+r+e+a+disc)/5).toFixed(1);
+  document.getElementById('dread-score').textContent = score;
+  const n = parseFloat(score);
+  const ratingEl = document.getElementById('dread-rating');
+  const actionEl = document.getElementById('dread-action');
+  if(n >= 8.5){ratingEl.style.color='var(--red)';ratingEl.textContent='CRITICAL';actionEl.textContent='Fix immediately — P0. Block release. Escalate to security lead and engineering manager now.';}
+  else if(n >= 7){ratingEl.style.color='var(--orange)';ratingEl.textContent='HIGH';actionEl.textContent='Fix within this sprint — P1. No new features until resolved. Assign to senior developer.';}
+  else if(n >= 5){ratingEl.style.color='var(--yellow)';ratingEl.textContent='MEDIUM';actionEl.textContent='Fix within 30 days — P2. Schedule in next sprint planning. Document acceptance if deferring.';}
+  else{ratingEl.style.color='var(--green)';ratingEl.textContent='LOW';actionEl.textContent='Add to backlog — P3. Fix within 90 days. Document risk acceptance with justification.';}
+}
+
+function toggleDread(){
+  document.getElementById('dread-wrap').classList.toggle('open');
+}
+document.getElementById('dread-wrap').classList.add('open');
+
+// Quiz
+function doQ(qid, el, result) {
+  const container = document.getElementById(qid);
+  container.querySelectorAll('.qo').forEach(o=>o.onclick=null);
+  el.classList.add(result === 'correct' ? 'correct' : 'wrong');
+  document.getElementById(qid+'-exp').classList.add('show');
+}
+
+// Challenge
+function checkCh(){
+  const ans = document.getElementById('ch-ans').value.toLowerCase();
+  const fb = document.getElementById('ch-fb');
+  const checks = [
+    ans.includes('s3') || ans.includes('public') || ans.includes('information disclosure') || ans.includes('disclosure'),
+    ans.includes('mfa') || ans.includes('no mfa') || ans.includes('authentication') || ans.includes('spoofing'),
+    ans.includes('admin') || ans.includes('/admin') || ans.includes('privilege') || ans.includes('elevation'),
+    ans.includes('injection') || ans.includes('sql') || ans.includes('xss') || ans.includes('tampering'),
+    ans.includes('dread') || (ans.includes('/10') && ans.includes('total')),
+    ans.includes('fix') || ans.includes('mitigat') || ans.includes('control'),
+  ];
+  const score = checks.filter(Boolean).length;
+  fb.className = 'ch-fb show ' + (score >= 5 ? 'good' : score >= 3 ? 'hint' : 'hint');
+  if(score >= 5){
+    fb.innerHTML = `🎯 Strong work — you covered ${score}/6 key areas. You're applying STRIDE like an AppSec engineer. One thing to verify: did you catch the S3 public URL issue? That's the most critical finding — <strong>Information Disclosure</strong> affecting ALL patients' lab results with no authentication required. DREAD score for that: D=10, R=10, E=10 (any browser), A=10 (all patients), Disc=10 (just try the URL) = 10.0 CRITICAL.`;
+  } else if(score >= 3){
+    fb.innerHTML = `✅ Good progress — ${score}/6 areas covered. Key threats you may have missed: (1) S3 public URLs — <strong>I</strong> (Information Disclosure), any person with the URL can download any patient's lab results, no auth required. (2) No MFA — <strong>S</strong> (Spoofing), credential stuffing gives attacker full patient record access. (3) /admin/records accessible to any authenticated user? — <strong>E</strong> (Elevation of Privilege). Did you DREAD score? That's required for the full model.`;
+  } else {
+    fb.innerHTML = `⚠️ Try expanding your analysis. Start with the DFD: who are the external entities? (Patients, Doctors). What are the processes? (Login, Record Viewer, S3 download, Chat, Admin panel). What are the data stores? (PostgreSQL, Redis, S3). Now apply STRIDE to each. The S3 public URLs should jump out immediately — that's a direct Information Disclosure affecting all patients.`;
+  }
+}
+
+function revealCh(){
+  const fb = document.getElementById('ch-fb');
+  fb.className = 'ch-fb show reveal';
+  fb.innerHTML = `<strong>Model Answer — Full STRIDE Analysis</strong><br><br>
+<strong>Threat 1 — S3 bucket public URLs: STRIDE-I (Information Disclosure) — CRITICAL</strong><br>
+Attack: Any person who has or guesses an S3 URL can download that patient's lab result PDF — no authentication required. URLs can be shared accidentally, found via Google, or enumerated. This violates HIPAA.<br>
+DREAD: D=10, R=10, E=10, A=10, Disc=9 → Score 9.8 — CRITICAL<br>
+Fix: Remove public access on S3 bucket. Serve PDFs through your authenticated backend: generate a pre-signed S3 URL (expiry 5 minutes) only after verifying the requesting user owns that record.<br><br>
+<strong>Threat 2 — No MFA on patient login: STRIDE-S (Spoofing) — HIGH</strong><br>
+Attack: Credential stuffing attack — attacker uses leaked username/password combos from other breaches (patients reuse passwords). Gains full access to medical records. Automated with tools like Sentry MBA or OpenBullet.<br>
+Fix: Enforce TOTP MFA for all patient accounts. Implement rate limiting: max 5 login attempts per account per 15 minutes. Monitor for credential stuffing patterns (many accounts, different IPs, same ASN).<br><br>
+<strong>Threat 3 — Admin panel IDOR: STRIDE-E (Elevation of Privilege) — HIGH</strong><br>
+Attack: /admin/records — if accessible to any authenticated patient (not just doctors), patient A can upload fake lab results for patient B. If role check is absent, vertical privilege escalation.<br>
+Fix: @require_role('doctor') decorator on all /admin/* routes. Separate auth flow for doctor vs patient accounts. Audit log every admin action with actor_id and target_patient_id.<br><br>
+<strong>Threat 4 — Django admin / debug mode: STRIDE-I (Information Disclosure) — MEDIUM</strong><br>
+Attack: If DEBUG=True in production Django, any error returns a full stack trace including settings variables, installed apps, SQL queries, and local file paths. Attacker triggers an error to enumerate the full tech stack.<br>
+Fix: DEBUG=False in production. ALLOWED_HOSTS set explicitly. Custom 500 error page with no technical details. All errors logged server-side to CloudWatch, not returned to client.<br><br>
+<strong>Threat 5 — Redis chat messages unencrypted: STRIDE-I (Information Disclosure) — MEDIUM</strong><br>
+Attack: Redis default config has no authentication and no TLS. If Redis port is accidentally exposed or an attacker gains internal network access, they can KEYS * and GET all cached doctor-patient messages.<br>
+Fix: Redis AUTH password required. TLS on Redis connections (stunnel or Redis 6+ native TLS). Redis in private subnet only — no public internet routing. Message encryption at rest using Fernet before storing in Redis.`;
+}
+</script>
+</body>
+</html>

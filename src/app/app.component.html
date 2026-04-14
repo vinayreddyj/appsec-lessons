@@ -1,0 +1,34 @@
+<!-- src/app/app.component.html -->
+<div class="app-shell" [class.sidebar-closed]="!sidebarOpen()">
+
+  <!-- Mobile hamburger -->
+  <button
+    class="mobile-menu-btn"
+    (click)="toggleSidebar()"
+    aria-label="Toggle menu"
+    [class.open]="sidebarOpen()"
+  >
+    <span></span><span></span><span></span>
+  </button>
+
+  <!-- Sidebar overlay (mobile) -->
+  <div
+    class="sidebar-overlay"
+    *ngIf="isMobile() && sidebarOpen()"
+    (click)="toggleSidebar()"
+  ></div>
+
+  <!-- Sidebar -->
+  <aside class="sidebar-wrap" [class.open]="sidebarOpen()">
+    <app-sidebar
+      [currentLessonNum]="currentLessonNum()"
+      (lessonSelected)="onLessonSelected($event)"
+    />
+  </aside>
+
+  <!-- Main content area -->
+  <main class="main-content">
+    <router-outlet></router-outlet>
+  </main>
+
+</div>

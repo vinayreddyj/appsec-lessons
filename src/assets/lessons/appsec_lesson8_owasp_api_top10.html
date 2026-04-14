@@ -1,0 +1,1436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AppSec Engineer — Lesson 8: OWASP API Security Top 10</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,700;0,900;1,700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#070912;
+  --surface:#0d1117;
+  --surface2:#161b27;
+  --surface3:#1c2333;
+  --border:#21293d;
+  --border2:#2a3450;
+  --ink:#e6edf3;
+  --ink2:#8b949e;
+  --ink3:#3d4452;
+  --accent:#f0883e;
+  --accent-bg:rgba(240,136,62,0.08);
+  --red:#ff6b6b;
+  --red-bg:rgba(255,107,107,0.08);
+  --orange:#f0883e;
+  --orange-bg:rgba(240,136,62,0.08);
+  --yellow:#e3b341;
+  --yellow-bg:rgba(227,179,65,0.08);
+  --green:#3fb950;
+  --green-bg:rgba(63,185,80,0.08);
+  --blue:#58a6ff;
+  --blue-bg:rgba(88,166,255,0.08);
+  --purple:#bc8cff;
+  --purple-bg:rgba(188,140,255,0.08);
+  --teal:#39d353;
+  --pink:#f778ba;
+  --code-bg:#0d1117;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--ink);font-family:'Inter',sans-serif;font-size:15px;line-height:1.8;}
+
+/* SIDEBAR */
+.sidebar{position:fixed;left:0;top:0;bottom:0;width:252px;background:var(--surface);border-right:1px solid var(--border);overflow-y:auto;z-index:100;}
+.sb-brand{padding:1.4rem 1.2rem 1rem;border-bottom:1px solid var(--border);}
+.sb-badge{font-family:'JetBrains Mono',monospace;font-size:9px;background:var(--accent);color:#000;padding:2px 8px;border-radius:2px;letter-spacing:.12em;display:inline-block;margin-bottom:7px;text-transform:uppercase;font-weight:700;}
+.sb-brand h2{font-size:13px;font-weight:400;color:var(--ink3);line-height:1.4;}
+.sb-sect{padding:.7rem 1.2rem .2rem;font-size:9px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--ink3);margin-top:.25rem;opacity:.6;}
+.nav-item{display:flex;align-items:center;gap:9px;padding:.38rem 1.2rem;cursor:pointer;border-left:2px solid transparent;font-size:12.5px;color:var(--ink3);text-decoration:none;transition:all .15s;}
+.nav-item:hover{color:var(--ink2);background:var(--surface2);}
+.nav-item.done{color:var(--ink3);}
+.nav-item.active{color:var(--accent);border-left-color:var(--accent);background:var(--accent-bg);}
+.nav-item .num{font-family:'JetBrains Mono',monospace;font-size:10px;min-width:22px;opacity:.35;}
+.nav-item.active .num{opacity:1;color:var(--accent);}
+
+/* MAIN */
+.main{margin-left:252px;}
+.topbar{position:sticky;top:0;background:rgba(7,9,18,.95);backdrop-filter:blur(14px);border-bottom:1px solid var(--border);padding:.65rem 2.5rem;display:flex;align-items:center;justify-content:space-between;z-index:50;}
+.bc{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink3);}
+.bc span{color:var(--accent);}
+.top-badge{font-family:'JetBrains Mono',monospace;font-size:10px;padding:3px 10px;background:var(--surface2);border:1px solid var(--border);color:var(--ink2);border-radius:2px;}
+.content{padding:3rem 2.5rem 5rem;max-width:960px;}
+
+/* HERO */
+.hero{margin-bottom:3.5rem;padding-bottom:2.5rem;border-bottom:1px solid var(--border);}
+.hero-meta{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1rem;}
+.tag{font-family:'JetBrains Mono',monospace;font-size:10px;padding:3px 10px;border-radius:2px;font-weight:600;letter-spacing:.04em;}
+.t-beg{background:var(--green-bg);color:var(--green);border:1px solid rgba(63,185,80,.2);}
+.t-frm{background:var(--blue-bg);color:var(--blue);border:1px solid rgba(88,166,255,.2);}
+.t-time{background:var(--purple-bg);color:var(--purple);border:1px solid rgba(188,140,255,.2);}
+.hero h1{font-family:'Playfair Display',serif;font-size:3.2rem;font-weight:900;line-height:1.1;color:var(--ink);margin-bottom:.85rem;}
+.hero h1 .hl{color:var(--accent);}
+.hero-sub{font-size:14.5px;color:var(--ink2);max-width:660px;line-height:1.8;margin-bottom:1.75rem;}
+.level-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:6px;overflow:hidden;}
+.lv-cell{background:var(--surface);padding:.9rem 1rem;}
+.lv-pip{width:8px;height:8px;border-radius:50%;margin-bottom:7px;}
+.lv-label{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink3);margin-bottom:3px;}
+.lv-title{font-size:13px;font-weight:600;color:var(--ink);margin-bottom:2px;}
+.lv-desc{font-size:12px;color:var(--ink3);line-height:1.5;}
+
+/* SECTIONS */
+.section{margin-bottom:3.5rem;}
+.eyebrow{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.15em;color:var(--accent);margin-bottom:5px;font-weight:600;}
+.sec-title{font-family:'Playfair Display',serif;font-size:1.9rem;font-weight:900;color:var(--ink);line-height:1.2;margin-bottom:.35rem;}
+.sec-sub{font-size:14px;color:var(--ink2);max-width:660px;line-height:1.75;margin-bottom:1.5rem;}
+
+/* CALLOUT */
+.callout{border-radius:5px;padding:.9rem 1.1rem;margin:1rem 0;display:flex;gap:10px;align-items:flex-start;border-left:3px solid;}
+.cl-warn{background:var(--red-bg);border-color:var(--red);}
+.cl-info{background:var(--blue-bg);border-color:var(--blue);}
+.cl-tip{background:var(--green-bg);border-color:var(--green);}
+.cl-note{background:var(--yellow-bg);border-color:var(--yellow);}
+.cl-orange{background:var(--orange-bg);border-color:var(--orange);}
+.cl-icon{font-size:15px;flex-shrink:0;margin-top:2px;}
+.cl-text{font-size:13.5px;color:var(--ink2);line-height:1.7;}
+.cl-text strong{color:var(--ink);}
+.cl-text code{font-family:'JetBrains Mono',monospace;font-size:11.5px;background:rgba(255,255,255,.06);padding:1px 5px;border-radius:3px;color:var(--accent);}
+
+/* CODE */
+pre{background:var(--code-bg);color:#e6edf3;border-radius:6px;padding:1.25rem;font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.8;overflow-x:auto;margin:.85rem 0;position:relative;border:1px solid var(--border);}
+.ctag{position:absolute;top:10px;right:12px;font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--ink3);text-transform:uppercase;letter-spacing:.1em;}
+.ck{color:#c084fc;}.cf{color:#79c0ff;}.cs{color:#a5d6ff;}.cm{color:#3d4452;}.cv{color:#e3b341;}.ce{color:#f0883e;}.cr{color:#ff6b6b;}.cg{color:#3fb950;}.ct{color:#39d353;}.cw{color:#f778ba;}.cy{color:#ffd700;}
+.lb{display:block;background:rgba(255,107,107,.09);border-left:2px solid var(--red);margin:0 -1.25rem;padding:0 1.25rem;}
+.lg{display:block;background:rgba(63,185,80,.07);border-left:2px solid var(--green);margin:0 -1.25rem;padding:0 1.25rem;}
+.lw{display:block;background:rgba(227,179,65,.07);border-left:2px solid var(--yellow);margin:0 -1.25rem;padding:0 1.25rem;}
+.lp{display:block;background:rgba(188,140,255,.07);border-left:2px solid var(--purple);margin:0 -1.25rem;padding:0 1.25rem;}
+
+/* API CATEGORY CARDS */
+.api-grid{display:flex;flex-direction:column;gap:.75rem;}
+.api-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden;cursor:pointer;transition:border-color .2s;}
+.api-card:hover{border-color:var(--border2);}
+.api-card.open{border-color:var(--accent);}
+.api-header{display:flex;align-items:center;gap:1rem;padding:1rem 1.25rem;user-select:none;}
+.api-num{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;padding:4px 12px;border-radius:3px;flex-shrink:0;min-width:52px;text-align:center;}
+.api-title{font-size:14.5px;font-weight:700;flex:1;color:var(--ink);}
+.api-abbr{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink3);flex-shrink:0;}
+.api-sev{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;padding:3px 10px;border-radius:2px;flex-shrink:0;white-space:nowrap;}
+.api-tog{color:var(--ink3);font-size:13px;transition:transform .2s;flex-shrink:0;}
+.api-card.open .api-tog{transform:rotate(180deg);}
+.api-body{display:none;border-top:1px solid var(--border);padding:1.25rem;}
+.api-card.open .api-body{display:block;}
+.api-body h4{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--ink3);margin:1rem 0 .5rem;font-weight:600;}
+.api-desc{font-size:14px;color:var(--ink2);line-height:1.8;margin-bottom:1rem;}
+
+/* severity colours */
+.sev-crit{background:rgba(255,107,107,.12);color:var(--red);border:1px solid rgba(255,107,107,.25);}
+.sev-high{background:rgba(240,136,62,.12);color:var(--orange);border:1px solid rgba(240,136,62,.25);}
+.sev-med{background:rgba(227,179,65,.12);color:var(--yellow);border:1px solid rgba(227,179,65,.25);}
+.num-crit{background:rgba(255,107,107,.12);color:var(--red);}
+.num-high{background:rgba(240,136,62,.12);color:var(--orange);}
+.num-med{background:rgba(227,179,65,.12);color:var(--yellow);}
+
+/* TABLE */
+table{width:100%;border-collapse:collapse;font-size:13px;margin:1rem 0;}
+th{padding:.55rem .9rem;text-align:left;background:var(--surface2);border:1px solid var(--border);font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink3);}
+td{padding:.55rem .9rem;border:1px solid var(--border);color:var(--ink2);line-height:1.5;vertical-align:top;}
+tr:hover td{background:var(--surface2);}
+
+/* ATTACK FLOW */
+.attack-flow{display:flex;align-items:center;gap:0;margin:1rem 0;overflow-x:auto;padding-bottom:.4rem;}
+.af-node{flex:1;min-width:100px;border:1px solid var(--border);padding:.55rem .7rem;font-size:11px;text-align:center;line-height:1.4;}
+.af-node:first-child{border-radius:5px 0 0 5px;}
+.af-node:last-child{border-radius:0 5px 5px 0;}
+.af-atk{background:rgba(255,107,107,.08);border-color:rgba(255,107,107,.3);color:var(--red);}
+.af-svc{background:var(--surface2);color:var(--ink2);}
+.af-ok{background:rgba(63,185,80,.08);border-color:rgba(63,185,80,.3);color:var(--green);}
+.af-bad{background:rgba(255,107,107,.08);border-color:rgba(255,107,107,.3);color:var(--red);}
+.af-arrow{padding:0 6px;color:var(--ink3);font-size:13px;background:var(--bg);}
+
+/* PANELS */
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:6px;overflow:hidden;margin-bottom:.75rem;}
+.panel-h{display:flex;align-items:center;gap:10px;padding:.9rem 1.1rem;cursor:pointer;transition:background .15s;user-select:none;}
+.panel-h:hover{background:var(--surface2);}
+.panel-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.panel-title{font-size:13.5px;font-weight:600;flex:1;color:var(--ink);}
+.panel-sub{font-size:12px;color:var(--ink3);}
+.panel-tog{color:var(--ink3);font-size:13px;transition:transform .2s;}
+.panel.open .panel-tog{transform:rotate(180deg);}
+.panel-body{display:none;padding:0 1.1rem 1.1rem;border-top:1px solid var(--border);}
+.panel.open .panel-body{display:block;}
+.panel-body h4{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--ink3);margin:1rem 0 .5rem;font-weight:600;}
+.panel-body p{font-size:13.5px;color:var(--ink2);line-height:1.75;margin-top:.6rem;}
+
+/* PILL */
+.pill{font-size:11px;padding:3px 9px;border-radius:2px;font-family:'JetBrains Mono',monospace;font-weight:600;}
+.pr{background:var(--red-bg);color:var(--red);border:1px solid rgba(255,107,107,.2);}
+.pg{background:var(--green-bg);color:var(--green);border:1px solid rgba(63,185,80,.2);}
+.py{background:var(--yellow-bg);color:var(--yellow);border:1px solid rgba(227,179,65,.2);}
+.pb{background:var(--blue-bg);color:var(--blue);border:1px solid rgba(88,166,255,.2);}
+.pp{background:var(--purple-bg);color:var(--purple);border:1px solid rgba(188,140,255,.2);}
+.pill-row{display:flex;flex-wrap:wrap;gap:6px;margin:.5rem 0;}
+
+/* RW BOX */
+.rw-box{background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:1rem 1.1rem;margin:.85rem 0;}
+.rw-label{font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.12em;color:var(--red);margin-bottom:5px;font-weight:700;}
+.rw-box p{font-size:13px;color:var(--ink2);line-height:1.7;}
+
+/* TWO COL */
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin:1rem 0;}
+.cb{background:var(--red-bg);border:1px solid rgba(255,107,107,.15);border-radius:6px;padding:1rem;}
+.cg-box{background:var(--green-bg);border:1px solid rgba(63,185,80,.15);border-radius:6px;padding:1rem;}
+.cmp-l{font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.12em;font-weight:700;margin-bottom:.6rem;}
+.cb .cmp-l{color:var(--red);}
+.cg-box .cmp-l{color:var(--green);}
+
+/* QUIZ */
+.quiz-block{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:1.25rem;margin-bottom:1rem;}
+.quiz-q{font-size:14.5px;font-weight:600;color:var(--ink);margin-bottom:.85rem;line-height:1.55;}
+.quiz-opts{display:flex;flex-direction:column;gap:7px;margin-bottom:.75rem;}
+.qo{padding:.65rem 1rem;border:1px solid var(--border);border-radius:4px;cursor:pointer;font-size:13.5px;color:var(--ink2);background:var(--surface2);transition:all .15s;}
+.qo:hover{border-color:var(--accent);color:var(--ink);}
+.qo.correct{border-color:var(--green);color:var(--green);background:var(--green-bg);cursor:default;}
+.qo.wrong{border-color:var(--red);color:var(--red);background:var(--red-bg);cursor:default;}
+.quiz-exp{font-size:13px;color:var(--ink2);line-height:1.7;padding:.75rem 1rem;background:var(--surface2);border-radius:4px;border-left:3px solid var(--green);display:none;margin-top:.5rem;}
+.quiz-exp.show{display:block;}
+
+/* CHALLENGE */
+.challenge{background:var(--surface);border:1px solid var(--accent);border-radius:10px;padding:2rem;margin:3rem 0;position:relative;overflow:hidden;}
+.challenge::before{content:'';position:absolute;top:-60px;right:-60px;width:220px;height:220px;background:radial-gradient(circle,var(--accent-bg) 0%,transparent 70%);pointer-events:none;}
+.ch-ey{font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.15em;color:var(--accent);margin-bottom:.5rem;}
+.ch h3{font-family:'Playfair Display',serif;font-size:1.5rem;font-weight:900;color:var(--ink);margin-bottom:.7rem;}
+.ch-desc{font-size:13.5px;color:var(--ink2);line-height:1.7;margin-bottom:1.25rem;}
+.scenario{background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:1rem 1.1rem;margin-bottom:1.25rem;}
+.scenario p{font-size:13px;color:var(--ink2);line-height:1.75;}
+.scenario strong{color:var(--ink);}
+.challenge textarea{width:100%;min-height:180px;background:var(--code-bg);border:1px solid var(--border);border-radius:4px;padding:1rem;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--ink);resize:vertical;outline:none;transition:border-color .2s;margin-bottom:1rem;}
+.challenge textarea:focus{border-color:var(--accent);}
+.challenge textarea::placeholder{color:var(--ink3);}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap;}
+.btn{padding:9px 20px;border-radius:4px;font-size:13px;font-family:'Inter',sans-serif;font-weight:600;cursor:pointer;border:1px solid;transition:all .15s;}
+.btn-p{background:var(--accent);color:#000;border-color:var(--accent);}
+.btn-p:hover{background:#d4732a;}
+.btn-g{background:transparent;color:var(--ink2);border-color:var(--border2);}
+.btn-g:hover{border-color:var(--accent);color:var(--ink);}
+.ch-fb{margin-top:1rem;padding:1rem 1.1rem;border-radius:5px;font-size:13.5px;line-height:1.7;display:none;}
+.ch-fb.show{display:block;}
+.ch-fb.good{background:var(--green-bg);border:1px solid rgba(63,185,80,.25);color:var(--green);}
+.ch-fb.hint{background:var(--yellow-bg);border:1px solid rgba(227,179,65,.25);color:var(--yellow);}
+.ch-fb.reveal{background:var(--surface2);border:1px solid var(--border);color:var(--ink2);}
+
+/* NAV FOOTER */
+.nav-footer{display:flex;justify-content:space-between;margin-top:4rem;padding-top:2rem;border-top:1px solid var(--border);}
+.nf-btn{padding:.85rem 1.5rem;border:1px solid var(--border);border-radius:4px;font-size:13px;cursor:pointer;background:var(--surface);color:var(--ink2);text-align:left;transition:all .15s;text-decoration:none;display:block;}
+.nf-btn:hover{border-color:var(--accent);}
+.nf-btn.next{background:var(--accent);color:#000;border-color:var(--accent);text-align:right;}
+.nf-btn.next:hover{background:#d4732a;}
+.nf-dir{font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:var(--ink3);display:block;margin-bottom:3px;}
+.nf-btn.next .nf-dir{color:rgba(0,0,0,.45);}
+.nf-title{font-weight:700;display:block;}
+
+code{font-family:'JetBrains Mono',monospace;font-size:12px;background:rgba(255,255,255,.06);padding:1px 5px;border-radius:3px;color:var(--accent);}
+pre code{background:none;padding:0;color:inherit;font-size:inherit;}
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+
+@media(max-width:860px){
+  .sidebar{display:none;}.main{margin-left:0;}
+  .content{padding:1.5rem 1.1rem 3rem;}
+  .level-strip,.two-col{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<nav class="sidebar">
+  <div class="sb-brand">
+    <div class="sb-badge">AppSec Engineer</div>
+    <h2>Application Security<br>Learning Path</h2>
+  </div>
+  <div class="sb-sect">Module 1 &mdash; Foundations</div>
+  <a class="nav-item done" href="#"><span class="num">01</span>OWASP Top 10 2021</a>
+  <a class="nav-item done" href="#"><span class="num">02</span>Secure SDLC</a>
+  <a class="nav-item done" href="#"><span class="num">03</span>Threat Modeling</a>
+  <div class="sb-sect">Module 2 &mdash; Testing Tools</div>
+  <a class="nav-item done" href="#"><span class="num">04</span>SAST</a>
+  <a class="nav-item done" href="#"><span class="num">05</span>DAST</a>
+  <a class="nav-item done" href="#"><span class="num">06</span>SCA</a>
+  <a class="nav-item done" href="#"><span class="num">07</span>IAST &amp; RASP</a>
+  <div class="sb-sect">Module 3 &mdash; API Security</div>
+  <a class="nav-item active" href="#"><span class="num">08</span>OWASP API Top 10</a>
+  <a class="nav-item" href="#"><span class="num">09</span>API Security Testing</a>
+  <a class="nav-item" href="#"><span class="num">10</span>GraphQL Security</a>
+  <div class="sb-sect">Module 4 &mdash; DevSecOps</div>
+  <a class="nav-item" href="#"><span class="num">11</span>DevSecOps Pipeline</a>
+  <a class="nav-item" href="#"><span class="num">12</span>Secrets Management</a>
+  <a class="nav-item" href="#"><span class="num">13</span>Container Security</a>
+  <a class="nav-item" href="#"><span class="num">14</span>Dependency Scanning</a>
+  <a class="nav-item" href="#"><span class="num">15</span>SBOM</a>
+  <div class="sb-sect">Module 5 &mdash; Architecture</div>
+  <a class="nav-item" href="#"><span class="num">16</span>Security Architecture</a>
+  <a class="nav-item" href="#"><span class="num">17</span>Supply Chain Security</a>
+  <a class="nav-item" href="#"><span class="num">18</span>WAF</a>
+  <a class="nav-item" href="#"><span class="num">19</span>Code Review</a>
+  <a class="nav-item" href="#"><span class="num">20</span>RASP</a>
+</nav>
+
+<div class="main">
+<div class="topbar">
+  <div class="bc">appsec-engineer / module-3 / <span>owasp-api-top-10</span></div>
+  <div class="top-badge">Lesson 08 / 20</div>
+</div>
+<div class="content">
+
+<!-- ═══ HERO ═══ -->
+<div class="hero">
+  <div class="hero-meta">
+    <span class="tag t-beg">Beginner &rarr; Advanced</span>
+    <span class="tag t-frm">Framework</span>
+    <span class="tag t-time">~75 min</span>
+  </div>
+  <h1>OWASP API Security<br><span class="hl">Top 10</span></h1>
+  <p class="hero-sub">APIs have completely different attack surfaces from web applications. An API exposes your business logic directly, often with no UI layer to slow attackers down. The OWASP API Security Top 10 (2023 edition) documents the 10 most critical API-specific risks. Every one of these has caused real production breaches. This lesson covers all 10 in full depth &mdash; what each is, how to attack it, and how to build the defence into your API from the start.</p>
+  <div class="level-strip">
+    <div class="lv-cell">
+      <div class="lv-pip" style="background:var(--green)"></div>
+      <div class="lv-label">Beginner</div>
+      <div class="lv-title">Why APIs are different</div>
+      <div class="lv-desc">REST vs web apps, attack surface, authentication models, why OWASP Web Top 10 is not enough for APIs</div>
+    </div>
+    <div class="lv-cell">
+      <div class="lv-pip" style="background:var(--yellow)"></div>
+      <div class="lv-label">Intermediate</div>
+      <div class="lv-title">All 10 categories deep</div>
+      <div class="lv-desc">Every API1-API10 with full vulnerable code, real attack PoC, CVSS context, and the exact fix</div>
+    </div>
+    <div class="lv-cell">
+      <div class="lv-pip" style="background:var(--red)"></div>
+      <div class="lv-label">Advanced</div>
+      <div class="lv-title">Defence patterns &amp; testing</div>
+      <div class="lv-desc">API gateway security, OpenAPI policy enforcement, automated API security testing, real breach walkthroughs</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ BEGINNER: WHY APIs ARE DIFFERENT ═══ -->
+<div class="section">
+  <div class="eyebrow">&#x1F7E2; Beginner &mdash; Why APIs need their own Top 10</div>
+  <div class="sec-title">APIs are not web applications</div>
+  <div class="sec-sub">The OWASP Web Application Top 10 covers server-rendered HTML applications. Modern APIs expose your raw business logic over HTTP &mdash; with different attack surfaces, different authentication models, and different failure modes.</div>
+
+  <p style="font-size:14.5px;color:var(--ink2);line-height:1.8;margin-bottom:1rem;">A traditional web app serves HTML. If you try to access another user's profile, the server renders HTML for you and you see your own data. An API returns JSON. If the ownership check is missing, it returns <em>anyone's</em> data as plain, machine-readable JSON that can be trivially scraped by an automated tool in seconds. The attack is faster, the data is cleaner, and the damage is larger.</p>
+
+  <div class="callout cl-orange">
+    <div class="cl-icon">&#x26A0;&#xFE0F;</div>
+    <div class="cl-text"><strong>The scale difference:</strong> A web app IDOR might leak one user's HTML page per request. An API IDOR can be scripted to extract millions of records in minutes. The 2022 Optus breach (11 million Australians' records) was a single unauthenticated API endpoint that returned customer data when a sequential ID was incremented. The attacker automated the enumeration. The entire database was extracted in one session.</div>
+  </div>
+
+  <div class="panel" id="pan-api-diff">
+    <div class="panel-h" onclick="tp('pan-api-diff')">
+      <div class="panel-dot" style="background:var(--blue)"></div>
+      <div class="panel-title">Web app vs API &mdash; why the attack surface is fundamentally different</div>
+      <div class="panel-sub">Know this to explain the OWASP API Top 10's existence in any interview</div>
+      <div class="panel-tog">&#x25BC;</div>
+    </div>
+    <div class="panel-body">
+      <table>
+        <tr><th>Dimension</th><th>Traditional Web App</th><th>REST API</th></tr>
+        <tr><td style="font-weight:600">Response format</td><td>HTML &mdash; mixed with presentation, hard to parse</td><td>JSON/XML &mdash; structured, machine-readable, trivially scriptable</td></tr>
+        <tr><td style="font-weight:600">Client type</td><td>Browsers &mdash; CORS, SOP, and browser security model provide some protection</td><td>Any HTTP client &mdash; curl, Python scripts, Postman, no browser restrictions</td></tr>
+        <tr><td style="font-weight:600">Authentication</td><td>Session cookies with HttpOnly, SameSite flags; CSRF tokens</td><td>Bearer tokens (JWT), API keys in headers; no CSRF protection by default if using cookies</td></tr>
+        <tr><td style="font-weight:600">Discoverability</td><td>Links in HTML, sitemaps; attackers must crawl</td><td>OpenAPI/Swagger spec often publicly available; entire endpoint inventory in one file</td></tr>
+        <tr><td style="font-weight:600">Rate limiting</td><td>Implicit slowdown via HTML rendering; browser limits</td><td>No inherent throttling; API can handle thousands of requests per second</td></tr>
+        <tr><td style="font-weight:600">Error messages</td><td>Custom HTML error pages typically strip detail</td><td>JSON error responses often include stack traces, field names, DB errors by default</td></tr>
+        <tr><td style="font-weight:600">Object exposure</td><td>Template decides what to show; partial data common</td><td>ORM .to_dict() or serialiser returns entire object by default if not explicitly filtered</td></tr>
+        <tr><td style="font-weight:600">Versioning</td><td>Single version; breaking changes update whole site</td><td>Multiple versions (/api/v1/, /api/v2/) often live simultaneously; old versions unenforced</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- 2019 vs 2023 -->
+  <div class="panel" id="pan-versions">
+    <div class="panel-h" onclick="tp('pan-versions')">
+      <div class="panel-dot" style="background:var(--accent)"></div>
+      <div class="panel-title">OWASP API Security Top 10 &mdash; 2019 vs 2023 edition</div>
+      <div class="panel-sub">The 2023 list introduced 3 new categories reflecting the rise of microservices and supply chain attacks</div>
+      <div class="panel-tog">&#x25BC;</div>
+    </div>
+    <div class="panel-body">
+      <table>
+        <tr><th>2023 Category</th><th>Change from 2019</th><th>Why it changed</th></tr>
+        <tr><td style="color:var(--red);font-weight:700">API1 &mdash; BOLA</td><td>Same as 2019 #1</td><td>Still the most common, most impactful API vulnerability. #1 again.</td></tr>
+        <tr><td style="color:var(--orange);font-weight:700">API2 &mdash; Broken Authentication</td><td>Was #2; refined</td><td>Expanded to include OAuth misconfigurations and JWT weaknesses more explicitly.</td></tr>
+        <tr><td style="color:var(--orange);font-weight:700">API3 &mdash; Broken Object Property Level Auth</td><td><strong>New in 2023</strong> (merged from old #3 and #6)</td><td>Merges "Excessive Data Exposure" and "Mass Assignment" into one category: property-level access control.</td></tr>
+        <tr><td style="color:var(--orange);font-weight:700">API4 &mdash; Unrestricted Resource Consumption</td><td>Replaces "Lack of Resources &amp; Rate Limiting"</td><td>Broader: now covers cost-based attacks (expensive AI API calls) and business logic abuse, not just DoS.</td></tr>
+        <tr><td style="color:var(--yellow);font-weight:700">API5 &mdash; Broken Function Level Auth</td><td>Was #5</td><td>Unchanged. Admin endpoints still commonly accessible to regular users.</td></tr>
+        <tr><td style="color:var(--yellow);font-weight:700">API6 &mdash; Unrestricted Access to Sensitive Business Flows</td><td><strong>New in 2023</strong></td><td>Reflects rise of business logic abuse &mdash; buying 10,000 items to drain inventory, mass account creation for abuse.</td></tr>
+        <tr><td style="color:var(--yellow);font-weight:700">API7 &mdash; Server Side Request Forgery</td><td><strong>New in 2023</strong></td><td>SSRF moved from OWASP Web Top 10 into API list as it's especially prevalent in microservice architectures.</td></tr>
+        <tr><td style="color:var(--yellow);font-weight:700">API8 &mdash; Security Misconfiguration</td><td>Was #7</td><td>Expanded to cover cloud API gateway misconfigs, default credentials on API management platforms.</td></tr>
+        <tr><td style="color:var(--green);font-weight:700">API9 &mdash; Improper Inventory Management</td><td>Was #9</td><td>More urgent with microservices explosion &mdash; "shadow APIs" and forgotten versions increasingly exploited.</td></tr>
+        <tr><td style="color:var(--green);font-weight:700">API10 &mdash; Unsafe Consumption of APIs</td><td>Was #10; renamed</td><td>Explicitly covers trusting third-party API responses without validation &mdash; supply chain API risk.</td></tr>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ THE 10 CATEGORIES ═══ -->
+<div class="section">
+  <div class="eyebrow">&#x1F7E1; All 10 Categories &mdash; Deep Dive</div>
+  <div class="sec-title">OWASP API Security Top 10 &mdash; 2023</div>
+  <div class="sec-sub">Click each category to expand the full explanation, real attack, vulnerable code, fix, and real-world breach example. These are the vulnerabilities you will find and fix in your career as an AppSec engineer.</div>
+
+  <div class="api-grid">
+
+    <!-- API1: BOLA -->
+    <div class="api-card" id="api1" onclick="toggleAPI('api1')">
+      <div class="api-header">
+        <span class="api-num num-crit">API1</span>
+        <span class="api-title">Broken Object Level Authorization (BOLA / IDOR)</span>
+        <span class="api-abbr">CWE-639</span>
+        <span class="api-sev sev-crit">CRITICAL</span>
+        <span class="api-tog">&#x25BC;</span>
+      </div>
+      <div class="api-body">
+        <div class="api-desc">BOLA is the #1 API vulnerability for two years running. It occurs when an API endpoint receives an object identifier (user ID, order ID, document ID) from the client and retrieves or modifies that object without verifying that the requesting user is authorized to access it. The attacker simply changes the ID to access someone else's data.</div>
+
+        <div class="rw-box">
+          <div class="rw-label">&#x1F534; Real breach &mdash; Optus (2022), 11 million records</div>
+          <p>An unauthenticated API endpoint at Optus returned customer records including passport numbers, driver's license numbers, and phone numbers when a sequential customer ID was provided. The attacker wrote a script to increment the ID from 1 to 11,000,000. No ownership check. No authentication. The entire customer database was extracted in a single session.</p>
+        </div>
+
+        <h4>Vulnerable code</h4>
+<pre>
+<span class="cm"># Django REST Framework — API1 BOLA vulnerability</span>
+<span class="ck">@api_view</span>([<span class="cs">'GET'</span>])
+<span class="ck">@permission_classes</span>([IsAuthenticated])
+<span class="cf">def</span> <span class="cg">get_order</span>(request, order_id):
+<span class="lb">    order = Order.objects.get(id=order_id)   <span class="cm"># ← fetches ANY order by ID</span></span>
+<span class="lb">    <span class="cf">return</span> Response(OrderSerializer(order).data) <span class="cm"># ← no ownership check</span></span>
+
+<span class="cm"># Attack: GET /api/orders/1001 (attacker's order)</span>
+<span class="cm"># Then:   GET /api/orders/1002 → user B's order ← UNAUTHORIZED ACCESS</span>
+<span class="cm"># Then:   GET /api/orders/1003 → user C's order</span>
+<span class="cm"># Automated: for id in range(1, 1000000): requests.get(f"/api/orders/{id}")</span>
+</pre>
+
+        <h4>Fixed code</h4>
+<pre>
+<span class="ck">@api_view</span>([<span class="cs">'GET'</span>])
+<span class="ck">@permission_classes</span>([IsAuthenticated])
+<span class="cf">def</span> <span class="cg">get_order_fixed</span>(request, order_id):
+<span class="lg">    order = get_object_or_404(Order, id=order_id, user=request.user)  <span class="cm"># ← filter by owner</span></span>
+    <span class="cf">return</span> Response(OrderSerializer(order).data)
+    <span class="cm"># Non-existent OR wrong owner → 404 (don't reveal resource existence)</span>
+</pre>
+
+        <h4>Defence principles</h4>
+        <table>
+          <tr><th>Control</th><th>Implementation</th><th>Why</th></tr>
+          <tr><td>Ownership filter</td><td>Always add <code>user=request.user</code> to every object retrieval query</td><td>DB-level filter is unforgeable. Application-level check can be bypassed by code changes.</td></tr>
+          <tr><td>Use UUIDs</td><td>Replace sequential integer IDs with UUID v4 in all API URLs</td><td>Eliminates enumeration. An attacker can't guess <code>f3c4e5a2-...</code> like they can guess 1002.</td></tr>
+          <tr><td>Return 404 for unauthorized</td><td>Return 404 Not Found instead of 403 Forbidden on ownership failure</td><td>403 reveals the resource exists. 404 denies that information (security through ambiguity at object level).</td></tr>
+          <tr><td>Centralise auth checks</td><td>Use an object-level permission class, not ad-hoc checks per view</td><td>Ad-hoc checks get forgotten. A central permission class applies to all views using that model.</td></tr>
+        </table>
+        <div class="pill-row"><span class="pill pr">CRITICAL</span><span class="pill pr">Most common API vuln</span><span class="pill py">CWE-639</span><span class="pill py">OWASP API1:2023</span></div>
+      </div>
+    </div>
+
+    <!-- API2: Broken Authentication -->
+    <div class="api-card" id="api2" onclick="toggleAPI('api2')">
+      <div class="api-header">
+        <span class="api-num num-crit">API2</span>
+        <span class="api-title">Broken Authentication</span>
+        <span class="api-abbr">CWE-287</span>
+        <span class="api-sev sev-crit">CRITICAL</span>
+        <span class="api-tog">&#x25BC;</span>
+      </div>
+      <div class="api-body">
+        <div class="api-desc">API authentication fails when tokens are weak, improperly validated, or authentication flows have exploitable logic flaws. This covers JWT algorithm confusion, weak secrets, missing token expiry, credential stuffing on login endpoints, and OAuth misconfigurations. The consequence is always the same: an attacker authenticates as any user.</div>
+
+        <h4>JWT algorithm confusion attack (most dangerous auth flaw)</h4>
+<pre>
+<span class="cm"># THE ATTACK: algorithm confusion (CVE-2022-21449 class)</span>
+<span class="cm"># Server uses RS256 (asymmetric). Public key is available.</span>
+<span class="cm"># Attacker changes algorithm to HS256 (symmetric) and signs with public key.</span>
+
+<span class="cm"># Original JWT header:</span>
+{ <span class="cs">"alg"</span>: <span class="cs">"RS256"</span>, <span class="cs">"typ"</span>: <span class="cs">"JWT"</span> }
+
+<span class="cm"># Attacker's forged JWT header:</span>
+{ <span class="cs">"alg"</span>: <span class="cs">"HS256"</span>, <span class="cs">"typ"</span>: <span class="cs">"JWT"</span> }  <span class="cm"># ← changed to symmetric</span>
+
+<span class="cm"># Attacker signs the JWT with the PUBLIC key (available from /api/.well-known/jwks)</span>
+<span class="cm"># Vulnerable server verifies HS256 using the PUBLIC key as the secret → accepts it!</span>
+
+<span class="cm"># Vulnerable verification:</span>
+<span class="lb">decoded = jwt.decode(token, PUBLIC_KEY)  <span class="cm"># ← no algorithm specified → accepts anything</span></span>
+
+<span class="cm"># Fixed verification — algorithm MUST be pinned server-side:</span>
+<span class="lg">decoded = jwt.decode(</span>
+<span class="lg">    token,</span>
+<span class="lg">    PUBLIC_KEY,</span>
+<span class="lg">    algorithms=[<span class="cs">"RS256"</span>],              <span class="cm"># ← never accept HS256 for RS256 tokens</span></span>
+<span class="lg">    options={<span class="cs">"require"</span>: [<span class="cs">"exp"</span>, <span class="cs">"iat"</span>, <span class="cs">"sub"</span>]}  <span class="cm"># ← require expiry claim</span></span>
+<span class="lg">)</span>
+</pre>
+
+        <h4>Credential stuffing &mdash; missing rate limiting</h4>
+<pre>
+<span class="cm"># VULNERABLE: no rate limiting on login endpoint</span>
+<span class="ck">@app.route</span>(<span class="cs">'/api/auth/login'</span>, methods=[<span class="cs">'POST'</span>])
+<span class="cf">def</span> <span class="cg">login</span>():
+<span class="lb">    user = User.query.filter_by(email=request.json[<span class="cs">'email'</span>]).first()</span>
+<span class="lb">    <span class="cf">if</span> user <span class="cf">and</span> bcrypt.check(request.json[<span class="cs">'password'</span>], user.password_hash):</span>
+<span class="lb">        <span class="cf">return</span> jsonify(token=generate_jwt(user))  <span class="cm"># ← 10B attempts/sec from botnet</span></span>
+
+<span class="cm"># FIXED: rate limit + account lockout + breach password check</span>
+<span class="cf">from</span> flask_limiter <span class="cf">import</span> Limiter
+limiter = Limiter(app, key_func=get_remote_address)
+
+<span class="ck">@app.route</span>(<span class="cs">'/api/auth/login'</span>, methods=[<span class="cs">'POST'</span>])
+<span class="lg">@limiter.limit(<span class="cs">"5 per minute;20 per hour"</span>)   <span class="cm"># ← rate limit runs before bcrypt</span></span>
+<span class="cf">def</span> <span class="cg">login_fixed</span>():
+    user = User.query.filter_by(email=request.json[<span class="cs">'email'</span>]).first()
+<span class="lg">    <span class="cf">if</span> user <span class="cf">and</span> user.failed_logins &gt;= <span class="ce">5</span>:</span>
+<span class="lg">        <span class="cf">return</span> jsonify(error=<span class="cs">"Account locked"</span>), <span class="ce">429</span>  <span class="cm"># ← account lockout</span></span>
+    <span class="cf">if</span> user <span class="cf">and</span> bcrypt.check(request.json[<span class="cs">'password'</span>], user.password_hash):
+        user.failed_logins = <span class="ce">0</span>
+        <span class="cf">return</span> jsonify(token=generate_jwt(user))
+    <span class="cf">if</span> user:
+        user.failed_logins += <span class="ce">1</span>; db.session.commit()
+</pre>
+
+        <h4>API key in URL &mdash; logged in access logs</h4>
+<pre>
+<span class="cm"># VULNERABLE: API key in URL → stored in server logs, browser history, proxies</span>
+<span class="lb">GET /api/data?api_key=sk-live-abc123xyz HTTP/1.1</span>
+
+<span class="cm"># FIXED: API key in Authorization header → not logged by default</span>
+<span class="lg">GET /api/data HTTP/1.1</span>
+<span class="lg">Authorization: Bearer sk-live-abc123xyz</span>
+</pre>
+        <div class="pill-row"><span class="pill pr">CRITICAL</span><span class="pill py">CWE-287</span><span class="pill py">JWT, OAuth, API keys</span></div>
+      </div>
+    </div>
+
+    <!-- API3: Broken Object Property Level Auth -->
+    <div class="api-card" id="api3" onclick="toggleAPI('api3')">
+      <div class="api-header">
+        <span class="api-num num-high">API3</span>
+        <span class="api-title">Broken Object Property Level Authorization</span>
+        <span class="api-abbr">CWE-213, 915</span>
+        <span class="api-sev sev-high">HIGH</span>
+        <span class="api-tog">&#x25BC;</span>
+      </div>
+      <div class="api-body">
+        <div class="api-desc">New in 2023, this category merges two related problems: <strong>Excessive Data Exposure</strong> (API returns more fields than the client should see) and <strong>Mass Assignment</strong> (API accepts more fields than the client should be able to set). Both are property-level access control failures. The former leaks sensitive data. The latter allows privilege escalation.</div>
+
+        <h4>Part A &mdash; Excessive Data Exposure</h4>
+<pre>
+<span class="cm"># User model has many fields</span>
+<span class="cf">class</span> <span class="ck">User</span>(models.Model):
+    email         = models.EmailField()
+    name          = models.CharField()
+    password_hash = models.CharField()   <span class="cm"># ← should NEVER be in API response</span>
+    role          = models.CharField()   <span class="cm"># ← internal field</span>
+    ssn           = models.CharField()   <span class="cm"># ← PII, restricted access</span>
+    is_admin      = models.BooleanField()
+
+<span class="cm"># VULNERABLE: serialiser exposes everything</span>
+<span class="cf">class</span> <span class="ck">UserSerializer</span>(serializers.ModelSerializer):
+<span class="lb">    <span class="cf">class</span> Meta:</span>
+<span class="lb">        model = User</span>
+<span class="lb">        fields = <span class="cs">'__all__'</span>   <span class="cm"># ← returns ALL fields including password_hash, ssn</span></span>
+
+<span class="cm"># FIXED: explicit allowlist of fields safe to expose</span>
+<span class="cf">class</span> <span class="ck">UserPublicSerializer</span>(serializers.ModelSerializer):
+<span class="lg">    <span class="cf">class</span> Meta:</span>
+<span class="lg">        model = User</span>
+<span class="lg">        fields = [<span class="cs">'id'</span>, <span class="cs">'email'</span>, <span class="cs">'name'</span>]   <span class="cm"># ← only these 3 fields</span></span>
+<span class="lg">        <span class="cm"># password_hash, ssn, role, is_admin → never included</span></span>
+</pre>
+
+        <h4>Part B &mdash; Mass Assignment</h4>
+<pre>
+<span class="cm"># VULNERABLE: API accepts any field from request body</span>
+<span class="ck">@api_view</span>([<span class="cs">'PATCH'</span>])
+<span class="ck">@permission_classes</span>([IsAuthenticated])
+<span class="cf">def</span> <span class="cg">update_profile</span>(request):
+<span class="lb">    serializer = UserSerializer(request.user, data=request.data, partial=<span class="ck">True</span>)</span>
+<span class="lb">    <span class="cm"># Attacker sends: {"name": "Alice", "is_admin": true, "role": "superuser"}</span></span>
+<span class="lb">    <span class="cm"># Server happily updates ALL fields including is_admin → privilege escalation!</span></span>
+
+<span class="cm"># FIXED: allowlist the writable fields</span>
+<span class="cf">class</span> <span class="ck">UserUpdateSerializer</span>(serializers.ModelSerializer):
+<span class="lg">    <span class="cf">class</span> Meta:</span>
+<span class="lg">        model = User</span>
+<span class="lg">        fields = [<span class="cs">'name'</span>, <span class="cs">'bio'</span>, <span class="cs">'avatar_url'</span>]  <span class="cm"># ← ONLY these are writable</span></span>
+<span class="lg">        read_only_fields = [<span class="cs">'email'</span>, <span class="cs">'is_admin'</span>, <span class="cs">'role'</span>, <span class="cs">'ssn'</span>]</span>
+</pre>
+        <div class="pill-row"><span class="pill py">HIGH</span><span class="pill py">Excessive Data Exposure</span><span class="pill py">Mass Assignment</span><span class="pill py">CWE-915</span></div>
+      </div>
+    </div>
+
+    <!-- API4: Unrestricted Resource Consumption -->
+    <div class="api-card" id="api4" onclick="toggleAPI('api4')">
+      <div class="api-header">
+        <span class="api-num num-high">API4</span>
+        <span class="api-title">Unrestricted Resource Consumption</span>
+        <span class="api-abbr">CWE-770</span>
+        <span class="api-sev sev-high">HIGH</span>
+        <span class="api-tog">&#x25BC;</span>
+      </div>
+      <div class="api-body">
+        <div class="api-desc">APIs that don't limit how many resources a single client can consume are vulnerable to DoS, financial abuse, and business logic attacks. This is broader than just rate limiting &mdash; it includes unbounded payload sizes, missing pagination limits, expensive operation abuse (AI inference, image processing, email sending), and financial cost attacks on usage-based APIs.</div>
+
+        <h4>Attack categories</h4>
+        <table>
+          <tr><th>Attack type</th><th>Example</th><th>Impact</th><th>Fix</th></tr>
+          <tr><td style="color:var(--red);font-weight:600">Request flooding</td><td>10,000 req/sec to any endpoint</td><td>Server CPU/memory exhaustion, DoS</td><td>Rate limiting per IP, per user, per API key</td></tr>
+          <tr><td style="color:var(--red);font-weight:600">Unbounded pagination</td><td><code>GET /api/products?limit=999999</code></td><td>Dumps entire DB, massive memory use</td><td>Max page size enforced server-side (e.g., max 100)</td></tr>
+          <tr><td style="color:var(--orange);font-weight:600">Large payload</td><td>POST 500MB JSON body</td><td>Parser memory exhaustion, OOM crash</td><td>Request size limit (e.g., 1MB max body)</td></tr>
+          <tr><td style="color:var(--orange);font-weight:600">Financial abuse</td><td>Send 10M SMS via API to harvest $5M in charges</td><td>Massive financial loss</td><td>Per-user daily budget limits, anomaly alerts</td></tr>
+          <tr><td style="color:var(--yellow);font-weight:600">AI cost attack</td><td>1000 requests to GPT-4 API in 1 minute</td><td>$1000+ API bill in minutes</td><td>Per-user token/cost quotas</td></tr>
+          <tr><td style="color:var(--yellow);font-weight:600">File processing DoS</td><td>Upload 1000 4K images for "thumbnail generation"</td><td>Image processing workers overwhelmed</td><td>Queue with concurrency limits, file size limit</td></tr>
+        </table>
+
+<pre>
+<span class="cm"># VULNERABLE: no pagination limit enforced</span>
+<span class="ck">@api_view</span>([<span class="cs">'GET'</span>])
+<span class="cf">def</span> <span class="cg">list_products</span>(request):
+<span class="lb">    limit = request.query_params.get(<span class="cs">'limit'</span>, <span class="ce">100</span>)  <span class="cm"># default 100, but attacker passes 999999</span></span>
+<span class="lb">    products = Product.objects.all()[:<span class="ck">int</span>(limit)]    <span class="cm"># ← dumps entire DB</span></span>
+    <span class="cf">return</span> Response(ProductSerializer(products, many=<span class="ck">True</span>).data)
+
+<span class="cm"># FIXED: server-side maximum enforced regardless of request</span>
+<span class="lg">MAX_PAGE_SIZE = <span class="ce">100</span></span>
+
+<span class="ck">@api_view</span>([<span class="cs">'GET'</span>])
+<span class="cf">def</span> <span class="cg">list_products_fixed</span>(request):
+    limit  = min(int(request.query_params.get(<span class="cs">'limit'</span>, <span class="ce">20</span>)), MAX_PAGE_SIZE)
+    offset = int(request.query_params.get(<span class="cs">'offset'</span>, <span class="ce">0</span>))
+<span class="lg">    products = Product.objects.all()[offset : offset + limit]  <span class="cm"># ← capped at 100</span></span>
+    <span class="cf">return</span> Response({
+        <span class="cs">'data'</span>: ProductSerializer(products, many=<span class="ck">True</span>).data,
+        <span class="cs">'total'</span>: Product.objects.count(),
+        <span class="cs">'limit'</span>: limit, <span class="cs">'offset'</span>: offset
+    })
+</pre>
+        <div class="pill-row"><span class="pill py">HIGH</span><span class="pill py">Rate limiting</span><span class="pill py">Pagination</span><span class="pill py">CWE-770</span></div>
+      </div>
+    </div>
+
+    <!-- API5: Broken Function Level Auth -->
+    <div class="api-card" id="api5" onclick="toggleAPI('api5')">
+      <div class="api-header">
+        <span class="api-num num-high">API5</span>
+        <span class="api-title">Broken Function Level Authorization</span>
+        <span class="api-abbr">CWE-285</span>
+        <span class="api-sev sev-high">HIGH</span>
+        <span class="api-tog">&#x25BC;</span>
+      </div>
+      <div class="api-body">
+        <div class="api-desc">While BOLA (API1) is about accessing another user's object at the same privilege level (horizontal escalation), BFLA is about accessing functions you should not be allowed to call at all (vertical escalation). Typically admin endpoints, management functions, or bulk operations that are "hidden" but not protected. If the only security is "the UI doesn't show this button," the API endpoint is open to anyone who calls it directly.</div>
+
+        <h4>Attack pattern &mdash; HTTP method and path manipulation</h4>
+<pre>
+<span class="cm"># Developer built admin endpoints but "didn't expose them in the UI"</span>
+<span class="cm"># The endpoints exist and are accessible to any authenticated user:</span>
+
+<span class="cm"># Regular user can access:</span>
+GET    /api/users/me           <span class="cm"># ← allowed</span>
+PATCH  /api/users/me           <span class="cm"># ← allowed</span>
+
+<span class="cm"># Attacker discovers admin endpoints via OpenAPI spec or directory brute-force:</span>
+<span class="lb">GET    /api/admin/users         <span class="cm"># ← returns ALL users — no role check</span></span>
+<span class="lb">DELETE /api/admin/users/42      <span class="cm"># ← deletes any user — no role check</span></span>
+<span class="lb">POST   /api/admin/make-admin    <span class="cm"># ← promotes self to admin</span></span>
+
+<span class="cm"># VULNERABLE: admin router with no global auth</span>
+admin_router = Router()
+admin_router.register(<span class="cs">'users'</span>, AdminUserViewSet)   <span class="cm"># ← viewset has no permission class</span>
+
+<span class="cm"># FIXED: global admin permission enforced at router level</span>
+<span class="cf">class</span> <span class="ck">AdminViewSet</span>(ModelViewSet):
+<span class="lg">    permission_classes = [IsAuthenticated, IsAdminUser]  <span class="cm"># ← BOTH required</span></span>
+
+<span class="cm"># Even better: use Django's guardian for object-level permissions</span>
+<span class="cm"># Or: separate admin API entirely behind VPN (network-level isolation)</span>
+</pre>
+
+        <h4>HTTP method confusion</h4>
+<pre>
+<span class="cm"># API checks role for POST (create) but not for PUT (update):</span>
+<span class="cm"># GET /api/products/42 → allowed (any user)</span>
+<span class="cm"># POST /api/products → requires admin role ← checked</span>
+<span class="lb">PUT /api/products/42 → no role check ← attacker can modify any product</span>
+
+<span class="cm"># Fix: check authorization on EVERY method, not just "sensitive" ones</span>
+<span class="cf">class</span> <span class="ck">ProductViewSet</span>(ModelViewSet):
+<span class="lg">    <span class="cf">def</span> <span class="cg">get_permissions</span>(self):</span>
+<span class="lg">        <span class="cf">if</span> self.action <span class="cf">in</span> [<span class="cs">'create'</span>, <span class="cs">'update'</span>, <span class="cs">'partial_update'</span>, <span class="cs">'destroy'</span>]:</span>
+<span class="lg">            <span class="cf">return</span> [IsAuthenticated(), IsAdminUser()]  <span class="cm"># ← ALL write actions need admin</span></span>
+<span class="lg">        <span class="cf">return</span> [IsAuthenticated()]</span>
+</pre>
+        <div class="pill-row"><span class="pill py">HIGH</span><span class="pill py">Vertical escalation</span><span class="pill py">CWE-285</span></div>
+      </div>
+    </div>
+
+    <!-- API6: Unrestricted Access to Sensitive Business Flows -->
+    <div class="api-card" id="api6" onclick="toggleAPI('api6')">
+      <div class="api-header">
+        <span class="api-num num-high">API6</span>
+        <span class="api-title">Unrestricted Access to Sensitive Business Flows</span>
+        <span class="api-abbr">CWE-841</span>
+        <span class="api-sev sev-high">HIGH</span>
+        <span class="api-tog">&#x25BC;</span>
+      </div>
+      <div class="api-body">
+        <div class="api-desc">New in 2023. This covers APIs that expose business-sensitive flows without adequate controls to prevent abuse at scale. Unlike DoS, these attacks don't crash the server &mdash; they abuse legitimate functionality. Common patterns: mass account creation for spam/fraud, inventory draining (buy all stock, cancel orders), ticket scalping bots, referral code farming, and voting manipulation.</div>
+
+        <div class="rw-box">
+          <div class="rw-label">&#x1F534; Real-world attack &mdash; Concert ticket scalping</div>
+          <p>A ticketing platform's API allows purchasing up to 4 tickets per account. Attackers created 50,000 fake accounts via the registration API (no email verification required), then used each account to purchase 4 tickets for a sold-out show, obtaining 200,000 tickets for resale. The API had no CAPTCHA, no email verification, and no anomaly detection for mass account creation. The concert sold out in seconds to bots.</p>
+        </div>
+
+<pre>
+<span class="cm"># VULNERABLE: account creation with no friction</span>
+<span class="ck">@api_view</span>([<span class="cs">'POST'</span>])
+<span class="cf">def</span> <span class="cg">register</span>(request):
+<span class="lb">    <span class="cm"># No email verification, no CAPTCHA, no rate limit → trivially abused</span></span>
+<span class="lb">    user = User.objects.create_user(</span>
+<span class="lb">        email=request.data[<span class="cs">'email'</span>],</span>
+<span class="lb">        password=request.data[<span class="cs">'password'</span>]</span>
+<span class="lb">    )</span>
+<span class="lb">    <span class="cf">return</span> Response({<span class="cs">'id'</span>: user.id}, status=<span class="ce">201</span>)</span>
+
+<span class="cm"># FIXED: multiple layers of friction</span>
+<span class="lg">@limiter.limit(<span class="cs">"3 per hour"</span>)  <span class="cm"># per IP rate limit</span></span>
+<span class="ck">@api_view</span>([<span class="cs">'POST'</span>])
+<span class="cf">def</span> <span class="cg">register_fixed</span>(request):
+<span class="lg">    <span class="cm"># 1. Verify CAPTCHA token</span></span>
+<span class="lg">    verify_captcha(request.data.get(<span class="cs">'captcha_token'</span>))</span>
+<span class="lg">    <span class="cm"># 2. Create user as unverified</span></span>
+<span class="lg">    user = User.objects.create_user(</span>
+<span class="lg">        email=request.data[<span class="cs">'email'</span>],</span>
+<span class="lg">        password=request.data[<span class="cs">'password'</span>],</span>
+<span class="lg">        is_verified=<span class="ck">False</span>              <span class="cm"># ← can't buy tickets until email confirmed</span></span>
+<span class="lg">    )</span>
+<span class="lg">    <span class="cm"># 3. Send verification email</span></span>
+<span class="lg">    send_verification_email(user)</span>
+<span class="lg">    <span class="cm"># 4. Sensitive actions (purchase) require is_verified=True</span></span>
+    <span class="cf">return</span> Response({<span class="cs">'message'</span>: <span class="cs">'Check your email to verify'</span>}, status=<span class="ce">201</span>)
+</pre>
+        <div class="pill-row"><span class="pill py">HIGH</span><span class="pill py">Business logic abuse</span><span class="pill py">New in 2023</span><span class="pill py">CWE-841</span></div>
+      </div>
+    </div>
+
+    <!-- API7: SSRF -->
+    <div class="api-card" id="api7" onclick="toggleAPI('api7')">
+      <div class="api-header">
+        <span class="api-num num-high">API7</span>
+        <span class="api-title">Server Side Request Forgery (SSRF)</span>
+        <span class="api-abbr">CWE-918</span>
+        <span class="api-sev sev-high">HIGH</span>
+        <span class="api-tog">&#x25BC;</span>
+      </div>
+      <div class="api-body">
+        <div class="api-desc">SSRF in APIs is especially dangerous because APIs often run in cloud environments where the metadata endpoint (169.254.169.254) hands out IAM credentials to anyone who can reach it. A single SSRF vulnerability in a cloud-hosted API can lead to complete AWS/GCP/Azure account takeover. SSRF is also the primary attack vector in microservice architectures &mdash; APIs often call each other, and SSRF lets an attacker make one API call any internal service.</div>
+
+        <div class="rw-box">
+          <div class="rw-label">&#x1F534; Capital One breach (2019) &mdash; 100 million records, $190M fine</div>
+          <p>The attacker exploited SSRF in a misconfigured WAF to reach the AWS EC2 metadata endpoint. The metadata service returned IAM role credentials. The attacker used those credentials to list S3 buckets and download 100 million customer records. The SSRF was in a server-side proxy function. The fix: validate URLs against an allowlist and block internal IP ranges before making any outbound HTTP request.</p>
+        </div>
+
+<pre>
+<span class="cm"># API endpoint that fetches a URL server-side (webhook preview, link unfurler)</span>
+<span class="ck">@api_view</span>([<span class="cs">'POST'</span>])
+<span class="cf">def</span> <span class="cg">fetch_url_preview</span>(request):
+<span class="lb">    url = request.data.get(<span class="cs">'url'</span>)</span>
+<span class="lb">    response = requests.get(url, timeout=<span class="ce">5</span>)  <span class="cm"># ← no URL validation</span></span>
+<span class="lb">    <span class="cf">return</span> Response({<span class="cs">'content'</span>: response.text})</span>
+
+<span class="cm"># Attack 1: AWS metadata</span>
+<span class="cm"># POST {"url": "http://169.254.169.254/latest/meta-data/iam/security-credentials/role"}</span>
+<span class="cm"># → returns AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, token</span>
+
+<span class="cm"># Attack 2: Internal microservice</span>
+<span class="cm"># POST {"url": "http://internal-payment-service:8080/admin/refund-all"}</span>
+<span class="cm"># → triggers admin action on internal service not accessible from internet</span>
+
+<span class="cm"># FIXED: URL validation with domain allowlist and IP blocklist</span>
+<span class="cf">import</span> ipaddress, socket
+<span class="cf">from</span> urllib.parse <span class="cf">import</span> urlparse
+
+ALLOWED_DOMAINS = {<span class="cs">'api.github.com'</span>, <span class="cs">'api.twitter.com'</span>}   <span class="cm"># explicit allowlist</span>
+BLOCKED_CIDRS   = [<span class="cs">'169.254.0.0/16'</span>, <span class="cs">'10.0.0.0/8'</span>,
+                   <span class="cs">'172.16.0.0/12'</span>, <span class="cs">'192.168.0.0/16'</span>, <span class="cs">'127.0.0.0/8'</span>]
+
+<span class="cf">def</span> <span class="cg">validate_url</span>(url):
+    parsed = urlparse(url)
+<span class="lg">    <span class="cf">if</span> parsed.scheme <span class="cf">not in</span> (<span class="cs">'http'</span>, <span class="cs">'https'</span>): <span class="cf">raise</span> ValueError(<span class="cs">"Bad scheme"</span>)</span>
+<span class="lg">    <span class="cf">if</span> parsed.hostname <span class="cf">not in</span> ALLOWED_DOMAINS: <span class="cf">raise</span> ValueError(<span class="cs">"Domain not allowed"</span>)</span>
+    resolved = socket.gethostbyname(parsed.hostname)
+    ip = ipaddress.ip_address(resolved)
+<span class="lg">    <span class="cf">for</span> cidr <span class="cf">in</span> BLOCKED_CIDRS:</span>
+<span class="lg">        <span class="cf">if</span> ip <span class="cf">in</span> ipaddress.ip_network(cidr): <span class="cf">raise</span> ValueError(<span class="cs">"Private range blocked"</span>)</span>
+<span class="lg">    <span class="cf">return</span> url</span>
+</pre>
+        <div class="pill-row"><span class="pill py">HIGH</span><span class="pill py">Cloud credential theft</span><span class="pill py">New in 2023</span><span class="pill py">CWE-918</span></div>
+      </div>
+    </div>
+
+    <!-- API8: Security Misconfiguration -->
+    <div class="api-card" id="api8" onclick="toggleAPI('api8')">
+      <div class="api-header">
+        <span class="api-num num-high">API8</span>
+        <span class="api-title">Security Misconfiguration</span>
+        <span class="api-abbr">CWE-16</span>
+        <span class="api-sev sev-high">HIGH</span>
+        <span class="api-tog">&#x25BC;</span>
+      </div>
+      <div class="api-body">
+        <div class="api-desc">APIs ship with insecure defaults that developers don't change: CORS set to *, debug mode enabled in production, verbose error messages returning stack traces, HTTP instead of HTTPS, no security headers, default admin credentials on API management platforms, and publicly accessible API documentation for internal APIs.</div>
+
+        <h4>CORS misconfiguration &mdash; the most dangerous API misconfiguration</h4>
+<pre>
+<span class="cm"># VULNERABLE: wildcard CORS with credentials allowed</span>
+<span class="lb">CORS_ALLOW_ALL_ORIGINS = True      <span class="cm"># ← any origin can call the API</span></span>
+<span class="lb">CORS_ALLOW_CREDENTIALS = True      <span class="cm"># ← cookies/auth headers included</span></span>
+<span class="cm"># Together: attacker's website can make credentialed requests to your API</span>
+<span class="cm"># Any user visiting evil.com → evil.js calls your API as the logged-in user</span>
+
+<span class="cm"># FIXED: explicit allowlist of trusted origins</span>
+<span class="lg">CORS_ALLOWED_ORIGINS = [</span>
+<span class="lg">    <span class="cs">"https://app.mycompany.com"</span>,</span>
+<span class="lg">    <span class="cs">"https://mobile.mycompany.com"</span>,</span>
+<span class="lg">]</span>
+<span class="lg">CORS_ALLOW_CREDENTIALS = True</span>
+<span class="cm"># Note: Access-Control-Allow-Origin: * and credentials: true is rejected by browsers</span>
+<span class="cm"># But many APIs use CORS validation that reflects the Origin header → bypassed</span>
+</pre>
+
+        <h4>Verbose errors in production</h4>
+<pre>
+<span class="cm"># VULNERABLE Django: DEBUG=True in production</span>
+<span class="lb">DEBUG = True                         <span class="cm"># ← full stack trace in every 500 response</span></span>
+<span class="lb">ALLOWED_HOSTS = []                   <span class="cm"># ← accepts any hostname → host header injection</span></span>
+
+<span class="cm"># What an attacker sees in the 500 response:</span>
+<span class="lb">{</span>
+<span class="lb">  <span class="cs">"error"</span>: <span class="cs">"OperationalError at /api/data"</span>,</span>
+<span class="lb">  <span class="cs">"traceback"</span>: <span class="cs">"File /app/views.py line 42..."</span>,    <span class="cm"># ← file paths</span></span>
+<span class="lb">  <span class="cs">"settings"</span>: { <span class="cs">"DATABASE_URL"</span>: <span class="cs">"postgres://user:pass@host"</span> }  <span class="cm"># ← credentials!</span></span>
+<span class="lb">}</span>
+
+<span class="cm"># FIXED:</span>
+<span class="lg">DEBUG = False</span>
+<span class="lg">ALLOWED_HOSTS = [<span class="cs">'api.mycompany.com'</span>]</span>
+<span class="lg">REST_FRAMEWORK = {</span>
+<span class="lg">    <span class="cs">'DEFAULT_RENDERER_CLASSES'</span>: [<span class="cs">'rest_framework.renderers.JSONRenderer'</span>],</span>
+<span class="lg">    <span class="cs">'EXCEPTION_HANDLER'</span>: <span class="cs">'myapp.exceptions.custom_exception_handler'</span>  <span class="cm"># generic errors only</span></span>
+<span class="lg">}</span>
+</pre>
+
+        <h4>Required security headers for APIs</h4>
+<pre>
+<span class="cm"># Add to every API response via middleware:</span>
+<span class="lg">X-Content-Type-Options: nosniff</span>
+<span class="lg">X-Frame-Options: DENY</span>
+<span class="lg">Strict-Transport-Security: max-age=31536000; includeSubDomains; preload</span>
+<span class="lg">Cache-Control: no-store                    <span class="cm"># don't cache API responses with PII</span></span>
+<span class="lg">Content-Security-Policy: default-src 'none'  <span class="cm"># APIs don't serve HTML — deny all</span></span>
+<span class="lg">X-Request-ID: &lt;uuid&gt;                       <span class="cm"># for request tracing and support</span></span>
+</pre>
+        <div class="pill-row"><span class="pill py">HIGH</span><span class="pill py">CORS wildcard</span><span class="pill py">Debug mode</span><span class="pill py">CWE-16</span></div>
+      </div>
+    </div>
+
+    <!-- API9: Improper Inventory Management -->
+    <div class="api-card" id="api9" onclick="toggleAPI('api9')">
+      <div class="api-header">
+        <span class="api-num num-med">API9</span>
+        <span class="api-title">Improper Inventory Management</span>
+        <span class="api-abbr">CWE-1059</span>
+        <span class="api-sev sev-med">MEDIUM</span>
+        <span class="api-tog">&#x25BC;</span>
+      </div>
+      <div class="api-body">
+        <div class="api-desc">Modern organizations run dozens of APIs &mdash; multiple versions, internal vs external, microservices calling each other, third-party integrations, forgotten test APIs still running in production. Attackers specifically target old API versions (v1, v2) that were deprecated without removing security controls added in newer versions. The 2020 Peloton breach started with a forgotten unauthenticated API endpoint that was supposed to have been decommissioned.</div>
+
+        <h4>The shadow API problem</h4>
+<pre>
+<span class="cm"># Example: security was added in v2, but v1 still exists and still works</span>
+
+<span class="cm"># API v2 (current) — properly secured:</span>
+<span class="lg">GET /api/v2/users/42  → requires auth, ownership check, rate limited</span>
+
+<span class="cm"># API v1 (deprecated but NOT removed) — no security:</span>
+<span class="lb">GET /api/v1/users/42  → returns full user object with no authentication!</span>
+
+<span class="cm"># Other shadow API sources:</span>
+<span class="lb">GET /api/internal/users      <span class="cm"># ← "internal" in name doesn't make it internal</span></span>
+<span class="lb">GET /api/debug/dump-config   <span class="cm"># ← left over from debugging session</span></span>
+<span class="lb">GET /api/beta/experimental   <span class="cm"># ← beta endpoint with no auth added yet</span></span>
+<span class="lb">GET /graphql                 <span class="cm"># ← GraphQL endpoint not covered by REST auth middleware</span></span>
+</pre>
+
+        <h4>How attackers find shadow APIs</h4>
+        <table>
+          <tr><th>Discovery method</th><th>What they find</th><th>How to prevent</th></tr>
+          <tr><td>Directory brute-force (ffuf, gobuster)</td><td>Hidden endpoints not in docs</td><td>API gateway inventory &mdash; only registered routes are reachable</td></tr>
+          <tr><td>Swagger/OpenAPI endpoint scan</td><td><code>/swagger.json</code>, <code>/openapi.yaml</code>, <code>/docs</code></td><td>Never expose API spec publicly in production</td></tr>
+          <tr><td>JS bundle analysis</td><td>API endpoint URLs hardcoded in React/Angular SPA JS files</td><td>Use relative paths, don't put internal API URLs in frontend JS</td></tr>
+          <tr><td>DNS enumeration</td><td><code>api-staging.mycompany.com</code>, <code>api-dev.mycompany.com</code> open to internet</td><td>Non-prod environments require VPN or IP allowlist</td></tr>
+          <tr><td>Version increment</td><td>v1, v2, v3 &mdash; try all versions</td><td>Decommission old versions. Redirect v1 to v2 at API gateway level.</td></tr>
+        </table>
+
+<pre>
+<span class="cm"># Fix: API Gateway enforces inventory</span>
+<span class="cm"># Only routes registered in the gateway are accessible</span>
+<span class="cm"># Anything not registered returns 404 — not just "not implemented"</span>
+
+<span class="cm"># Kong API Gateway config:</span>
+services:
+  - name: user-service-v2
+    url: http://user-service:8080/api/v2
+    routes:
+      - name: users
+        paths: [<span class="cs">"/api/v2/users"</span>]
+        methods: [<span class="cs">"GET"</span>, <span class="cs">"POST"</span>]
+    <span class="cm"># /api/v1 is NOT registered → 404 for anyone trying to reach it</span>
+    <span class="cm"># /api/internal → not registered → 404</span>
+
+<span class="cm"># Also: maintain an API inventory document (linked to SBOM concept)</span>
+<span class="cm"># Every API endpoint should have: owner, version, auth requirements, deprecation date</span>
+</pre>
+        <div class="pill-row"><span class="pill py">MEDIUM</span><span class="pill py">Shadow APIs</span><span class="pill py">Old versions</span><span class="pill py">CWE-1059</span></div>
+      </div>
+    </div>
+
+    <!-- API10: Unsafe Consumption of APIs -->
+    <div class="api-card" id="api10" onclick="toggleAPI('api10')">
+      <div class="api-header">
+        <span class="api-num num-med">API10</span>
+        <span class="api-title">Unsafe Consumption of APIs</span>
+        <span class="api-abbr">CWE-346</span>
+        <span class="api-sev sev-med">MEDIUM</span>
+        <span class="api-tog">&#x25BC;</span>
+      </div>
+      <div class="api-body">
+        <div class="api-desc">Your API doesn't just receive calls &mdash; it also makes calls to third-party APIs and microservices. When your code implicitly trusts those responses without validation, a compromised third-party API or a man-in-the-middle attack can inject malicious data into your system. This is the API equivalent of supply chain attacks: a third party you trust is the attack vector.</div>
+
+        <h4>Attack scenario &mdash; compromised payment provider response</h4>
+<pre>
+<span class="cm"># Your app calls a payment provider to verify a transaction</span>
+<span class="cm"># If the provider is compromised or response is intercepted:</span>
+
+<span class="cm"># VULNERABLE: trusting third-party response without validation</span>
+<span class="cf">def</span> <span class="cg">verify_payment</span>(transaction_id):
+    response = requests.get(
+        <span class="cs">f"https://payment-provider.com/api/transactions/{transaction_id}"</span>
+    )
+<span class="lb">    data = response.json()                     <span class="cm"># ← no schema validation</span></span>
+<span class="lb">    <span class="cf">if</span> data[<span class="cs">'status'</span>] == <span class="cs">'success'</span>:          <span class="cm"># ← attacker sends {"status":"success","amount":0.01}</span></span>
+<span class="lb">        fulfill_order(data[<span class="cs">'amount'</span>])         <span class="cm"># ← order fulfilled for $0.01 instead of $99.99</span></span>
+
+<span class="cm"># FIXED: validate response schema AND business logic</span>
+<span class="cf">from</span> pydantic <span class="cf">import</span> BaseModel, validator
+
+<span class="cf">class</span> <span class="ck">PaymentResponse</span>(BaseModel):
+    transaction_id: str
+    status: str
+    amount: float
+    currency: str
+
+    <span class="lg">@validator(<span class="cs">'status'</span>)</span>
+    <span class="lg"><span class="cf">def</span> <span class="cg">status_must_be_valid</span>(cls, v):</span>
+    <span class="lg">    <span class="cf">assert</span> v <span class="cf">in</span> (<span class="cs">'success'</span>, <span class="cs">'failed'</span>, <span class="cs">'pending'</span>), <span class="cs">'Invalid status'</span></span>
+    <span class="lg">    <span class="cf">return</span> v</span>
+
+<span class="cf">def</span> <span class="cg">verify_payment_fixed</span>(transaction_id, expected_amount):
+    response = requests.get(
+        <span class="cs">f"https://payment-provider.com/api/transactions/{transaction_id}"</span>,
+        timeout=<span class="ce">5</span>,
+<span class="lg">        verify=<span class="ck">True</span>                            <span class="cm"># ← verify TLS certificate</span></span>
+    )
+    response.raise_for_status()
+<span class="lg">    data = PaymentResponse(**response.json())  <span class="cm"># ← schema validation via Pydantic</span></span>
+<span class="lg">    <span class="cf">if</span> abs(data.amount - expected_amount) &gt; <span class="ce">0.01</span>:  <span class="cm"># ← business logic check</span></span>
+<span class="lg">        <span class="cf">raise</span> ValueError(<span class="cs">"Amount mismatch — possible tampering"</span>)</span>
+    <span class="cf">if</span> data.status == <span class="cs">'success'</span>:
+        fulfill_order(data.amount)
+</pre>
+        <div class="pill-row"><span class="pill py">MEDIUM</span><span class="pill py">Third-party trust</span><span class="pill py">Schema validation</span><span class="pill py">CWE-346</span></div>
+      </div>
+    </div>
+
+  </div><!-- /api-grid -->
+</div>
+
+<!-- ═══ ADVANCED: API GATEWAY SECURITY ═══ -->
+<div class="section">
+  <div class="eyebrow">&#x1F534; Advanced &mdash; API Gateway as Security Layer</div>
+  <div class="sec-title">API Gateway &mdash; centralising security controls</div>
+  <div class="sec-sub">An API gateway sits in front of all your backend services and enforces security policies centrally. Instead of implementing rate limiting, authentication, and logging in every microservice, you implement them once at the gateway and every service gets them automatically.</div>
+
+  <div class="callout cl-tip">
+    <div class="cl-icon">&#x1F4A1;</div>
+    <div class="cl-text"><strong>The gateway principle:</strong> Security controls implemented in every service get forgotten, implemented inconsistently, and bypassed when developers take shortcuts. Security controls implemented at the gateway are enforced uniformly, can be updated without changing services, and apply even to services that "forgot" to implement them. Kong, AWS API Gateway, Nginx, and Traefik all support this pattern.</div>
+  </div>
+
+  <div class="panel" id="pan-gateway">
+    <div class="panel-h" onclick="tp('pan-gateway')">
+      <div class="panel-dot" style="background:var(--blue)"></div>
+      <div class="panel-title">What to enforce at the API gateway vs application layer</div>
+      <div class="panel-sub">Dividing security responsibilities between gateway and service code</div>
+      <div class="panel-tog">&#x25BC;</div>
+    </div>
+    <div class="panel-body">
+      <table>
+        <tr><th>Control</th><th>Enforce at Gateway?</th><th>Enforce at Application?</th><th>Why</th></tr>
+        <tr><td style="font-weight:600">Rate limiting</td><td style="color:var(--green)">Yes &mdash; primary</td><td style="color:var(--yellow)">Optional backup</td><td>Gateway has global view across all instances. App-level rate limiting per instance is bypassable with multiple requests to different pods.</td></tr>
+        <tr><td style="font-weight:600">JWT validation</td><td style="color:var(--green)">Yes &mdash; signature only</td><td style="color:var(--green)">Yes &mdash; claims</td><td>Gateway validates signature and expiry. App validates claims (user ID, role, scopes) against business logic.</td></tr>
+        <tr><td style="font-weight:600">TLS termination</td><td style="color:var(--green)">Yes</td><td>No needed</td><td>Gateway handles TLS. Internal service-to-service can use mTLS or plain HTTP in trusted network.</td></tr>
+        <tr><td style="font-weight:600">BOLA / ownership</td><td style="color:var(--red)">No &mdash; too specific</td><td style="color:var(--green)">Yes &mdash; required</td><td>Gateway doesn't know which user_id owns which order. Only application code knows the data model.</td></tr>
+        <tr><td style="font-weight:600">Security headers</td><td style="color:var(--green)">Yes &mdash; primary</td><td>Fallback</td><td>Gateway adds headers to all responses. Consistent, unforgettable.</td></tr>
+        <tr><td style="font-weight:600">Request logging</td><td style="color:var(--green)">Yes</td><td style="color:var(--yellow)">For business events</td><td>Gateway logs all requests. Application logs business events (order created, payment failed).</td></tr>
+        <tr><td style="font-weight:600">Input validation</td><td style="color:var(--yellow)">Basic (size, schema)</td><td style="color:var(--green)">Deep (business rules)</td><td>Gateway can reject malformed JSON and oversized bodies. Application validates business rules.</td></tr>
+      </table>
+
+<pre>
+<span class="ctag">Kong</span>
+<span class="cm"># Kong API Gateway — plugin configuration for API security</span>
+
+<span class="cm"># Rate limiting plugin:</span>
+plugins:
+  - name: rate-limiting
+    config:
+      minute: <span class="ce">60</span>            <span class="cm"># max 60 req/min per consumer</span>
+      hour: <span class="ce">1000</span>
+      policy: local         <span class="cm"># or 'redis' for distributed rate limiting across pods</span>
+      error_message: <span class="cs">"Rate limit exceeded"</span>
+
+  <span class="cm"># JWT validation plugin:</span>
+  - name: jwt
+    config:
+      secret_is_base64: <span class="ck">false</span>
+      claims_to_verify: [<span class="cs">"exp"</span>, <span class="cs">"nbf"</span>]   <span class="cm"># verify expiry and not-before</span>
+      key_claim_name: <span class="cs">"kid"</span>              <span class="cm"># use key ID to look up public key</span>
+
+  <span class="cm"># Request size limit:</span>
+  - name: request-size-limiting
+    config:
+      allowed_payload_size: <span class="ce">1</span>           <span class="cm"># 1MB max request body</span>
+
+  <span class="cm"># CORS plugin:</span>
+  - name: cors
+    config:
+      origins: [<span class="cs">"https://app.mycompany.com"</span>]
+      methods: [<span class="cs">"GET"</span>, <span class="cs">"POST"</span>, <span class="cs">"PUT"</span>, <span class="cs">"DELETE"</span>]
+      credentials: <span class="ck">true</span>
+      preflight_continue: <span class="ck">false</span>
+
+  <span class="cm"># Response headers:</span>
+  - name: response-transformer
+    config:
+      add:
+        headers:
+          - <span class="cs">"Strict-Transport-Security: max-age=31536000; includeSubDomains"</span>
+          - <span class="cs">"X-Content-Type-Options: nosniff"</span>
+          - <span class="cs">"Cache-Control: no-store"</span>
+</pre>
+    </div>
+  </div>
+
+  <!-- OpenAPI Policy enforcement -->
+  <div class="panel" id="pan-openapi">
+    <div class="panel-h" onclick="tp('pan-openapi')">
+      <div class="panel-dot" style="background:var(--accent)"></div>
+      <div class="panel-title">OpenAPI spec as a security policy &mdash; request validation</div>
+      <div class="panel-sub">Your OpenAPI spec is not just documentation &mdash; it is a machine-enforceable security contract</div>
+      <div class="panel-tog">&#x25BC;</div>
+    </div>
+    <div class="panel-body">
+      <p>An OpenAPI 3.0 specification defines every endpoint, every parameter, every request body schema, and every response schema. By validating incoming requests against this spec at the gateway, you get automatic protection against: unexpected parameters, wrong data types, out-of-range values, undocumented endpoints (shadow API protection), and mass assignment attacks.</p>
+<pre>
+<span class="ctag">OpenAPI 3.0</span>
+<span class="cm"># openapi.yaml — spec-driven security</span>
+paths:
+  /api/users/{user_id}:
+    patch:
+      summary: Update user profile
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: user_id
+          in: path
+          required: <span class="ck">true</span>
+          schema:
+            type: string
+            format: uuid                  <span class="cm"># enforces UUID format — no sequential integers</span>
+      requestBody:
+        required: <span class="ck">true</span>
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  maxLength: <span class="ce">100</span>        <span class="cm"># enforces length limit</span>
+                  minLength: <span class="ce">1</span>
+                bio:
+                  type: string
+                  maxLength: <span class="ce">500</span>
+              additionalProperties: <span class="ck">false</span>  <span class="cm"># CRITICAL: blocks mass assignment</span>
+              <span class="cm"># Any field not listed above → 400 Bad Request (is_admin, role rejected)</span>
+</pre>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ ADVANCED: API SECURITY TESTING ═══ -->
+<div class="section">
+  <div class="eyebrow">&#x1F534; Advanced &mdash; Testing Your API</div>
+  <div class="sec-title">Testing for all 10 categories systematically</div>
+  <div class="sec-sub">How an AppSec engineer systematically tests an API for the full OWASP API Top 10 &mdash; the tools, the approach, and the test cases for each category.</div>
+
+  <div class="panel" id="pan-testing">
+    <div class="panel-h" onclick="tp('pan-testing')">
+      <div class="panel-dot" style="background:var(--yellow)"></div>
+      <div class="panel-title">BOLA testing &mdash; the most impactful test you can run</div>
+      <div class="panel-sub">A structured method for testing object-level authorization across all API endpoints</div>
+      <div class="panel-tog">&#x25BC;</div>
+    </div>
+    <div class="panel-body">
+<pre>
+<span class="cm"># BOLA testing methodology with two accounts</span>
+<span class="cm"># Step 1: Create two legitimate test accounts</span>
+<span class="cm">#   Account A: alice@test.com → JWT_A</span>
+<span class="cm">#   Account B: bob@test.com   → JWT_B</span>
+
+<span class="cm"># Step 2: Using Account A, create a resource and note its ID</span>
+POST /api/orders
+Authorization: Bearer JWT_A
+{"product_id": "abc", "quantity": 1}
+<span class="cm"># Response: {"id": "order-uuid-xyz", "user_id": "alice-uuid"}</span>
+
+<span class="cm"># Step 3: Try to access Account A's resource using Account B's token</span>
+GET /api/orders/order-uuid-xyz
+Authorization: Bearer JWT_B     <span class="cm"># ← Bob trying to read Alice's order</span>
+
+<span class="cm"># PASS: 403 Forbidden or 404 Not Found</span>
+<span class="cm"># FAIL: 200 OK with Alice's order data → BOLA confirmed</span>
+
+<span class="cm"># Step 4: Try to modify Account A's resource using Account B's token</span>
+PUT /api/orders/order-uuid-xyz
+Authorization: Bearer JWT_B
+{"status": "shipped"}
+<span class="cm"># PASS: 403/404</span>
+<span class="cm"># FAIL: 200 OK → BOLA on write operations (often missed — only reads tested)</span>
+
+<span class="cm"># Step 5: Test ALL HTTP methods on ALL resource endpoints</span>
+<span class="cm"># GET, POST, PUT, PATCH, DELETE</span>
+<span class="cm"># Use Burp Intruder to automate across 100+ endpoints</span>
+</pre>
+    </div>
+  </div>
+
+  <div class="panel" id="pan-automated">
+    <div class="panel-h" onclick="tp('pan-automated')">
+      <div class="panel-dot" style="background:var(--purple)"></div>
+      <div class="panel-title">Automated API security testing &mdash; OWASP ZAP API scan + custom scripts</div>
+      <div class="panel-sub">Running a systematic API Top 10 test against your OpenAPI spec in CI/CD</div>
+      <div class="panel-tog">&#x25BC;</div>
+    </div>
+    <div class="panel-body">
+<pre>
+<span class="ctag">bash</span>
+<span class="cm"># 1. ZAP API scan against OpenAPI spec — tests for injection, auth, misconfig</span>
+$ docker run ghcr.io/zaproxy/zaproxy:stable zap-api-scan.py \
+    -t ./openapi.json \
+    -f openapi \
+    -r zap-api-report.html \
+    -z "-config scanner.strength=HIGH" \
+    -H <span class="cs">"Authorization: Bearer $TEST_JWT"</span>
+
+<span class="cm"># 2. Custom BOLA test script — runs for every endpoint with object IDs</span>
+$ python3 test_bola.py \
+    --spec openapi.json \
+    --token-a $JWT_USER_A \
+    --token-b $JWT_USER_B \
+    --base-url https://staging.api.myapp.com
+
+<span class="cm"># test_bola.py logic:</span>
+<span class="cm"># - Parse all {object_id} path parameters from OpenAPI spec</span>
+<span class="cm"># - For each endpoint: create resource as User A, try to access as User B</span>
+<span class="cm"># - FAIL if 200 returned when using User B's token</span>
+
+<span class="cm"># 3. Mass assignment test — send extra fields on all writable endpoints</span>
+$ python3 test_mass_assignment.py \
+    --spec openapi.json \
+    --token $JWT_REGULAR_USER \
+    --extra-fields '{"is_admin": true, "role": "superuser", "credit_balance": 999999}'
+
+<span class="cm"># 4. Rate limit test — verify limits are enforced</span>
+$ for i in $(seq 1 200); do
+    curl -s -w "%{http_code}\n" -X POST https://staging.api.myapp.com/api/auth/login \
+      -H "Content-Type: application/json" \
+      -d '{"email":"test@test.com","password":"wrong"}' &
+  done | sort | uniq -c
+<span class="cm"># Expect: 429 responses after 5 failures</span>
+</pre>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ QUIZ ═══ -->
+<div class="section">
+  <div class="eyebrow">Knowledge Check</div>
+  <div class="sec-title">OWASP API Top 10 interview questions</div>
+  <div class="sec-sub">These exact questions appear in API security and AppSec engineer interviews</div>
+
+  <div class="quiz-block">
+    <div class="quiz-q">Q1. What is the difference between API1 (BOLA) and API5 (BFLA)? Give a concrete code-level example of each.</div>
+    <div class="quiz-opts" id="q1">
+      <div class="qo" onclick="doQ('q1',this,'wrong')">They are the same &mdash; both are access control failures. BFLA is just the newer name for BOLA.</div>
+      <div class="qo" onclick="doQ('q1',this,'wrong')">BOLA affects GET endpoints. BFLA affects POST/PUT/DELETE endpoints.</div>
+      <div class="qo" onclick="doQ('q1',this,'correct')">BOLA: User A reads User B's object at the same privilege level (horizontal escalation). Example: GET /api/orders/1002 returns Bob's order to Alice. BFLA: Regular user accesses a function they should not be allowed to call at all (vertical escalation). Example: Regular user calls DELETE /api/admin/users/42 &mdash; the endpoint exists and works but should require admin role.</div>
+      <div class="qo" onclick="doQ('q1',this,'wrong')">BOLA is for REST APIs. BFLA is for GraphQL APIs.</div>
+    </div>
+    <div class="quiz-exp" id="q1-exp">The key distinction is horizontal vs vertical escalation. BOLA (API1) = horizontal: you and Bob are both regular users, but you can read Bob's data. BFLA (API5) = vertical: you are a regular user but you can call an admin-only function. Code-level: BOLA fix is <code>Order.objects.get(id=id, user=request.user)</code> &mdash; filter by owner. BFLA fix is <code>@permission_classes([IsAuthenticated, IsAdminUser])</code> on the admin endpoint &mdash; role check at the function level.</div>
+  </div>
+
+  <div class="quiz-block">
+    <div class="quiz-q">Q2. API3 in the 2023 list merges two categories from 2019. What were those two categories, and what is the common root cause that justifies merging them?</div>
+    <div class="quiz-opts" id="q2">
+      <div class="qo" onclick="doQ('q2',this,'wrong')">BOLA and BFLA &mdash; both are authorization failures</div>
+      <div class="qo" onclick="doQ('q2',this,'correct')">Excessive Data Exposure (2019 API3) and Mass Assignment (2019 API6). Common root cause: failing to control which object properties a user can READ (excessive data exposure) or WRITE (mass assignment). Both are property-level access control failures &mdash; the fix for both is an explicit property allowlist on the serialiser.</div>
+      <div class="qo" onclick="doQ('q2',this,'wrong')">Security Misconfiguration and Improper Assets Management &mdash; both are operational failures</div>
+      <div class="qo" onclick="doQ('q2',this,'wrong')">Broken Authentication and Broken Function Level Auth &mdash; both involve authentication</div>
+    </div>
+    <div class="quiz-exp" id="q2-exp">Excessive Data Exposure: your serialiser returns <code>__all__</code> fields including password_hash, SSN, is_admin. Mass Assignment: your update endpoint accepts <code>is_admin: true</code> in the request body. Both are fixed by the same mechanism: an explicit allowlist of properties in the serialiser class. For reads: <code>fields = ['id', 'name', 'email']</code>. For writes: <code>read_only_fields = ['is_admin', 'role', 'ssn']</code>. One root cause, two manifestations &mdash; hence merged in 2023.</div>
+  </div>
+
+  <div class="quiz-block">
+    <div class="quiz-q">Q3. Your API returns a 403 Forbidden when a user tries to access another user's resource. A security engineer tells you to change it to 404 Not Found. Why?</div>
+    <div class="quiz-opts" id="q3">
+      <div class="qo" onclick="doQ('q3',this,'wrong')">404 is the correct HTTP status code for any authorization failure</div>
+      <div class="qo" onclick="doQ('q3',this,'wrong')">There is no security reason &mdash; 403 is more correct because the resource exists</div>
+      <div class="qo" onclick="doQ('q3',this,'correct')">403 reveals that the resource EXISTS but the caller is not authorized. An attacker enumerating IDs learns which IDs have resources, which is information leakage. 404 denies that information &mdash; the attacker cannot distinguish "doesn't exist" from "exists but you can't see it." This makes BOLA enumeration harder.</div>
+      <div class="qo" onclick="doQ('q3',this,'wrong')">404 is better for UX &mdash; users understand "not found" more than "forbidden"</div>
+    </div>
+    <div class="quiz-exp" id="q3-exp">This is a classic OWASP recommendation. If your API returns 403 on ID 1002, an attacker knows ID 1002 exists. If they then create account B and get 200 on their own ID, and 403 on all other IDs &mdash; they've confirmed which IDs have users. With 404 for non-owned resources, the attacker cannot tell "doesn't exist" from "exists but denied" &mdash; information leakage is eliminated. The DRF implementation: <code>get_object_or_404(Order, id=order_id, user=request.user)</code> returns 404 for both "doesn't exist" and "wrong owner."</div>
+  </div>
+
+  <div class="quiz-block">
+    <div class="quiz-q">Q4. An internal API that only your mobile app uses is not protected by authentication because "only the mobile app knows the endpoint URL." Why is this wrong, and how should it be secured?</div>
+    <div class="quiz-opts" id="q4">
+      <div class="qo" onclick="doQ('q4',this,'wrong')">It is fine &mdash; security through obscurity is an accepted defence for internal APIs</div>
+      <div class="qo" onclick="doQ('q4',this,'wrong')">The mobile app should use certificate pinning to ensure only it can call the API</div>
+      <div class="qo" onclick="doQ('q4',this,'correct')">Wrong for multiple reasons: API endpoints are discoverable via JS bundle analysis, network traffic interception, and fuzzing. Any HTTPS-intercepting proxy (Burp) reveals the endpoint. This is API9 (Improper Inventory Management) &mdash; treating an endpoint as "secret" when it's reachable over the internet. Fix: the endpoint must require authentication (JWT or API key) AND should be behind an API gateway with the route explicitly registered. Obscurity is not a security control.</div>
+      <div class="qo" onclick="doQ('q4',this,'wrong')">Add IP allowlisting to only allow the mobile app's IP address</div>
+    </div>
+    <div class="quiz-exp" id="q4-exp">Security through obscurity fails because: (1) Reverse-engineering a mobile app takes minutes with jadx/apktool. (2) Intercepting HTTPS traffic with Burp Suite requires only installing a certificate. (3) Automated API discovery tools (gobuster, ffuf) find common paths. Mobile apps that are downloaded by users effectively publish their API endpoint list to the world. Certificate pinning helps prevent easy MITM but can be bypassed with Frida. The only correct answer is authentication &mdash; every API endpoint accessible from the internet must require a valid credential to return data.</div>
+  </div>
+</div>
+
+<!-- ═══ CHALLENGE ═══ -->
+<div class="challenge">
+  <div class="ch-ey">Capstone Challenge &mdash; Full API Security Audit</div>
+  <div class="ch">
+    <h3>Find all 10 API vulnerabilities in this codebase</h3>
+    <p class="ch-desc">Below is a Django REST Framework API for a fintech app. It has vulnerabilities from multiple OWASP API Top 10 categories. For each vulnerability: identify the API category (API1-API10), explain the attack, and write the fix. Then design the API gateway security configuration.</p>
+    <div class="scenario">
+<pre style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:5px;padding:1rem;font-size:11.5px;color:rgba(255,255,255,.7);margin:0;">
+<span style="color:rgba(255,255,255,.4);"># models.py</span>
+class BankAccount(models.Model):
+    user         = models.ForeignKey(User, on_delete=models.CASCADE)
+    balance      = models.DecimalField()
+    account_num  = models.IntegerField()   # sequential!
+    is_frozen    = models.BooleanField(default=False)
+    internal_note = models.TextField()    # audit notes
+
+<span style="color:rgba(255,255,255,.4);"># serializers.py</span>
+class AccountSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = BankAccount
+        fields = '__all__'    # all fields including internal_note, is_frozen
+
+<span style="color:rgba(255,255,255,.4);"># views.py</span>
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_account(request, account_id):
+    account = BankAccount.objects.get(id=account_id)   # no ownership check
+    return Response(AccountSerializer(account).data)
+
+@api_view(['PATCH'])
+@permission_classes([IsAuthenticated])
+def update_account(request, account_id):
+    account = BankAccount.objects.get(id=account_id)   # no ownership check
+    serializer = AccountSerializer(account, data=request.data, partial=True)
+    if serializer.is_valid():
+        serializer.save()   # accepts is_frozen=False, balance=999999
+    return Response(serializer.data)
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def transfer(request):
+    url = request.data.get('webhook_url')    # user-controlled URL
+    amount = request.data.get('amount')      # user-controlled amount — no max
+    to_account = request.data.get('to_account_id')
+    # no rate limiting on transfers
+    perform_transfer(amount, to_account)
+    requests.post(url, json={'status': 'done'})   # SSRF
+    return Response({'status': 'transferred'})
+
+@api_view(['GET'])
+def admin_list_accounts(request):    # no auth decorator at all!
+    return Response(AccountSerializer(BankAccount.objects.all(), many=True).data)
+
+<span style="color:rgba(255,255,255,.4);"># urls.py</span>
+urlpatterns = [
+    path('api/v1/accounts/&lt;int:account_id&gt;/', get_account),
+    path('api/v1/accounts/&lt;int:account_id&gt;/update/', update_account),
+    path('api/v1/transfer/', transfer),
+    path('api/v1/admin/accounts/', admin_list_accounts),
+    path('api/v2/accounts/&lt;uuid:account_id&gt;/', get_account_v2),  # v1 still active
+    path('debug/config/', debug_config_view),   # returns settings.DEBUG, DB URL
+]
+</pre>
+    </div>
+    <textarea id="ch-ans" placeholder="Vulnerability 1 — Category: API? — Attack: ... — Fix: ...
+Vulnerability 2 — Category: API? — Attack: ... — Fix: ...
+Vulnerability 3 — Category: API? — Attack: ... — Fix: ...
+...continue for all vulnerabilities found...
+
+API Gateway config:
+- Rate limiting:
+- Authentication:
+- Request validation:
+- Headers:"></textarea>
+    <div class="btn-row">
+      <button class="btn btn-p" onclick="checkCh()">Submit</button>
+      <button class="btn btn-g" onclick="revealCh()">Reveal model answer</button>
+    </div>
+    <div class="ch-fb" id="ch-fb"></div>
+  </div>
+</div>
+
+<!-- ═══ SUMMARY ═══ -->
+<div class="section">
+  <div class="eyebrow">Quick Reference</div>
+  <div class="sec-title">OWASP API Security Top 10 &mdash; 2023 cheat sheet</div>
+  <table>
+    <tr><th>#</th><th>Category</th><th>Root Cause</th><th>Primary Fix</th><th>Severity</th></tr>
+    <tr><td style="color:var(--red);font-family:'JetBrains Mono',monospace;font-weight:700">API1</td><td>BOLA / IDOR</td><td>No ownership check on object retrieval</td><td>Filter by owner: <code>Model.objects.get(id=id, user=request.user)</code></td><td style="color:var(--red)">Critical</td></tr>
+    <tr><td style="color:var(--red);font-family:'JetBrains Mono',monospace;font-weight:700">API2</td><td>Broken Authentication</td><td>Weak tokens, no rate limit, alg confusion</td><td>Pin JWT algorithm, rate limit login, short token expiry</td><td style="color:var(--red)">Critical</td></tr>
+    <tr><td style="color:var(--orange);font-family:'JetBrains Mono',monospace;font-weight:700">API3</td><td>Broken Object Property Level Auth</td><td>fields=__all__ and no write allowlist</td><td>Explicit <code>fields</code> list + <code>read_only_fields</code> in serialiser</td><td style="color:var(--orange)">High</td></tr>
+    <tr><td style="color:var(--orange);font-family:'JetBrains Mono',monospace;font-weight:700">API4</td><td>Unrestricted Resource Consumption</td><td>No pagination cap, no rate limiting</td><td>Enforce max page size server-side, rate limit per user and IP</td><td style="color:var(--orange)">High</td></tr>
+    <tr><td style="color:var(--orange);font-family:'JetBrains Mono',monospace;font-weight:700">API5</td><td>Broken Function Level Auth</td><td>Admin endpoints with no role check</td><td><code>@permission_classes([IsAuthenticated, IsAdminUser])</code></td><td style="color:var(--orange)">High</td></tr>
+    <tr><td style="color:var(--orange);font-family:'JetBrains Mono',monospace;font-weight:700">API6</td><td>Unrestricted Business Flows</td><td>No bot/automation protection on sensitive flows</td><td>CAPTCHA, email verification, anomaly detection</td><td style="color:var(--orange)">High</td></tr>
+    <tr><td style="color:var(--orange);font-family:'JetBrains Mono',monospace;font-weight:700">API7</td><td>SSRF</td><td>User-controlled URL passed to server-side HTTP call</td><td>Domain allowlist + block internal IP ranges before fetch</td><td style="color:var(--orange)">High</td></tr>
+    <tr><td style="color:var(--orange);font-family:'JetBrains Mono',monospace;font-weight:700">API8</td><td>Security Misconfiguration</td><td>CORS wildcard, debug mode, no security headers</td><td>Explicit CORS origins, DEBUG=False, security headers middleware</td><td style="color:var(--orange)">High</td></tr>
+    <tr><td style="color:var(--yellow);font-family:'JetBrains Mono',monospace;font-weight:700">API9</td><td>Improper Inventory Management</td><td>Old API versions live, shadow endpoints</td><td>API gateway route inventory, decommission v1, protect all envs</td><td style="color:var(--yellow)">Medium</td></tr>
+    <tr><td style="color:var(--yellow);font-family:'JetBrains Mono',monospace;font-weight:700">API10</td><td>Unsafe Consumption of APIs</td><td>Trusting third-party response without validation</td><td>Pydantic schema validation + business logic checks on all API responses</td><td style="color:var(--yellow)">Medium</td></tr>
+  </table>
+</div>
+
+<!-- NAV FOOTER -->
+<div class="nav-footer">
+  <a class="nf-btn" href="#">
+    <span class="nf-dir">&larr; Previous</span>
+    <span class="nf-title">07 &mdash; IAST &amp; RASP</span>
+  </a>
+  <a class="nf-btn next" href="#">
+    <span class="nf-dir">Next Lesson &rarr;</span>
+    <span class="nf-title">09 &mdash; API Security Testing</span>
+  </a>
+</div>
+
+</div>
+</div>
+
+<!-- ═══ REVEAL ANSWER HTML stored in hidden DOM ═══ -->
+<div id="reveal-html" style="display:none">
+<strong>Model Answer &mdash; Vulnerabilities Found:</strong><br><br>
+<strong>Vulnerability 1 &mdash; API1 BOLA on get_account():</strong> No ownership check. Attacker with account 1001 calls GET /api/v1/accounts/1002 and gets another user's balance, account number, and internal_note. Fix: <code>BankAccount.objects.get(id=account_id, user=request.user)</code> and return 404 for failures.<br><br>
+<strong>Vulnerability 2 &mdash; API1 BOLA on update_account():</strong> Same ownership failure but on write. Attacker can modify any account. Plus BOLA on write allows setting balance=999999 on another user's account.<br><br>
+<strong>Vulnerability 3 &mdash; API3 Excessive Data Exposure on both endpoints:</strong> fields='__all__' exposes internal_note and is_frozen to the account holder. Internal audit notes should never be in a customer-facing response. Fix: explicit serialiser fields = ['id', 'account_num', 'balance', 'currency'].<br><br>
+<strong>Vulnerability 4 &mdash; API3 Mass Assignment on update_account():</strong> The PATCH endpoint accepts all fields including is_frozen and balance. Attacker sends PATCH with {"is_frozen": false} to unfreeze their own account, or {"balance": 999999}. Fix: UpdateSerializer with fields = ['preferred_currency', 'display_name'] and read_only_fields = ['balance', 'is_frozen', 'internal_note'].<br><br>
+<strong>Vulnerability 5 &mdash; API5 BFLA on admin_list_accounts():</strong> No @permission_classes decorator at all. Any request (including unauthenticated!) can call GET /api/v1/admin/accounts/ and get every bank account in the system. Fix: @permission_classes([IsAuthenticated, IsAdminUser]) and move admin endpoints behind separate route requiring MFA.<br><br>
+<strong>Vulnerability 6 &mdash; API7 SSRF in transfer():</strong> webhook_url is user-controlled and passed directly to requests.post(). Attacker sends webhook_url="http://169.254.169.254/latest/meta-data/" to steal AWS IAM credentials. Fix: domain allowlist + block internal CIDR ranges as shown in API7 section.<br><br>
+<strong>Vulnerability 7 &mdash; API4 Unrestricted Resource Consumption on transfer():</strong> No rate limiting on the transfer endpoint. Attacker can initiate 10,000 transfers per second (or exhaust webhook call budget). No maximum amount check on the amount field. Fix: @limiter.limit("10 per minute") on transfer endpoint + amount validation: assert 0 < amount <= 10000.<br><br>
+<strong>Vulnerability 8 &mdash; API9 Improper Inventory &mdash; v1 still active and debug endpoint:</strong> /api/v1/ is still running while v2 exists. If v1 has fewer security controls, attackers will use it. /debug/config/ returns settings.DEBUG and DATABASE_URL &mdash; full credentials disclosure. Fix: decommission /api/v1/ at the API gateway. Remove /debug/ entirely from all environments (not just production).<br><br>
+<strong>Vulnerability 9 &mdash; API9 Sequential integer IDs:</strong> account_num is an IntegerField and the URL path uses integer account_id. Attackers can enumerate all accounts via BOLA. Fix: use UUID primary keys. Change urlpatterns to use uuid: converter type.<br><br>
+<strong>Vulnerability 10 &mdash; API8 Security Misconfiguration (implied):</strong> No security headers configured, no CORS policy shown, debug endpoint suggests DEBUG=True. Fix: add security headers middleware, set DEBUG=False, explicit ALLOWED_HOSTS.<br><br>
+<strong>API Gateway configuration:</strong><br>
+Rate limiting: 60 req/min per authenticated user on general endpoints. 10 req/min on /transfer/. 5 req/min on auth endpoints.<br>
+Authentication: JWT validation at gateway for all /api/ routes. /admin/ routes require additional admin scope claim in JWT.<br>
+Route inventory: Only v2 endpoints registered. v1 routes return 404 at gateway level. /debug/ not registered &mdash; returns 404.<br>
+Request validation: Max body size 1MB. OpenAPI spec validation enabled with additionalProperties: false on all request bodies.<br>
+Security headers: HSTS, X-Content-Type-Options, Cache-Control: no-store added to all responses by gateway.<br>
+Logging: All requests logged with user ID, endpoint, response code, latency for anomaly detection.
+</div>
+
+<!-- ═══ JAVASCRIPT &mdash; zero HTML in JS strings ═══ -->
+<script>
+function tp(id) {
+  document.getElementById(id).classList.toggle('open');
+}
+document.getElementById('pan-api-diff').classList.add('open');
+
+function toggleAPI(id) {
+  var card = document.getElementById(id);
+  var wasOpen = card.classList.contains('open');
+  document.querySelectorAll('.api-card').forEach(function(c) {
+    c.classList.remove('open');
+  });
+  if (!wasOpen) {
+    card.classList.add('open');
+    card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+}
+toggleAPI('api1');
+
+function doQ(qid, el, result) {
+  var container = document.getElementById(qid);
+  container.querySelectorAll('.qo').forEach(function(o) { o.onclick = null; });
+  el.classList.add(result === 'correct' ? 'correct' : 'wrong');
+  var exp = document.getElementById(qid + '-exp');
+  if (exp) { exp.classList.add('show'); }
+}
+
+function checkCh() {
+  var ans = document.getElementById('ch-ans').value.toLowerCase();
+  var fb  = document.getElementById('ch-fb');
+  var checks = [
+    ans.includes('api1') && (ans.includes('bola') || ans.includes('ownership') || ans.includes('idor')),
+    ans.includes('api3') && (ans.includes('mass') || ans.includes('excessive') || ans.includes('__all__') || ans.includes('serializ')),
+    ans.includes('api5') && (ans.includes('admin') || ans.includes('function level') || ans.includes('no auth') || ans.includes('bfla')),
+    ans.includes('api7') && (ans.includes('ssrf') || ans.includes('webhook') || ans.includes('169.254')),
+    ans.includes('api4') && (ans.includes('rate') || ans.includes('transfer') || ans.includes('amount')),
+    ans.includes('api9') && (ans.includes('v1') || ans.includes('debug') || ans.includes('inventory') || ans.includes('sequential')),
+    ans.includes('gateway') || ans.includes('rate limit') || ans.includes('kong')
+  ];
+  var score = checks.filter(Boolean).length;
+  fb.className = 'ch-fb show ' + (score >= 6 ? 'good' : 'hint');
+  if (score >= 6) {
+    fb.textContent = 'Excellent — ' + score + '/7 key areas covered. You found the major vulnerabilities and are thinking about gateway-level defence. One thing to add if you missed it: the sequential integer account_id in the URL (account_num = IntegerField) makes BOLA trivially scriptable. Always use UUID primary keys in API URLs for financial data.';
+  } else if (score >= 3) {
+    fb.textContent = 'Good work — ' + score + '/7 covered. Key findings to revisit: (1) The PATCH update_account() has BOTH a BOLA (no ownership check) AND a mass assignment issue (accepts is_frozen and balance). (2) admin_list_accounts() has NO authentication decorator at all — completely unauthenticated. (3) The /debug/config/ endpoint is API9 Improper Inventory Management and likely leaks DATABASE credentials.';
+  } else {
+    fb.textContent = 'Work through each function line by line. For get_account(): is there an ownership check? For update_account(): what fields does the serialiser accept? For admin_list_accounts(): what permission_classes are applied? For transfer(): can the webhook_url point to 169.254.169.254?';
+  }
+}
+
+function revealCh() {
+  var fb  = document.getElementById('ch-fb');
+  var src = document.getElementById('reveal-html');
+  fb.className = 'ch-fb show reveal';
+  fb.innerHTML = src ? src.innerHTML : 'Model answer unavailable.';
+}
+</script>
+</body>
+</html>

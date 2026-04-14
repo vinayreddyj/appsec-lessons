@@ -1,0 +1,1263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AppSec Engineer — Lesson 17: Supply Chain Security</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Lora:ital,wght@0,600;0,700;1,500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#09090e;--surface:#0f0f16;--surface2:#14141e;--surface3:#1a1a26;
+  --border:#1e1e2e;--border2:#28283c;--ink:#e8e8f4;--ink2:#8080a8;--ink3:#383858;
+  --accent:#f0a020;--accent-bg:rgba(240,160,32,0.08);
+  --red:#e05050;--red-bg:rgba(224,80,80,0.08);
+  --orange:#e08030;--orange-bg:rgba(224,128,48,0.08);
+  --yellow:#d0a020;--yellow-bg:rgba(208,160,32,0.08);
+  --green:#30b870;--green-bg:rgba(48,184,112,0.08);
+  --blue:#4080e0;--blue-bg:rgba(64,128,224,0.08);
+  --purple:#9060d0;--purple-bg:rgba(144,96,208,0.08);
+  --teal:#20b0a0;--teal-bg:rgba(32,176,160,0.08);
+  --pink:#d04080;--pink-bg:rgba(208,64,128,0.08);
+  --code-bg:#050508;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;font-size:15px;line-height:1.8;}
+.sidebar{position:fixed;left:0;top:0;bottom:0;width:252px;background:var(--surface);border-right:1px solid var(--border);overflow-y:auto;z-index:100;}
+.sb-brand{padding:1.4rem 1.2rem 1rem;border-bottom:1px solid var(--border);}
+.sb-badge{font-family:'JetBrains Mono',monospace;font-size:9px;background:var(--accent);color:#000;padding:2px 8px;border-radius:2px;letter-spacing:.12em;display:inline-block;margin-bottom:7px;text-transform:uppercase;font-weight:700;}
+.sb-brand h2{font-size:13px;font-weight:400;color:var(--ink3);line-height:1.4;}
+.sb-sect{padding:.7rem 1.2rem .2rem;font-size:9px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--ink3);margin-top:.25rem;opacity:.55;}
+.nav-item{display:flex;align-items:center;gap:9px;padding:.38rem 1.2rem;cursor:pointer;border-left:2px solid transparent;font-size:12.5px;color:var(--ink3);text-decoration:none;transition:all .15s;}
+.nav-item:hover{color:var(--ink2);background:var(--surface2);}
+.nav-item.done{color:var(--ink3);}
+.nav-item.active{color:var(--accent);border-left-color:var(--accent);background:var(--accent-bg);}
+.nav-item .num{font-family:'JetBrains Mono',monospace;font-size:10px;min-width:22px;opacity:.3;}
+.nav-item.active .num{opacity:1;color:var(--accent);}
+.main{margin-left:252px;}
+.topbar{position:sticky;top:0;background:rgba(9,9,14,.96);backdrop-filter:blur(14px);border-bottom:1px solid var(--border);padding:.65rem 2.5rem;display:flex;align-items:center;justify-content:space-between;z-index:50;}
+.bc{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink3);}
+.bc span{color:var(--accent);}
+.top-badge{font-family:'JetBrains Mono',monospace;font-size:10px;padding:3px 10px;background:var(--surface2);border:1px solid var(--border);color:var(--ink2);border-radius:2px;}
+.content{padding:3rem 2.5rem 5rem;max-width:960px;}
+.hero{margin-bottom:3.5rem;padding-bottom:2.5rem;border-bottom:1px solid var(--border);}
+.hero-meta{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1rem;}
+.tag{font-family:'JetBrains Mono',monospace;font-size:10px;padding:3px 10px;border-radius:2px;font-weight:600;letter-spacing:.04em;}
+.t-beg{background:var(--green-bg);color:var(--green);border:1px solid rgba(48,184,112,.2);}
+.t-frm{background:var(--blue-bg);color:var(--blue);border:1px solid rgba(64,128,224,.2);}
+.t-time{background:var(--purple-bg);color:var(--purple);border:1px solid rgba(144,96,208,.2);}
+.hero h1{font-family:'Lora',serif;font-size:3.4rem;font-weight:700;line-height:1.1;color:var(--ink);margin-bottom:.85rem;}
+.hero h1 .hl{color:var(--accent);}
+.hero-sub{font-size:14.5px;color:var(--ink2);max-width:660px;line-height:1.8;margin-bottom:1.75rem;}
+.level-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:6px;overflow:hidden;}
+.lv-cell{background:var(--surface);padding:.9rem 1rem;}
+.lv-pip{width:8px;height:8px;border-radius:50%;margin-bottom:7px;}
+.lv-label{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink3);margin-bottom:3px;}
+.lv-title{font-size:13px;font-weight:600;color:var(--ink);margin-bottom:2px;}
+.lv-desc{font-size:12px;color:var(--ink3);line-height:1.5;}
+.section{margin-bottom:3.5rem;}
+.eyebrow{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.15em;color:var(--accent);margin-bottom:5px;font-weight:700;}
+.sec-title{font-family:'Lora',serif;font-size:1.9rem;color:var(--ink);line-height:1.2;margin-bottom:.35rem;}
+.sec-sub{font-size:14px;color:var(--ink2);max-width:660px;line-height:1.75;margin-bottom:1.5rem;}
+.callout{border-radius:5px;padding:.9rem 1.1rem;margin:1rem 0;display:flex;gap:10px;align-items:flex-start;border-left:3px solid;}
+.cl-warn{background:var(--red-bg);border-color:var(--red);}
+.cl-info{background:var(--blue-bg);border-color:var(--blue);}
+.cl-tip{background:var(--green-bg);border-color:var(--green);}
+.cl-note{background:var(--yellow-bg);border-color:var(--yellow);}
+.cl-accent{background:var(--accent-bg);border-color:var(--accent);}
+.cl-teal{background:var(--teal-bg);border-color:var(--teal);}
+.cl-purple{background:var(--purple-bg);border-color:var(--purple);}
+.cl-pink{background:var(--pink-bg);border-color:var(--pink);}
+.cl-icon{font-size:15px;flex-shrink:0;margin-top:2px;}
+.cl-text{font-size:13.5px;color:var(--ink2);line-height:1.7;}
+.cl-text strong{color:var(--ink);}
+.cl-text code{font-family:'JetBrains Mono',monospace;font-size:11.5px;background:rgba(255,255,255,.06);padding:1px 5px;border-radius:3px;color:var(--accent);}
+pre{background:var(--code-bg);color:#d8d8f0;border-radius:6px;padding:1.25rem;font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.8;overflow-x:auto;margin:.85rem 0;position:relative;border:1px solid var(--border);}
+.ctag{position:absolute;top:10px;right:12px;font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--ink3);text-transform:uppercase;letter-spacing:.1em;}
+.ck{color:#c084fc;}.cf{color:#7dd3fc;}.cs{color:#86efac;}.cm{color:#2a3050;}.cv{color:#fcd34d;}.ce{color:#fb923c;}.cr{color:#f87171;}.cg{color:#4ade80;}.ct{color:#2dd4bf;}.cw{color:#f9a8d4;}.ca{color:#fbbf24;}
+.lb{display:block;background:rgba(224,80,80,.09);border-left:2px solid #ef4444;margin:0 -1.25rem;padding:0 1.25rem;}
+.lg{display:block;background:rgba(74,222,128,.07);border-left:2px solid #22c55e;margin:0 -1.25rem;padding:0 1.25rem;}
+.lw{display:block;background:rgba(252,211,77,.07);border-left:2px solid #f59e0b;margin:0 -1.25rem;padding:0 1.25rem;}
+table{width:100%;border-collapse:collapse;font-size:13px;margin:1rem 0;}
+th{padding:.55rem .9rem;text-align:left;background:var(--surface2);border:1px solid var(--border);font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink3);}
+td{padding:.55rem .9rem;border:1px solid var(--border);color:var(--ink2);line-height:1.5;vertical-align:top;}
+tr:hover td{background:var(--surface2);}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:6px;overflow:hidden;margin-bottom:.75rem;}
+.panel-h{display:flex;align-items:center;gap:10px;padding:.9rem 1.1rem;cursor:pointer;transition:background .15s;user-select:none;}
+.panel-h:hover{background:var(--surface2);}
+.panel-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.panel-title{font-size:13.5px;font-weight:600;flex:1;color:var(--ink);}
+.panel-sub{font-size:12px;color:var(--ink3);}
+.panel-tog{color:var(--ink3);font-size:13px;transition:transform .2s;}
+.panel.open .panel-tog{transform:rotate(180deg);}
+.panel-body{display:none;padding:0 1.1rem 1.1rem;border-top:1px solid var(--border);}
+.panel.open .panel-body{display:block;}
+.panel-body h4{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--ink3);margin:1rem 0 .5rem;font-weight:600;}
+.panel-body p{font-size:13.5px;color:var(--ink2);line-height:1.75;margin-top:.6rem;}
+.incident-card{background:var(--surface);border:1px solid var(--border);border-radius:6px;overflow:hidden;margin-bottom:.75rem;cursor:pointer;transition:background .15s;}
+.incident-card:hover{background:var(--surface2);}
+.ic-h{display:flex;align-items:center;gap:12px;padding:.9rem 1.1rem;}
+.ic-year{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--accent);min-width:48px;}
+.ic-title{font-size:13.5px;font-weight:600;flex:1;color:var(--ink);}
+.ic-type{font-family:'JetBrains Mono',monospace;font-size:10px;padding:3px 9px;border-radius:2px;font-weight:600;flex-shrink:0;}
+.ic-tog{color:var(--ink3);font-size:13px;transition:transform .2s;}
+.incident-card.open .ic-tog{transform:rotate(180deg);}
+.ic-body{display:none;padding:.85rem 1.1rem 1.1rem;border-top:1px solid var(--border);}
+.incident-card.open .ic-body{display:block;}
+.ic-body h5{font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:var(--ink3);margin:.7rem 0 .35rem;font-weight:700;}
+.ic-body p{font-size:13.5px;color:var(--ink2);line-height:1.7;}
+.tool-tabs{border:1px solid var(--border);border-radius:6px;overflow:hidden;margin:1.25rem 0;}
+.tool-tab-bar{display:flex;background:var(--surface2);border-bottom:1px solid var(--border);flex-wrap:wrap;}
+.ttab{padding:.55rem 1rem;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;cursor:pointer;color:var(--ink3);border-right:1px solid var(--border);transition:all .15s;user-select:none;}
+.ttab:hover{color:var(--ink2);}
+.ttab.active{background:var(--surface);color:var(--accent);border-bottom:2px solid var(--accent);}
+.tool-pane{display:none;padding:1.25rem;}
+.tool-pane.active{display:block;}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin:1rem 0;}
+.cb{background:var(--red-bg);border:1px solid rgba(224,80,80,.15);border-radius:6px;padding:1rem;}
+.cg-box{background:var(--green-bg);border:1px solid rgba(48,184,112,.15);border-radius:6px;padding:1rem;}
+.cmp-l{font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.12em;font-weight:700;margin-bottom:.6rem;}
+.cb .cmp-l{color:var(--red);}
+.cg-box .cmp-l{color:var(--green);}
+.pill{font-size:11px;padding:3px 9px;border-radius:2px;font-family:'JetBrains Mono',monospace;font-weight:600;}
+.pr{background:var(--red-bg);color:var(--red);border:1px solid rgba(224,80,80,.2);}
+.pg{background:var(--green-bg);color:var(--green);border:1px solid rgba(48,184,112,.2);}
+.py{background:var(--yellow-bg);color:var(--yellow);border:1px solid rgba(208,160,32,.2);}
+.pb{background:var(--blue-bg);color:var(--blue);border:1px solid rgba(64,128,224,.2);}
+.pp{background:var(--purple-bg);color:var(--purple);border:1px solid rgba(144,96,208,.2);}
+.pt{background:var(--teal-bg);color:var(--teal);border:1px solid rgba(32,176,160,.2);}
+.pa{background:var(--accent-bg);color:var(--accent);border:1px solid rgba(240,160,32,.2);}
+.pk{background:var(--pink-bg);color:var(--pink);border:1px solid rgba(208,64,128,.2);}
+.pill-row{display:flex;flex-wrap:wrap;gap:6px;margin:.5rem 0;}
+.rw-box{background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:1rem 1.1rem;margin:.85rem 0;}
+.rw-label{font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.12em;color:var(--red);margin-bottom:5px;font-weight:700;}
+.rw-box p{font-size:13px;color:var(--ink2);line-height:1.7;}
+.slsa-level{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:1rem 1.1rem;margin-bottom:.6rem;cursor:pointer;transition:background .15s;}
+.slsa-level:hover{background:var(--surface2);}
+.sl-head{display:flex;align-items:center;gap:12px;}
+.sl-badge{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;padding:3px 10px;border-radius:2px;flex-shrink:0;}
+.sl-title{font-size:13.5px;font-weight:700;color:var(--ink);}
+.sl-tog{color:var(--ink3);font-size:13px;transition:transform .2s;margin-left:auto;}
+.slsa-level.open .sl-tog{transform:rotate(180deg);}
+.sl-body{display:none;margin-top:.85rem;padding-top:.85rem;border-top:1px solid var(--border);}
+.slsa-level.open .sl-body{display:block;}
+.sl-body p{font-size:13.5px;color:var(--ink2);line-height:1.7;}
+.sl-body h5{font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:var(--ink3);margin:.7rem 0 .35rem;font-weight:700;}
+.quiz-block{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:1.25rem;margin-bottom:1rem;}
+.quiz-q{font-size:14.5px;font-weight:600;color:var(--ink);margin-bottom:.85rem;line-height:1.55;}
+.quiz-opts{display:flex;flex-direction:column;gap:7px;}
+.qo{padding:.65rem 1rem;border:1px solid var(--border);border-radius:4px;cursor:pointer;font-size:13.5px;color:var(--ink2);background:var(--surface2);transition:all .15s;}
+.qo:hover{border-color:var(--accent);color:var(--ink);}
+.qo.correct{border-color:var(--green);color:var(--green);background:var(--green-bg);cursor:default;}
+.qo.wrong{border-color:var(--red);color:var(--red);background:var(--red-bg);cursor:default;}
+.quiz-exp{font-size:13px;color:var(--ink2);line-height:1.7;padding:.75rem 1rem;background:var(--surface2);border-radius:4px;border-left:3px solid var(--green);display:none;margin-top:.5rem;}
+.quiz-exp.show{display:block;}
+.challenge{background:var(--surface);border:1px solid var(--accent);border-radius:10px;padding:2rem;margin:3rem 0;position:relative;overflow:hidden;}
+.challenge::before{content:'';position:absolute;top:-60px;right:-60px;width:220px;height:220px;background:radial-gradient(circle,var(--accent-bg) 0%,transparent 70%);pointer-events:none;}
+.ch-ey{font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.15em;color:var(--accent);margin-bottom:.5rem;}
+.ch h3{font-family:'Lora',serif;font-size:1.5rem;color:var(--ink);margin-bottom:.7rem;}
+.ch-desc{font-size:13.5px;color:var(--ink2);line-height:1.75;margin-bottom:1.25rem;}
+.scenario{background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:1rem 1.1rem;margin-bottom:1.25rem;}
+.scenario p{font-size:13px;color:var(--ink2);line-height:1.75;}
+.scenario strong{color:var(--ink);}
+.challenge textarea{width:100%;min-height:200px;background:var(--code-bg);border:1px solid var(--border);border-radius:4px;padding:1rem;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--ink);resize:vertical;outline:none;transition:border-color .2s;margin-bottom:1rem;}
+.challenge textarea:focus{border-color:var(--accent);}
+.challenge textarea::placeholder{color:var(--ink3);}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap;}
+.btn{padding:9px 20px;border-radius:4px;font-size:13px;font-family:'Outfit',sans-serif;font-weight:700;cursor:pointer;border:1px solid;transition:all .15s;}
+.btn-p{background:var(--accent);color:#000;border-color:var(--accent);}
+.btn-p:hover{background:#d08010;}
+.btn-g{background:transparent;color:var(--ink2);border-color:var(--border2);}
+.btn-g:hover{border-color:var(--accent);color:var(--ink);}
+.ch-fb{margin-top:1rem;padding:1rem 1.1rem;border-radius:5px;font-size:13.5px;line-height:1.7;display:none;}
+.ch-fb.show{display:block;}
+.ch-fb.good{background:var(--green-bg);border:1px solid rgba(48,184,112,.25);color:var(--green);}
+.ch-fb.hint{background:var(--yellow-bg);border:1px solid rgba(208,160,32,.25);color:var(--yellow);}
+.ch-fb.reveal{background:var(--surface2);border:1px solid var(--border);color:var(--ink2);}
+.nav-footer{display:flex;justify-content:space-between;margin-top:4rem;padding-top:2rem;border-top:1px solid var(--border);}
+.nf-btn{padding:.85rem 1.5rem;border:1px solid var(--border);border-radius:4px;font-size:13px;cursor:pointer;background:var(--surface);color:var(--ink2);text-align:left;transition:all .15s;text-decoration:none;display:block;}
+.nf-btn:hover{border-color:var(--accent);}
+.nf-btn.next{background:var(--accent);color:#000;border-color:var(--accent);text-align:right;}
+.nf-btn.next:hover{background:#d08010;}
+.nf-dir{font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:var(--ink3);display:block;margin-bottom:3px;}
+.nf-btn.next .nf-dir{color:rgba(0,0,0,.4);}
+.nf-title{font-weight:700;display:block;}
+code{font-family:'JetBrains Mono',monospace;font-size:12px;background:rgba(255,255,255,.06);padding:1px 5px;border-radius:3px;color:var(--accent);}
+pre code{background:none;padding:0;color:inherit;font-size:inherit;}
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+@media(max-width:860px){.sidebar{display:none;}.main{margin-left:0;}.content{padding:1.5rem 1.1rem 3rem;}.level-strip,.two-col{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+<nav class="sidebar">
+  <div class="sb-brand"><div class="sb-badge">AppSec Engineer</div><h2>Application Security<br>Learning Path</h2></div>
+  <div class="sb-sect">Module 1 &mdash; Foundations</div>
+  <a class="nav-item done" href="#"><span class="num">01</span>OWASP Top 10 2021</a>
+  <a class="nav-item done" href="#"><span class="num">02</span>Secure SDLC</a>
+  <a class="nav-item done" href="#"><span class="num">03</span>Threat Modeling</a>
+  <div class="sb-sect">Module 2 &mdash; Testing Tools</div>
+  <a class="nav-item done" href="#"><span class="num">04</span>SAST</a>
+  <a class="nav-item done" href="#"><span class="num">05</span>DAST</a>
+  <a class="nav-item done" href="#"><span class="num">06</span>SCA</a>
+  <a class="nav-item done" href="#"><span class="num">07</span>IAST &amp; RASP</a>
+  <div class="sb-sect">Module 3 &mdash; API Security</div>
+  <a class="nav-item done" href="#"><span class="num">08</span>OWASP API Top 10</a>
+  <a class="nav-item done" href="#"><span class="num">09</span>API Security Testing</a>
+  <a class="nav-item done" href="#"><span class="num">10</span>GraphQL Security</a>
+  <div class="sb-sect">Module 4 &mdash; DevSecOps</div>
+  <a class="nav-item done" href="#"><span class="num">11</span>DevSecOps Pipeline</a>
+  <a class="nav-item done" href="#"><span class="num">12</span>Secrets Management</a>
+  <a class="nav-item done" href="#"><span class="num">13</span>Container Security</a>
+  <a class="nav-item done" href="#"><span class="num">14</span>Dependency Scanning</a>
+  <a class="nav-item done" href="#"><span class="num">15</span>SBOM</a>
+  <div class="sb-sect">Module 5 &mdash; Architecture</div>
+  <a class="nav-item done" href="#"><span class="num">16</span>Security Architecture</a>
+  <a class="nav-item active" href="#"><span class="num">17</span>Supply Chain Security</a>
+  <a class="nav-item" href="#"><span class="num">18</span>WAF</a>
+  <a class="nav-item" href="#"><span class="num">19</span>Code Review</a>
+  <a class="nav-item" href="#"><span class="num">20</span>RASP</a>
+</nav>
+
+<div class="main">
+<div class="topbar">
+  <div class="bc">appsec-engineer / module-5 / <span>supply-chain-security</span></div>
+  <div class="top-badge">Lesson 17 / 20</div>
+</div>
+<div class="content">
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-meta">
+    <span class="tag t-beg">Beginner &rarr; Advanced</span>
+    <span class="tag t-frm">Supply Chain</span>
+    <span class="tag t-time">~70 min</span>
+  </div>
+  <h1>Supply Chain<br><span class="hl">Security</span></h1>
+  <p class="hero-sub">Software supply chain attacks target the tools, pipelines, and dependencies that build your software rather than the software itself. SolarWinds was not hacked &mdash; its build server was compromised, and a backdoor was injected into a signed, legitimate software update delivered to 18,000 organisations. XZ Utils was not hacked &mdash; a maintainer was socially engineered over two years, then used their trusted position to inject a backdoor into a compression library running on millions of Linux systems. These attacks succeed because we trust the supply chain implicitly. This lesson covers the full attack surface, the SLSA framework for measuring build integrity, Sigstore for cryptographic provenance, and a hardened pipeline that makes your build process itself an auditable artefact.</p>
+  <div class="level-strip">
+    <div class="lv-cell"><div class="lv-pip" style="background:var(--green)"></div><div class="lv-label">Beginner</div><div class="lv-title">The supply chain attack surface</div><div class="lv-desc">What a software supply chain is, the attack taxonomy, SolarWinds, XZ Utils, event-stream — case studies and root causes</div></div>
+    <div class="lv-cell"><div class="lv-pip" style="background:var(--yellow)"></div><div class="lv-label">Intermediate</div><div class="lv-title">SLSA framework &amp; Sigstore</div><div class="lv-desc">Supply chain Levels for Software Artefacts (SLSA 1-3), provenance, cosign signing, Rekor transparency log, in-toto</div></div>
+    <div class="lv-cell"><div class="lv-pip" style="background:var(--red)"></div><div class="lv-label">Advanced</div><div class="lv-title">Hardened pipelines &amp; controls</div><div class="lv-desc">Pinning dependencies by hash, trusted build environments, Gittuf, private registries, Kyverno admission policy, incident response</div></div>
+  </div>
+</div>
+
+<!-- BEGINNER: THE ATTACK SURFACE -->
+<div class="section">
+  <div class="eyebrow">&#x1F7E2; Beginner &mdash; The Supply Chain Attack Surface</div>
+  <div class="sec-title">Where the supply chain can be compromised</div>
+  <div class="sec-sub">The software supply chain is every step between writing code and running it in production: source control, dependencies, build tools, the build server itself, the artifact registry, and the deployment pipeline. Any of these can be a target.</div>
+
+  <div class="callout cl-warn">
+    <div class="cl-icon">&#x26A0;&#xFE0F;</div>
+    <div class="cl-text"><strong>Why supply chain attacks are uniquely dangerous:</strong> A direct attack on your application is stopped by your security controls &mdash; your WAF, your SAST, your pen tests. A supply chain attack delivers malware through a trusted, verified, signed package that bypasses all those controls. Your WAF cannot inspect what your build server does. Your SAST cannot flag a dependency it trusts. Supply chain attacks are peer-reviewed by your own security team and pass your CI/CD gates because they look exactly like legitimate software.</div>
+  </div>
+
+  <div class="panel" id="pan-taxonomy">
+    <div class="panel-h" onclick="tp('pan-taxonomy')">
+      <div class="panel-dot" style="background:var(--red)"></div>
+      <div class="panel-title">Supply chain attack taxonomy &mdash; every attack vector mapped</div>
+      <div class="panel-sub">Eight attack vectors across the full software supply chain</div>
+      <div class="panel-tog">&#x25BC;</div>
+    </div>
+    <div class="panel-body">
+      <table>
+        <tr><th>Attack vector</th><th>How it works</th><th>Real example</th><th>Primary defence</th></tr>
+        <tr><td style="font-weight:700;color:var(--red)">Compromised source code</td><td>Attacker gains write access to source repository and injects malicious code before the legitimate build</td><td>XZ Utils 2024: maintainer access granted to attacker over 2 years</td><td>Branch protection, code signing, 2+ reviewer requirement, CODEOWNERS</td></tr>
+        <tr><td style="font-weight:700;color:var(--red)">Compromised build system</td><td>Attacker gains access to the build server and modifies the build process or output artifacts</td><td>SolarWinds 2020: Orion build server injected backdoor into signed DLL</td><td>Isolated build environments, build provenance, hermetic builds</td></tr>
+        <tr><td style="font-weight:700;color:var(--orange)">Malicious dependency</td><td>A dependency the project uses is modified to include malicious code, delivered through a legitimate update</td><td>event-stream 2018: npm package handed to malicious contributor</td><td>Dependency pinning by hash, SCA scanning, SBOM, Dependabot alerts</td></tr>
+        <tr><td style="font-weight:700;color:var(--orange)">Typosquatting</td><td>Attacker publishes a package with a name nearly identical to a popular one to catch mistyped installs</td><td>colourama (vs colorama), request (vs requests)</td><td>Package name verification, registry monitoring, private mirror</td></tr>
+        <tr><td style="font-weight:700;color:var(--yellow)">Dependency confusion</td><td>Attacker publishes a public package with the same name as an internal private one at a higher version</td><td>Birsan 2021: affected Apple, Microsoft, Tesla</td><td>--index-url not --extra-index-url, namespace packages, hash pinning</td></tr>
+        <tr><td style="font-weight:700;color:var(--yellow)">Compromised maintainer account</td><td>Maintainer account is phished or credential-stuffed, attacker publishes malicious update under legitimate identity</td><td>ua-parser-js 2021: npm account compromised, malicious version published</td><td>MFA on all registry accounts, publish token restrictions</td></tr>
+        <tr><td style="font-weight:700;color:var(--blue)">CI/CD pipeline injection</td><td>Attacker modifies pipeline configuration files (Actions workflows, Jenkinsfiles) to exfiltrate secrets or modify artifacts</td><td>Codecov 2021: bash uploader script modified to exfiltrate CI env vars</td><td>Pin Actions by commit hash, review pipeline config changes, OIDC not static tokens</td></tr>
+        <tr><td style="font-weight:700;color:var(--purple)">Compromised artifact registry</td><td>Attacker gains write access to the registry and replaces a legitimate published artifact with a malicious one</td><td>Hypothetical but high-impact; registry account security is critical</td><td>Immutable artifact tags, signing, admission control verifying signatures</td></tr>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- CASE STUDIES -->
+<div class="section">
+  <div class="eyebrow">&#x1F7E2; Beginner &mdash; Landmark Incidents</div>
+  <div class="sec-title">The attacks that defined supply chain security</div>
+  <div class="sec-sub">Each incident below introduced a new attack category or demonstrated a previously theoretical threat at scale. Understanding them is essential context for the controls that followed.</div>
+
+  <div class="incident-card" id="ic-solarwinds" onclick="toggleIC('ic-solarwinds')">
+    <div class="ic-h">
+      <span class="ic-year">2020</span>
+      <span class="ic-title">SolarWinds SUNBURST &mdash; the build server attack</span>
+      <span class="ic-type py">Build Compromise</span>
+      <span class="ic-tog">&#x25BC;</span>
+    </div>
+    <div class="ic-body">
+      <h5>What happened</h5>
+      <p>Nation-state attackers (attributed to Russia's SVR) compromised SolarWinds' build infrastructure for the Orion network monitoring platform. They modified the build process to inject the SUNBURST backdoor into the legitimate Orion DLL during compilation. The resulting software was digitally signed with SolarWinds' authentic code-signing certificate, passed all QA checks, and was delivered as a legitimate software update to approximately 18,000 customers including US Treasury, CISA, Microsoft, FireEye, and many more.</p>
+      <h5>Why it was so effective</h5>
+      <p>The attack targeted the build server rather than the source code repository. This meant: the source code was clean (code review would not catch it), the binary was signed with a legitimate certificate (signature verification passed), and the software was delivered through the official update channel (customers had no reason to distrust it). Customers who followed all standard security practices were still compromised because the trust model assumed the build process was trustworthy.</p>
+      <h5>What it changed</h5>
+      <p>SolarWinds made the case for build provenance &mdash; cryptographically proving not just <em>what</em> was built but <em>how</em> it was built and on which infrastructure. SLSA (Supply chain Levels for Software Artefacts) and in-toto attestations were directly motivated by this incident. The build server is now considered part of the attack surface, not a trusted control point.</p>
+      <div class="pill-row"><span class="pill pr">18,000 customers affected</span><span class="pill py">Signed binary bypassed all controls</span><span class="pill pa">SLSA created in response</span></div>
+    </div>
+  </div>
+
+  <div class="incident-card" id="ic-xz" onclick="toggleIC('ic-xz')">
+    <div class="ic-h">
+      <span class="ic-year">2024</span>
+      <span class="ic-title">XZ Utils backdoor &mdash; the long game social engineering</span>
+      <span class="ic-type pr">Maintainer Takeover</span>
+      <span class="ic-tog">&#x25BC;</span>
+    </div>
+    <div class="ic-body">
+      <h5>What happened</h5>
+      <p>A contributor using the alias "Jia Tan" spent almost two years building credibility in the XZ Utils project &mdash; a ubiquitous Linux data compression library included in almost every Linux distribution. They submitted legitimate, valuable code contributions, built trust with the existing maintainer (who appeared to be under sustained social pressure), and were eventually granted maintainer access. They then used that access to introduce a sophisticated backdoor into the build system that would compromise OpenSSH on systemd-based Linux systems, allowing unauthenticated remote access to any affected server. It was discovered by a Microsoft engineer (Andres Freund) who noticed unusual CPU usage in SSH.</p>
+      <h5>The patience of the attack</h5>
+      <p>The attack timeline: Feb 2022 first commit, 18 months of legitimate contributions, late 2023 first malicious infrastructure changes, early 2024 backdoor fully integrated. The attacker operated under what appeared to be normal open source contributor behaviour for nearly two years. No automated tool would have caught the social engineering phase.</p>
+      <h5>What it changed</h5>
+      <p>XZ crystallised the "trusted contributor" threat: a legitimate maintainer with commit access is indistinguishable from an attacker who has become a legitimate maintainer. It forced the industry to reconsider: who controls your critical dependencies? What happens when a dependency's maintainer is compromised or is a threat actor? It strengthened the case for SBOM (know exactly what you depend on), dependency pinning (don't automatically upgrade), and OpenSSF Scorecard (measure dependency health).</p>
+      <div class="pill-row"><span class="pill pr">Targeted millions of Linux servers</span><span class="pill py">2 years in development</span><span class="pill pa">Caught by performance regression</span></div>
+    </div>
+  </div>
+
+  <div class="incident-card" id="ic-eventstream" onclick="toggleIC('ic-eventstream')">
+    <div class="ic-h">
+      <span class="ic-year">2018</span>
+      <span class="ic-title">event-stream &mdash; malicious maintainer via package handoff</span>
+      <span class="ic-type pb">Dependency Attack</span>
+      <span class="ic-tog">&#x25BC;</span>
+    </div>
+    <div class="ic-body">
+      <h5>What happened</h5>
+      <p>event-stream was a popular npm package with ~2 million weekly downloads. The original maintainer, overwhelmed with maintenance, handed the package to a new contributor who offered to help. The new contributor added a dependency called flatmap-stream, which contained obfuscated malicious code targeting the Copay Bitcoin wallet application specifically. The attack stole cryptocurrency from Copay users by targeting the npm package depended on by Copay's build process.</p>
+      <h5>Why it matters structurally</h5>
+      <p>event-stream was not itself the target &mdash; it was a stepping stone. The attack chain: attacker gains control of event-stream → adds malicious sub-dependency → sub-dependency targets a specific downstream application. This is the N-hop dependency attack: you may audit your direct dependencies, but do you audit your dependencies' dependencies' dependencies? The attack exploited the fact that npm package ownership transfers are not audited, and that deeply nested dependencies are invisible to most teams.</p>
+      <div class="pill-row"><span class="pill pb">npm package handoff</span><span class="pill py">~2M weekly downloads</span><span class="pill pa">Lesson: who maintains your deps?</span></div>
+    </div>
+  </div>
+
+  <div class="incident-card" id="ic-codecov" onclick="toggleIC('ic-codecov')">
+    <div class="ic-h">
+      <span class="ic-year">2021</span>
+      <span class="ic-title">Codecov &mdash; CI/CD script injection</span>
+      <span class="ic-type pp">CI/CD Attack</span>
+      <span class="ic-tog">&#x25BC;</span>
+    </div>
+    <div class="ic-body">
+      <h5>What happened</h5>
+      <p>Codecov is a code coverage reporting tool widely used in CI/CD pipelines. Attackers modified the Codecov bash uploader script (a shell script that CI pipelines download and execute) to exfiltrate all environment variables to an attacker-controlled server. CI/CD environments are typically loaded with secrets: AWS credentials, API keys, GitHub tokens, deployment keys. The modified script ran silently alongside legitimate code coverage reporting. Thousands of organisations were affected including Twilio, HashiCorp, Rapid7, and Confluent.</p>
+      <h5>The pipeline trust model</h5>
+      <p>This attack exploited the common CI pattern: <code>curl https://codecov.io/bash | bash</code>. Piping a remote script to bash is a complete trust delegation &mdash; you are executing arbitrary code from a remote server with full access to your CI environment's secrets. The fix: download the script, verify its SHA256 hash against a published value, then execute. Or better: use the official GitHub Action (which pins a specific version by commit hash).</p>
+      <div class="pill-row"><span class="pill pp">curl | bash pattern</span><span class="pill py">CI environment secrets exposed</span><span class="pill pa">Lesson: verify before executing</span></div>
+    </div>
+  </div>
+</div>
+<!-- INTERMEDIATE: SLSA -->
+<div class="section">
+  <div class="eyebrow">&#x1F7E1; Intermediate &mdash; SLSA Framework</div>
+  <div class="sec-title">Supply chain Levels for Software Artefacts</div>
+  <div class="sec-sub">SLSA (pronounced "salsa") is a security framework from Google that defines four levels of supply chain integrity. Each level adds requirements that make it progressively harder for an attacker to tamper with the build process or its outputs. Directly motivated by SolarWinds.</div>
+
+  <div class="callout cl-teal">
+    <div class="cl-icon">&#x1F4CC;</div>
+    <div class="cl-text"><strong>What SLSA measures:</strong> SLSA asks two questions about every software artifact: (1) Can we prove <em>where</em> the source code came from? (2) Can we prove <em>how</em> the binary was built from that source? A signed binary only answers question 1. A SLSA-compliant build answers both, producing a cryptographically signed <em>provenance</em> document that records the exact build inputs, build process, and build environment that produced the artifact.</div>
+  </div>
+
+  <div class="slsa-level" id="slsa0" onclick="toggleSLSA('slsa0')">
+    <div class="sl-head">
+      <span class="sl-badge" style="background:var(--red-bg);color:var(--red);border:1px solid rgba(224,80,80,.2)">SLSA 0</span>
+      <span class="sl-title">No guarantees &mdash; where most organisations are today</span>
+      <span class="sl-tog">&#x25BC;</span>
+    </div>
+    <div class="sl-body">
+      <p>No requirements met. Build process is undocumented, manual, or not reproducible. No integrity checks on source or artifacts. Susceptible to all supply chain attacks. Most open source projects and many internal projects are here by default.</p>
+    </div>
+  </div>
+
+  <div class="slsa-level" id="slsa1" onclick="toggleSLSA('slsa1')">
+    <div class="sl-head">
+      <span class="sl-badge" style="background:var(--yellow-bg);color:var(--yellow);border:1px solid rgba(208,160,32,.2)">SLSA 1</span>
+      <span class="sl-title">Provenance exists &mdash; the build process is documented and automated</span>
+      <span class="sl-tog">&#x25BC;</span>
+    </div>
+    <div class="sl-body">
+      <h5>Requirements</h5>
+      <p>The build process must be fully scripted/automated (no manual steps), and it must generate a provenance document that records: what was built, who triggered the build, what inputs were used, and what the build process was. The provenance does not need to be signed at this level.</p>
+      <h5>What this prevents</h5>
+      <p>Accidental or unreviewed manual modifications to build outputs. Provides a basic audit trail. Does NOT prevent an attacker who has compromised the build system, because the provenance is self-reported by the same system that could be compromised.</p>
+<pre>
+<span class="ctag">SLSA 1 &mdash; GitHub Actions provenance generation</span>
+<span class="cm"># The slsa-github-generator action generates SLSA provenance automatically</span>
+name: Build with SLSA Provenance
+
+on: { push: { branches: [main] } }
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      hashes: ${{ steps.hash.outputs.hashes }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build artifact
+        run: |
+          make build
+          echo "hashes=$(sha256sum artifact.tar.gz | base64 -w0)" >> $GITHUB_OUTPUT
+        id: hash
+
+  provenance:
+    needs: [build]
+    permissions:
+      actions: read
+      id-token: write      <span class="cm"># required for OIDC signing</span>
+      contents: write
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v1.9.0
+    with:
+      base64-subjects: ${{ needs.build.outputs.hashes }}
+<span class="cm"># Produces: artifact.tar.gz.intoto.jsonl (signed provenance)</span>
+</pre>
+    </div>
+  </div>
+
+  <div class="slsa-level" id="slsa2" onclick="toggleSLSA('slsa2')">
+    <div class="sl-head">
+      <span class="sl-badge" style="background:var(--accent-bg);color:var(--accent);border:1px solid rgba(240,160,32,.2)">SLSA 2</span>
+      <span class="sl-title">Signed provenance &mdash; the build service signs its own provenance</span>
+      <span class="sl-tog">&#x25BC;</span>
+    </div>
+    <div class="sl-body">
+      <h5>Requirements (adds to L1)</h5>
+      <p>The provenance must be signed by a trusted build service (not just the developer). Source must be version controlled. The build must be hosted on a platform like GitHub Actions or Google Cloud Build that generates provenance as part of its service, not just as a script output.</p>
+      <h5>What this adds</h5>
+      <p>Because the build platform (not the developer) generates and signs the provenance, tampering with the provenance would require compromising GitHub Actions' or Google Cloud Build's signing key &mdash; significantly harder than compromising a developer's machine. Provides meaningful protection against developer workstation compromise.</p>
+    </div>
+  </div>
+
+  <div class="slsa-level" id="slsa3" onclick="toggleSLSA('slsa3')">
+    <div class="sl-head">
+      <span class="sl-badge" style="background:var(--green-bg);color:var(--green);border:1px solid rgba(48,184,112,.2)">SLSA 3</span>
+      <span class="sl-title">Hardened build &mdash; the build environment is isolated and non-forgeable</span>
+      <span class="sl-tog">&#x25BC;</span>
+    </div>
+    <div class="sl-body">
+      <h5>Requirements (adds to L2)</h5>
+      <p>The build must run in an isolated, ephemeral environment with no persistent state between builds. The provenance must be non-forgeable: it must be generated by the build platform in a way that the build instructions themselves cannot influence the provenance content. All build parameters must be recorded. No human accounts can access the build environment.</p>
+      <h5>What this adds &mdash; addressing the SolarWinds problem</h5>
+      <p>SLSA 3 is the level specifically designed to address the SolarWinds attack. The build environment is ephemeral and isolated: there is no persistent build server to compromise. The provenance is generated by the hosting platform (GitHub Actions) rather than by the build script, so a compromised build script cannot forge its own provenance. An attacker would need to compromise GitHub Actions' infrastructure itself, not just access the build server.</p>
+<pre>
+<span class="ctag">SLSA 3 provenance verification</span>
+<span class="cm"># Install slsa-verifier</span>
+$ go install github.com/slsa-framework/slsa-verifier/v2/cli/slsa-verifier@latest
+
+<span class="cm"># Verify that artifact was built from a specific repository at a specific tag</span>
+$ slsa-verifier verify-artifact \
+    artifact.tar.gz \
+    --provenance-path artifact.tar.gz.intoto.jsonl \
+    --source-uri github.com/myorg/myrepo \
+    --source-tag v1.2.3
+
+PASSED: SLSA verification passed
+
+<span class="cm"># What this proves:</span>
+<span class="cm"># 1. The artifact was built from github.com/myorg/myrepo at tag v1.2.3</span>
+<span class="cm"># 2. It was built using GitHub Actions (not a developer's laptop)</span>
+<span class="cm"># 3. The provenance was signed by GitHub's OIDC identity provider</span>
+<span class="cm"># 4. No one modified the artifact after the build completed</span>
+<span class="cm">#</span>
+<span class="cm"># If an attacker injected code at build time: the provenance would be absent</span>
+<span class="cm"># or would point to a different source ref → verification fails</span>
+
+<span class="cm"># Kyverno policy: reject images without SLSA 3 provenance</span>
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata: { name: require-slsa-provenance }
+spec:
+  validationFailureAction: Enforce
+  rules:
+    - name: check-provenance
+      match: { resources: { kinds: [Pod] } }
+      verifyImages:
+        - imageReferences: ["registry.io/*"]
+          attestors:
+            - entries:
+                - keyless:
+                    subject: "https://github.com/myorg/*"
+                    issuer: "https://token.actions.githubusercontent.com"
+          attestations:
+            - predicateType: https://slsa.dev/provenance/v0.2
+</pre>
+    </div>
+  </div>
+</div>
+
+<!-- INTERMEDIATE: SIGSTORE -->
+<div class="section">
+  <div class="eyebrow">&#x1F7E1; Intermediate &mdash; Sigstore &amp; Provenance</div>
+  <div class="sec-title">Cryptographic provenance with Sigstore</div>
+  <div class="sec-sub">Sigstore is a set of open-source tools (cosign, Rekor, Fulcio) that make signing software artifacts as easy as using git, without requiring developers to manage private key infrastructure.</div>
+
+  <div class="panel" id="pan-sigstore">
+    <div class="panel-h" onclick="tp('pan-sigstore')">
+      <div class="panel-dot" style="background:var(--teal)"></div>
+      <div class="panel-title">How Sigstore works &mdash; keyless signing via OIDC</div>
+      <div class="panel-sub">The architecture: cosign, Fulcio CA, and Rekor transparency log</div>
+      <div class="panel-tog">&#x25BC;</div>
+    </div>
+    <div class="panel-body">
+      <p>Traditional code signing requires: generate a key pair, protect the private key forever, manage revocation, distribute the public key. Sigstore's keyless signing eliminates all of this. The signing key is ephemeral: it is generated, used to sign, and immediately discarded. The identity is not the key &mdash; it is the OIDC identity (GitHub Actions OIDC, Google, Microsoft) that proves who requested the signing operation.</p>
+<pre>
+<span class="ctag">Sigstore architecture</span>
+<span class="cm"># Three components:
+# 1. cosign:   CLI tool for signing and verifying
+# 2. Fulcio:   Certificate Authority that issues short-lived signing certs
+#              tied to OIDC identities (GitHub Actions workflow identity)
+# 3. Rekor:    Immutable transparency log recording all signing events
+#              Append-only; tampering is detectable by merkle tree
+
+# Keyless signing flow in GitHub Actions:
+# 1. Workflow requests OIDC token from GitHub (proves: "I am workflow X in
+#    repo Y at commit Z, triggered by push to main")
+# 2. cosign sends OIDC token to Fulcio
+# 3. Fulcio verifies OIDC token, issues 10-minute X.509 cert
+#    Subject: https://github.com/myorg/myrepo/.github/workflows/build.yml@refs/heads/main
+# 4. cosign signs the artifact with the ephemeral key, discards the key
+# 5. Signature + cert chain stored in Rekor transparency log
+# 6. Rekor returns a signed timestamp (tlog entry)
+# 7. All of: image, signature, cert, tlog entry stored together</span>
+
+<span class="cm"># Signing a container image (keyless, in GitHub Actions)</span>
+- name: Install cosign
+  uses: sigstore/cosign-installer@v3
+
+- name: Sign image
+  run: |
+    cosign sign \
+      --yes \
+      registry.io/myapp@${{ steps.build.outputs.digest }}
+  <span class="cm"># --yes: non-interactive, uses OIDC automatically in Actions</span>
+  <span class="cm"># No COSIGN_PASSWORD needed: keyless mode</span>
+  <span class="cm"># Signature stored in registry alongside image</span>
+
+<span class="cm"># Verifying on consumer side (e.g., in admission controller)</span>
+$ cosign verify \
+    --certificate-identity-regexp "https://github.com/myorg/myrepo/.*" \
+    --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
+    registry.io/myapp:1.2.3
+
+Verification for registry.io/myapp:1.2.3 --
+The following checks were performed on each of these signatures:
+  - The cosign claims were validated
+  - Existence of the claims in the transparency log was verified offline
+  - The code-signing certificate claims were validated
+
+[{"critical":{"identity":{"docker-reference":"registry.io/myapp"},
+  "image":{"docker-manifest-digest":"sha256:abc123..."},
+  "type":"cosign container image signature"},
+  "optional":{
+    "Bundle":{"SignedEntryTimestamp":"...","Payload":{"..."}},
+    "Issuer":"https://token.actions.githubusercontent.com",
+    "Subject":"https://github.com/myorg/myrepo/.github/workflows/build.yml@refs/heads/main"
+  }}]
+</pre>
+    </div>
+  </div>
+
+  <div class="panel" id="pan-intoto">
+    <div class="panel-h" onclick="tp('pan-intoto')">
+      <div class="panel-dot" style="background:var(--purple)"></div>
+      <div class="panel-title">in-toto &mdash; end-to-end supply chain verification</div>
+      <div class="panel-sub">Verifying every step from source commit to deployed artifact, not just the final signature</div>
+      <div class="panel-tog">&#x25BC;</div>
+    </div>
+    <div class="panel-body">
+      <p>cosign verifies that an artifact was signed by a trusted party. in-toto verifies the entire supply chain: that the artifact went through exactly the steps defined in a policy, in the right order, performed by the right parties. It is the difference between "someone we trust signed this" and "this was built from commit ABC, passed these tests, was scanned, and was signed by these specific parties at each step."</p>
+<pre>
+<span class="ctag">in-toto link metadata concept</span>
+<span class="cm"># in-toto defines a "layout" (the policy):
+# Step 1: Checkout source (performed by: developer key, from: tag v1.2.3)
+# Step 2: Run tests (performed by: CI key, result: all pass)
+# Step 3: Build artifact (performed by: build key)
+# Step 4: Scan (performed by: security key, no CRITICAL findings)
+# Step 5: Sign and push (performed by: release key)
+# 
+# Each step produces a "link" file: a signed record that the step
+# was performed, by whom, and what the inputs/outputs were.
+# 
+# Verification: replay the layout against all link files.
+# If any step is missing, done out of order, or done by wrong party:
+# verification fails. Attacker who inserts a step cannot forge a link
+# signed by the legitimate parties.</span>
+
+<span class="cm"># SLSA provenance IS an in-toto attestation with a SLSA predicate</span>
+<span class="cm"># The "statement" envelope:</span>
+{
+  <span class="cs">"_type"</span>: <span class="cs">"https://in-toto.io/Statement/v0.1"</span>,
+  <span class="cs">"predicateType"</span>: <span class="cs">"https://slsa.dev/provenance/v0.2"</span>,
+  <span class="cs">"subject"</span>: [{
+    <span class="cs">"name"</span>: <span class="cs">"registry.io/myapp"</span>,
+    <span class="cs">"digest"</span>: { <span class="cs">"sha256"</span>: <span class="cs">"abc123..."</span> }
+  }],
+  <span class="cs">"predicate"</span>: {
+    <span class="cs">"builder"</span>: { <span class="cs">"id"</span>: <span class="cs">"https://github.com/actions/runner"</span> },
+    <span class="cs">"buildType"</span>: <span class="cs">"https://github.com/actions/workflow"</span>,
+    <span class="cs">"invocation"</span>: {
+      <span class="cs">"configSource"</span>: {
+        <span class="cs">"uri"</span>: <span class="cs">"git+https://github.com/myorg/myrepo@refs/heads/main"</span>,
+        <span class="cs">"digest"</span>: { <span class="cs">"sha1"</span>: <span class="cs">"deadbeef..."</span> },
+        <span class="cs">"entryPoint"</span>: <span class="cs">".github/workflows/build.yml"</span>
+      }
+    },
+    <span class="cs">"materials"</span>: [{
+      <span class="cs">"uri"</span>: <span class="cs">"git+https://github.com/myorg/myrepo"</span>,
+      <span class="cs">"digest"</span>: { <span class="cs">"sha1"</span>: <span class="cs">"deadbeef..."</span> }
+    }]
+  }
+}
+</pre>
+    </div>
+  </div>
+
+  <div class="panel" id="pan-scorecard">
+    <div class="panel-h" onclick="tp('pan-scorecard')">
+      <div class="panel-dot" style="background:var(--blue)"></div>
+      <div class="panel-title">OpenSSF Scorecard &mdash; measuring dependency health</div>
+      <div class="panel-sub">Automatically scoring your dependencies on 18 security checks</div>
+      <div class="panel-tog">&#x25BC;</div>
+    </div>
+    <div class="panel-body">
+      <p>OpenSSF Scorecard is a tool that automatically evaluates an open source project's security posture across 18 checks: branch protection, code review required, dependency pinning, signed releases, CI/CD security, and more. It produces a score from 0-10. Use it to evaluate the supply chain risk of your critical dependencies &mdash; a dependency with a Scorecard of 2/10 on a project handling payment data should raise concerns.</p>
+<pre>
+<span class="ctag">OpenSSF Scorecard</span>
+<span class="cm"># Install</span>
+$ go install github.com/ossf/scorecard/v4/cmd/scorecard@latest
+
+<span class="cm"># Score a dependency you use</span>
+$ scorecard --repo github.com/psf/requests \
+    --auth-token $GITHUB_TOKEN \
+    --show-details
+
+RESULTS
+-------
+Aggregate score: 7.4 / 10
+
+Check Name                          Score   Reason
+Code-Review                         10/10   all changesets reviewed
+Branch-Protection                    9/10   branch protection on main
+Dependency-Update-Tool               10/10  Dependabot enabled
+Pinned-Dependencies                   3/10  some Actions not pinned
+Signed-Releases                      10/10  releases signed
+Binary-Artifacts                     10/10  no binaries in repo
+Security-Policy                       10/10  SECURITY.md present
+Vulnerabilities                      10/10  no open vulnerabilities
+Dangerous-Workflow                   10/10  no dangerous patterns
+Maintained                           10/10  active maintenance
+
+<span class="cm"># Low-scoring checks to watch:</span>
+<span class="cm"># Pinned-Dependencies: unpinned Actions = supply chain risk</span>
+<span class="cm"># Signed-Releases: no signing = no integrity verification</span>
+<span class="cm"># Maintained: abandoned projects accumulate unpatched CVEs</span>
+
+<span class="cm"># GitHub Actions integration: score your own repo</span>
+- uses: ossf/scorecard-action@v2.3.1
+  with:
+    results_file: results.sarif
+    results_format: sarif
+    publish_results: true
+</pre>
+    </div>
+  </div>
+</div>
+<!-- ADVANCED: HARDENED PIPELINE CONTROLS -->
+<div class="section">
+  <div class="eyebrow">&#x1F534; Advanced &mdash; Hardened Pipeline Controls</div>
+  <div class="sec-title">Making your build pipeline supply-chain-resistant</div>
+  <div class="sec-sub">Each control below addresses a specific attack vector from the taxonomy. Together they form a hardened pipeline that leaves significantly less room for supply chain compromise.</div>
+
+  <div class="tool-tabs">
+    <div class="tool-tab-bar">
+      <div class="ttab active" onclick="switchTab(this,'t-pin')">Dependency Pinning</div>
+      <div class="ttab" onclick="switchTab(this,'t-actions')">Actions Hardening</div>
+      <div class="ttab" onclick="switchTab(this,'t-registry')">Private Registry</div>
+      <div class="ttab" onclick="switchTab(this,'t-admission')">Admission Control</div>
+      <div class="ttab" onclick="switchTab(this,'t-ir')">Incident Response</div>
+    </div>
+
+    <div class="tool-pane active" id="t-pin">
+      <p style="font-size:13.5px;color:var(--ink2);line-height:1.75;margin-bottom:.85rem;">Pinning dependencies by cryptographic hash means a compromised package registry cannot serve a different version of a package that matches your version specifier. The hash must match exactly or the install fails. This is the most direct defence against typosquatting, version-overwrite attacks, and compromised registries.</p>
+<pre>
+<span class="ctag">Python &mdash; hash pinning in requirements.lock</span>
+<span class="cm"># Bad: version range can resolve to different packages over time</span>
+<span class="lb">requests&gt;=2.28.0,&lt;3.0.0</span>
+
+<span class="cm"># Good: exact version + hash</span>
+<span class="lg">requests==2.31.0 \</span>
+<span class="lg">    --hash=sha256:58cd2187423839... \  <span class="cm"># wheel hash</span></span>
+<span class="lg">    --hash=sha256:942c5a758f98... \   <span class="cm"># sdist hash</span></span>
+
+<span class="cm"># Generate a pinned lock file:</span>
+$ pip-compile requirements.in \
+    --generate-hashes \
+    --output-file requirements.lock
+
+<span class="cm"># Install from pinned file (fails if any hash doesn't match)</span>
+$ pip install -r requirements.lock --require-hashes
+
+<span class="cm"># Node.js: package-lock.json includes integrity hashes automatically</span>
+<span class="cm"># Use npm ci (not npm install) in CI &mdash; ci enforces the lock file exactly:</span>
+$ npm ci   <span class="cm"># fails if package-lock.json doesn't match package.json</span>
+           <span class="cm"># does NOT update package-lock.json</span>
+           <span class="cm"># verifies package integrity hashes</span>
+
+<span class="cm"># Go: go.sum is the integrity database &mdash; always commit it</span>
+$ GONOSUMCHECK="" go mod verify  <span class="cm"># verify all modules in go.sum</span>
+
+<span class="cm"># Rust: Cargo.lock includes exact checksums, Cargo verifies them</span>
+$ cargo fetch --locked   <span class="cm"># fail if Cargo.lock not up to date</span>
+</pre>
+    </div>
+
+    <div class="tool-pane" id="t-actions">
+      <p style="font-size:13.5px;color:var(--ink2);line-height:1.75;margin-bottom:.85rem;">GitHub Actions are supply chain components. When you use <code>actions/checkout@v4</code>, you are executing code from GitHub's repository at a mutable tag. If that tag is overwritten with malicious code (or the actions account is compromised), your pipeline runs the attacker's code with access to all your CI secrets. Pin Actions by commit SHA to get immutable references.</p>
+<pre>
+<span class="ctag">GitHub Actions hardening</span>
+<span class="cm"># BAD: mutable tags can be overwritten</span>
+<span class="lb">- uses: actions/checkout@v4</span>
+<span class="lb">- uses: docker/build-push-action@v5</span>
+
+<span class="cm"># GOOD: pin to specific commit SHA (immutable)</span>
+<span class="lg">- uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11  <span class="cm"># v4.1.1</span></span>
+<span class="lg">- uses: docker/build-push-action@4a13e500e55cf31b7a5d59a38ab2040ab0f42f56  <span class="cm"># v5.1.0</span></span>
+
+<span class="cm"># Even better: add the version as a comment so updates are reviewable
+# Use: Dependabot for GitHub Actions to keep SHA pins up to date automatically</span>
+
+<span class="cm"># Principle of least privilege for workflow permissions</span>
+permissions:
+<span class="lg">  contents: read      <span class="cm"># minimum: read the repo</span></span>
+<span class="lg">  packages: write     <span class="cm"># only if pushing to GitHub Packages</span></span>
+<span class="lg">  id-token: write     <span class="cm"># only if using OIDC (cosign, SLSA)</span></span>
+<span class="cm"># Default: write access to all permissions &mdash; too broad</span>
+
+<span class="cm"># NEVER pipe remote scripts to shell</span>
+<span class="lb">- run: curl https://example.com/install.sh | bash  <span class="cm"># executes arbitrary remote code</span></span>
+<span class="lg">- run: |</span>
+<span class="lg">    curl -o install.sh https://example.com/install.sh</span>
+<span class="lg">    echo "abc123...expected_hash  install.sh" | sha256sum --check</span>
+<span class="lg">    bash install.sh</span>
+
+<span class="cm"># Use OIDC (not static tokens) for cloud authentication</span>
+<span class="lb">env:</span>
+<span class="lb">  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_KEY }}      <span class="cm"># static, long-lived</span></span>
+<span class="lg">permissions:</span>
+<span class="lg">  id-token: write                                 <span class="cm"># keyless via OIDC</span></span>
+<span class="lg">- uses: aws-actions/configure-aws-credentials@v4</span>
+<span class="lg">  with:</span>
+<span class="lg">    role-to-assume: arn:aws:iam::123:role/GitHubActions</span>
+<span class="lg">    aws-region: us-east-1</span>
+<span class="cm"># Short-lived credentials, no static secrets to leak</span>
+</pre>
+    </div>
+
+    <div class="tool-pane" id="t-registry">
+      <p style="font-size:13.5px;color:var(--ink2);line-height:1.75;margin-bottom:.85rem;">A private registry acts as an approved package allowlist. Instead of pulling packages directly from public registries (PyPI, npmjs, Docker Hub), all packages are proxied through your private registry. Security teams can scan, approve, and block packages centrally. Dependency confusion attacks are blocked by configuration.</p>
+<pre>
+<span class="ctag">Private registry with Artifactory / AWS CodeArtifact</span>
+<span class="cm"># AWS CodeArtifact: proxy PyPI through your private registry</span>
+
+<span class="cm"># 1. Create domain and repository</span>
+$ aws codeartifact create-domain --domain mycompany
+$ aws codeartifact create-repository \
+    --domain mycompany \
+    --repository myapp-python \
+    --upstreams repositoryName=pypi-store
+<span class="cm"># pypi-store is the AWS-managed PyPI proxy</span>
+
+<span class="cm"># 2. Configure pip to use only your private registry</span>
+$ aws codeartifact login \
+    --tool pip \
+    --repository myapp-python \
+    --domain mycompany
+
+<span class="cm"># This sets pip's index URL to your CodeArtifact endpoint</span>
+<span class="cm"># --index-url (replaces PyPI), NOT --extra-index-url (dangerous)</span>
+
+<span class="cm"># 3. All pip installs now go through your registry:</span>
+<span class="cm">#  - Public packages: fetched from PyPI and cached in your registry</span>
+<span class="cm">#  - Private packages: served from your registry only</span>
+<span class="cm">#  - Dependency confusion: private packages cannot be shadowed</span>
+<span class="cm">#    because your registry has priority over its upstream</span>
+
+<span class="cm"># 4. Block unapproved packages via CodeArtifact package policies</span>
+$ aws codeartifact put-package-policy \
+    --domain mycompany \
+    --repository myapp-python \
+    --format pypi \
+    --policy-document file://policy.json
+<span class="cm"># policy.json: allow only packages on your approved list</span>
+
+<span class="cm"># Docker: use ECR as private registry, enforce no public pulls</span>
+<span class="lg">imagePullPolicy: Always</span>
+<span class="lg">image: 123456789.dkr.ecr.us-east-1.amazonaws.com/myapp:sha256-abc123</span>
+<span class="cm"># Enforce via OPA: reject any image not from ECR</span>
+</pre>
+    </div>
+
+    <div class="tool-pane" id="t-admission">
+      <p style="font-size:13.5px;color:var(--ink2);line-height:1.75;margin-bottom:.85rem;">Admission control policies at the Kubernetes level enforce that only signed, scanned, and provenance-verified images can be deployed. An attacker who compromises a developer's machine and pushes a malicious image cannot deploy it if the admission controller rejects it for lack of a valid signature or provenance.</p>
+<pre>
+<span class="ctag">Kyverno &mdash; supply chain admission policies</span>
+<span class="cm"># Policy 1: require cosign signature on all images</span>
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata: { name: require-signed-images }
+spec:
+  validationFailureAction: Enforce
+  rules:
+    - name: verify-image-signature
+      match: { resources: { kinds: [Pod], namespaces: [production] } }
+      verifyImages:
+        - imageReferences: ["registry.io/*"]
+          attestors:
+            - entries:
+                - keyless:
+                    subject: "https://github.com/myorg/myrepo/.github/workflows/build.yml@refs/heads/main"
+                    issuer: "https://token.actions.githubusercontent.com"
+<span class="cm"># Rejects any image in production not signed by the exact workflow</span>
+
+<span class="cm"># Policy 2: require SLSA provenance attestation</span>
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata: { name: require-slsa-provenance }
+spec:
+  validationFailureAction: Enforce
+  rules:
+    - name: verify-provenance
+      match: { resources: { kinds: [Pod], namespaces: [production] } }
+      verifyImages:
+        - imageReferences: ["registry.io/*"]
+          attestors:
+            - entries:
+                - keyless:
+                    subject: "https://github.com/myorg/myrepo/*"
+                    issuer: "https://token.actions.githubusercontent.com"
+          attestations:
+            - predicateType: https://slsa.dev/provenance/v0.2
+              conditions:
+                - all:
+                  - key: "{{ predicate.builder.id }}"
+                    operator: Equals
+                    value: "https://github.com/actions/runner"
+<span class="cm"># Rejects images without a valid SLSA provenance attestation
+# Image must have been built by GitHub Actions (not a developer laptop)</span>
+
+<span class="cm"># Policy 3: require Trivy scan attestation (no CRITICAL vulns)</span>
+<span class="cm"># (Store scan results as cosign attestation, verify in admission)</span>
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata: { name: require-vuln-scan }
+spec:
+  validationFailureAction: Enforce
+  rules:
+    - name: verify-scan
+      match: { resources: { kinds: [Pod], namespaces: [production] } }
+      verifyImages:
+        - imageReferences: ["registry.io/*"]
+          attestations:
+            - predicateType: https://trivy.aquasec.com/scan/v2
+              conditions:
+                - all:
+                  - key: "{{ predicate.Results[].Vulnerabilities[] | [?Severity == 'CRITICAL'] | length(@) }}"
+                    operator: Equals
+                    value: "0"
+</pre>
+    </div>
+
+    <div class="tool-pane" id="t-ir">
+      <p style="font-size:13.5px;color:var(--ink2);line-height:1.75;margin-bottom:.85rem;">When a supply chain incident is discovered (compromised dependency, pipeline injection, malicious package), the response is different from a normal security incident. The key challenges: the compromise may have already built and deployed artifacts you are currently running, the blast radius is potentially all services that consumed the affected component, and the evidence is in your artifact store and build logs.</p>
+<pre>
+<span class="ctag">Supply chain incident response playbook</span>
+<span class="cm"># STEP 1: Blast radius assessment (first 30 minutes)
+# Query your SBOM database: which services include the affected component?</span>
+$ curl "$DTRACK_URL/api/v1/component/search?purl=pkg:pypi/xz@5.6.1" \
+    -H "X-Api-Key: $DT_API_KEY" | jq '.[] | .project.name'
+<span class="cm"># Returns: all projects using the affected xz version</span>
+
+<span class="cm"># If no SBOM database: query your artifact registry for all image SBOMs</span>
+$ for image in $(aws ecr describe-images --repository-name myapp \
+    --query 'imageDetails[*].imageDigest' --output text); do
+    cosign verify-attestation \
+      --type cyclonedx \
+      --certificate-identity-regexp '.*' \
+      --certificate-oidc-issuer 'https://token.actions.githubusercontent.com' \
+      registry.io/myapp@$image 2>/dev/null | \
+    jq -r '.payload | @base64d | fromjson | .predicate.components[]
+           | select(.purl | test("xz|liblzma")) | .purl'
+  done
+
+<span class="cm"># STEP 2: Determine exploitability
+# Was the affected version in scope for the known attack?
+# Was the vulnerable code path reachable from your application?
+# Consult VEX document if available; create one if not.</span>
+
+<span class="cm"># STEP 3: Stop the bleeding
+# Block deployment of any image containing the affected package:</span>
+$ kubectl annotate clusterpolicy require-signed-images \
+    kyverno.io/policy-exception='deny-xz-5.6.1'
+<span class="cm"># Emergency NetworkPolicy to block compromised service's egress:</span>
+$ kubectl apply -f emergency-networkpolicy.yaml
+
+<span class="cm"># STEP 4: Rebuild and redeploy
+# Bump the dependency to a patched version
+# Rebuild all affected images from scratch in a clean environment
+# Verify the new build's SLSA provenance before deploying
+# Rotate any secrets that were accessible to compromised processes</span>
+
+<span class="cm"># STEP 5: Post-incident
+# Document what was affected and what was done
+# Review: how long was the compromised version running?
+# Improve: what detection would have caught this sooner?</span>
+</pre>
+    </div>
+  </div>
+</div>
+
+<!-- ADVANCED: COMPLETE PIPELINE -->
+<div class="section">
+  <div class="eyebrow">&#x1F534; Advanced &mdash; Complete Hardened Pipeline</div>
+  <div class="sec-title">A GitHub Actions pipeline with full supply chain controls</div>
+  <div class="sec-sub">Every control assembled into a single production-ready workflow: pinned actions by SHA, OIDC cloud auth, SBOM generation, image signing, SLSA provenance, and admission policy enforcement.</div>
+
+  <div class="panel" id="pan-pipeline">
+    <div class="panel-h" onclick="tp('pan-pipeline')">
+      <div class="panel-dot" style="background:var(--accent)"></div>
+      <div class="panel-title">Complete supply-chain-hardened build pipeline</div>
+      <div class="panel-sub">From source commit to signed, attested, SLSA-compliant artifact in a Kubernetes cluster</div>
+      <div class="panel-tog">&#x25BC;</div>
+    </div>
+    <div class="panel-body">
+<pre>
+<span class="ctag">.github/workflows/secure-build.yml</span>
+name: Secure Supply Chain Build
+
+on:
+  push: { branches: [main], tags: ["v*"] }
+
+permissions:
+<span class="lg">  contents: read</span>
+<span class="lg">  packages: write</span>
+<span class="lg">  id-token: write    <span class="cm"># required for OIDC signing</span></span>
+<span class="lg">  security-events: write</span>
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE: ghcr.io/${{ github.repository }}
+
+jobs:
+  build-and-attest:
+    runs-on: ubuntu-latest
+    outputs:
+      digest: ${{ steps.push.outputs.digest }}
+
+    steps:
+      <span class="cm"># ── All actions pinned by commit SHA (not mutable tag) ────────</span>
+<span class="lg">      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11  <span class="cm"># v4.1.1</span></span>
+
+      <span class="cm"># ── Authenticate to registry via OIDC (no static tokens) ──────</span>
+<span class="lg">      - uses: docker/login-action@343f7c4344506bcbf9b4de18042ae17996df046d  <span class="cm"># v3</span></span>
+<span class="lg">        with:</span>
+<span class="lg">          registry: ${{ env.REGISTRY }}</span>
+<span class="lg">          username: ${{ github.actor }}</span>
+<span class="lg">          password: ${{ secrets.GITHUB_TOKEN }}  <span class="cm"># short-lived, OIDC-backed</span></span>
+
+      <span class="cm"># ── Verify dependencies before build ──────────────────────────</span>
+      - name: Verify dependency hashes
+        run: pip install -r requirements.lock --require-hashes --dry-run
+
+      <span class="cm"># ── Build image ────────────────────────────────────────────────</span>
+<span class="lg">      - uses: docker/build-push-action@4a13e500e55cf31b7a5d59a38ab2040ab0f42f56  <span class="cm"># v5</span></span>
+        id: push
+        with:
+          context: .
+          push: true
+          tags: ${{ env.IMAGE }}:${{ github.sha }}
+          provenance: true   <span class="cm"># requests BuildKit SLSA provenance</span>
+          sbom: true         <span class="cm"># generate SBOM during build</span>
+
+      <span class="cm"># ── Security scan: fail on CRITICAL before attesting ──────────</span>
+<function_calls>
+<invoke name="bash_tool">
+<parameter name="command">cat >> /home/claude/l17.html << 'EOF2'
+      - name: Trivy image scan
+        uses: aquasecurity/trivy-action@62f47f6a9a8c46467efff87e3e07b06a02f38a5b  # v0.16
+        with:
+          image-ref: ${{ env.IMAGE }}@${{ steps.push.outputs.digest }}
+          severity: CRITICAL,HIGH
+          exit-code: 1
+          ignore-unfixed: true
+          format: sarif
+          output: trivy.sarif
+
+      - uses: github/codeql-action/upload-sarif@4355c29c9543f09abe5826e7f42ec3d1b0dafdc3
+        if: always()
+        with: { sarif_file: trivy.sarif }
+
+      <span class="cm"># ── Generate SBOM and attach as attestation ───────────────────</span>
+      - name: Generate SBOM
+        uses: anchore/sbom-action@fd74a6fb98a8a574ff48f6c2dcc7e1f45ca3a36c  # v0.15
+        with:
+          image: ${{ env.IMAGE }}@${{ steps.push.outputs.digest }}
+          format: cyclonedx-json
+          output-file: sbom.cdx.json
+          artifact-name: sbom-${{ github.sha }}.cdx.json
+
+      <span class="cm"># ── Sign image with cosign (keyless OIDC) ─────────────────────</span>
+      - uses: sigstore/cosign-installer@9614fae9e5c5edd3c96fff4f7bbf0afb4df6fdcb  # v3.3
+      - name: Sign image
+        run: |
+          cosign sign --yes \
+            ${{ env.IMAGE }}@${{ steps.push.outputs.digest }}
+
+      <span class="cm"># ── Attest SBOM to image ──────────────────────────────────────</span>
+      - name: Attest SBOM
+        run: |
+          cosign attest --yes \
+            --predicate sbom.cdx.json \
+            --type cyclonedx \
+            ${{ env.IMAGE }}@${{ steps.push.outputs.digest }}
+
+      <span class="cm"># ── Generate and attach SLSA provenance ───────────────────────</span>
+      - name: Generate artifact hash
+        id: hash
+        run: |
+          echo "hashes=$(echo '${{ steps.push.outputs.digest }}' | base64 -w0)" >> $GITHUB_OUTPUT
+
+  slsa-provenance:
+    needs: build-and-attest
+    permissions:
+      actions: read
+      id-token: write
+      contents: write
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v1.9.0
+    with:
+      image: ${{ needs.build-and-attest.outputs.image }}
+      digest: ${{ needs.build-and-attest.outputs.digest }}
+      registry-username: ${{ github.actor }}
+    secrets:
+      registry-password: ${{ secrets.GITHUB_TOKEN }}
+    <span class="cm"># Produces SLSA 3 provenance:
+    # - Signed by GitHub Actions OIDC (not the workflow itself)
+    # - Records: source commit, workflow file, build environment
+    # - Verifiable: slsa-verifier can confirm this ran in GitHub Actions</span>
+EOF2
+echo "Pipeline continued: $(wc -l < /home/claude/l17.html) lines"</pre>
+    </div>
+  </div>
+</div>
+
+<!-- QUIZ -->
+<div class="section">
+  <div class="eyebrow">Knowledge Check</div>
+  <div class="sec-title">Supply chain security interview questions</div>
+  <div class="sec-sub">These questions appear in AppSec, platform security, and senior engineer interviews.</div>
+
+  <div class="quiz-block">
+    <div class="quiz-q">Q1. How did the SolarWinds attack bypass code review, SAST, and signature verification — all of which were presumably in place — and what architectural control would have detected or prevented it?</div>
+    <div class="quiz-opts" id="q1">
+      <div class="qo" onclick="doQ('q1',this,'wrong')">The attack succeeded because SolarWinds had no security controls at all</div>
+      <div class="qo" onclick="doQ('q1',this,'correct')">The malicious code was injected at build time, not at code-review time. Code review saw clean source code. SAST scanned clean source code. The binary was then signed by SolarWinds' own legitimate certificate after the malicious injection during compilation. All of these controls operate on source code or verify that the binary was signed by the expected party — but none verified that the binary was built only from the reviewed source code. SLSA provenance addresses this: it produces a cryptographically signed record that a specific binary was built from a specific source commit on a specific build platform. If the build server injects code, the provenance either cannot be produced (the signing key is held by the build platform, not the server) or the provenance shows a mismatch between source and binary.</div>
+      <div class="qo" onclick="doQ('q1',this,'wrong')">Better SAST rules would have detected the injected code</div>
+      <div class="qo" onclick="doQ('q1',this,'wrong')">Multi-party code review would have prevented it</div>
+    </div>
+    <div class="quiz-exp" id="q1-exp">This is the fundamental insight behind SLSA: signing proves who signed, but not what was signed or how it was built. SolarWinds' code signing certificate proved the binary came from SolarWinds, which was true — it just also contained attacker-injected code. The missing control is build provenance: a cryptographic proof that the binary was produced from exactly the reviewed source code, on a specific build platform, without modification. SLSA 3's non-forgeable provenance is generated by the build platform (GitHub Actions, Google Cloud Build) using an OIDC key that the build script itself cannot access. This means even if the build script is malicious, it cannot forge provenance claiming it ran on a clean system from clean source.</div>
+  </div>
+
+  <div class="quiz-block">
+    <div class="quiz-q">Q2. What specifically made the XZ Utils backdoor so difficult to detect, and what tooling exists today that might have flagged the attack earlier?</div>
+    <div class="quiz-opts" id="q2">
+      <div class="qo" onclick="doQ('q2',this,'wrong')">It was difficult because the attacker used sophisticated obfuscation that no tool could detect</div>
+      <div class="qo" onclick="doQ('q2',this,'wrong')">It was only detectable by manual source code review which no automated tool can replace</div>
+      <div class="qo" onclick="doQ('q2',this,'correct')">The attack operated at three layers simultaneously: (1) social engineering that was inherently undetectable by code tools, (2) build-system injection (the malicious code was in the build scripts, not the source being reviewed), and (3) the backdoor targeted the test harness path so it would not appear in normal binary analysis. Tooling that could have flagged it earlier: OpenSSF Scorecard (would show the project's maintainer health declining), binary diffing between releases (unexpected size change in the built binary vs expected from source diff), Sigstore transparency log (a maintainer pushing releases from a new machine or identity would be visible), and reproducible builds (building from the same source should produce the same binary — it wouldn't here).</div>
+      <div class="qo" onclick="doQ('q2',this,'wrong')">Dependency scanning would have detected the malicious code in the library</div>
+    </div>
+    <div class="quiz-exp" id="q2-exp">XZ is particularly instructive because it reveals the limits of purely technical controls. The social engineering phase (two years of legitimate contributions) is not detectable by SAST, dependency scanning, or SBOM analysis. What those tools missed that other approaches might have caught: (1) The suspicious change in build infrastructure — the malicious code was added to the build system, not the main source. Binary reproducibility tools would show that building from the same source produces a different binary. (2) The new maintainer's trust trajectory — OpenSSF Scorecard tracks maintainer health and unusual patterns. (3) The release process changing — Sigstore's transparency log shows who signed releases and from which identity. A new signing identity should trigger review. (4) CI test infrastructure — the attack targeted test harnesses specifically, something fuzzing of build artifacts might reveal. The honest answer is that some of XZ required Andres Freund's combination of curiosity and expertise — but reproducible builds and binary transparency logs are the closest systematic controls.</div>
+  </div>
+
+  <div class="quiz-block">
+    <div class="quiz-q">Q3. Your CI/CD pipeline includes the step <code>curl https://tool-vendor.com/install.sh | bash</code>. What are the security risks and what is the correct alternative?</div>
+    <div class="quiz-opts" id="q3">
+      <div class="qo" onclick="doQ('q3',this,'wrong')">Only a risk if the vendor's website is compromised; otherwise it is safe</div>
+      <div class="qo" onclick="doQ('q3',this,'wrong')">The risk is only that the script might install an outdated version</div>
+      <div class="qo" onclick="doQ('q3',this,'correct')">Three risks: (1) MITM or DNS hijack can serve a different script from the legitimate one — the script runs with full access to your CI environment's secrets. (2) The vendor's hosting can be compromised (Codecov 2021). (3) The script changes without notice — you are executing whatever is there right now, not a pinned version. Correct alternatives in priority order: (a) Use the official versioned GitHub Action (e.g., aquasecurity/trivy-action@v0.x.x) pinned by commit SHA — no bash download needed. (b) Download the script, verify its SHA256 against a published hash, then execute. (c) Pull a specific pinned container image and run the tool inside it. The principle: never execute code from a URL you have not cryptographically verified.</div>
+      <div class="qo" onclick="doQ('q3',this,'wrong')">Add a firewall rule to only allow the vendor's IP address</div>
+    </div>
+    <div class="quiz-exp" id="q3-exp">The curl-pipe-to-bash pattern is one of the most widely used and most dangerous CI patterns. It is a complete trust delegation to a remote URL at runtime. The Codecov attack exploited exactly this: the bash uploader script was modified to exfiltrate all environment variables (CI secrets) to an attacker-controlled server. The fix hierarchy: (1) Prefer official GitHub Actions pinned by commit SHA — these have no bash download, are version-controlled, and are signed. (2) If you must download a script: download it first, verify it against a known-good hash (published in the vendor's release notes or signed with their GPG key), then execute. (3) Use a container image for the tool, pulling a specific digest rather than a floating tag. The underlying principle: in a supply chain context, every external code execution is a trust decision. Make that trust decision explicit and verifiable, not implicit via a live URL.</div>
+  </div>
+</div>
+
+<!-- CHALLENGE -->
+<div class="challenge">
+  <div class="ch-ey">Capstone Challenge &mdash; Supply Chain Threat Model</div>
+  <div class="ch">
+    <h3>Harden this pipeline against supply chain attacks</h3>
+    <p class="ch-desc">Below is a simplified CI/CD pipeline for a financial services company. Identify every supply chain vulnerability, classify it against the attack taxonomy, and propose the specific control to fix each one.</p>
+    <div class="scenario">
+      <p><strong>Current pipeline (.github/workflows/build.yml):</strong></p>
+<pre style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:5px;padding:1rem;font-size:11.5px;color:rgba(255,255,255,.55);margin:.75rem 0;">
+on: { push: { branches: [main] } }
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+      - run: pip install -r requirements.txt
+      - run: curl https://security-scanner.io/scan.sh | bash
+      - uses: docker/build-push-action@v5
+        with: { push: true, tags: registry.io/app:latest }
+      - run: aws ecr get-login-password | docker login --username AWS registry.io
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET }}</pre>
+      <p><strong>requirements.txt (excerpt):</strong></p>
+<pre style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:5px;padding:.75rem;font-size:11.5px;color:rgba(255,255,255,.55);margin:.75rem 0 0;">
+django>=4.0
+requests
+cryptography>=40.0
+stripe==5.0.0</pre>
+    </div>
+    <textarea id="ch-ans" placeholder="Vulnerability 1:
+Type (from taxonomy): ...
+Attack scenario: ...
+Control: ...
+
+Vulnerability 2:
+...
+
+[List all vulnerabilities]
+
+Rewritten pipeline:
+..."></textarea>
+    <div class="btn-row">
+      <button class="btn btn-p" onclick="checkCh()">Submit</button>
+      <button class="btn btn-g" onclick="revealCh()">Reveal model answer</button>
+    </div>
+    <div class="ch-fb" id="ch-fb"></div>
+  </div>
+</div>
+
+<!-- SUMMARY -->
+<div class="section">
+  <div class="eyebrow">Quick Reference</div>
+  <div class="sec-title">Supply chain security cheat sheet</div>
+  <table>
+    <tr><th>Control</th><th>Addresses</th><th>Implementation</th><th>Key tool</th></tr>
+    <tr><td style="font-weight:700;color:var(--green)">Dependency hash pinning</td><td>Compromised registry, typosquatting, version-overwrite</td><td>pip --require-hashes, npm ci, go mod verify, cargo --locked</td><td>pip-compile --generate-hashes</td></tr>
+    <tr><td style="font-weight:700;color:var(--accent)">Action SHA pinning</td><td>Compromised Actions account, mutable tag overwrite</td><td>Pin every GitHub Action by commit SHA, not tag</td><td>Dependabot for Actions updates</td></tr>
+    <tr><td style="font-weight:700;color:var(--blue)">OIDC cloud auth</td><td>Static credential leakage from CI</td><td>id-token: write + aws-actions/configure-aws-credentials</td><td>GitHub OIDC</td></tr>
+    <tr><td style="font-weight:700;color:var(--teal)">Image signing (cosign)</td><td>Tampered registry artifact, unauthorised image</td><td>cosign sign --yes in CI; Kyverno verifyImages in K8s</td><td>Sigstore / cosign</td></tr>
+    <tr><td style="font-weight:700;color:var(--purple)">SLSA provenance</td><td>Compromised build server (SolarWinds-class attack)</td><td>slsa-github-generator SLSA 3 workflow</td><td>slsa-framework/slsa-github-generator</td></tr>
+    <tr><td style="font-weight:700;color:var(--yellow)">SBOM generation</td><td>Unknown dependency exposure (Log4Shell)</td><td>anchore/sbom-action after build; Dependency-Track for monitoring</td><td>Syft / cdxgen</td></tr>
+    <tr><td style="font-weight:700;color:var(--pink)">Private registry</td><td>Dependency confusion, unscanned public images</td><td>AWS CodeArtifact / Artifactory; --index-url (not --extra-index-url)</td><td>Artifactory / CodeArtifact</td></tr>
+    <tr><td style="font-weight:700;color:var(--red)">Admission control</td><td>Unsigned images reaching production</td><td>Kyverno ClusterPolicy verifyImages with keyless attestors</td><td>Kyverno / OPA</td></tr>
+    <tr><td style="font-weight:700;color:var(--blue)">OpenSSF Scorecard</td><td>High-risk dependency selection</td><td>Run scorecard on critical dependencies before adoption</td><td>ossf/scorecard-action</td></tr>
+    <tr><td style="font-weight:700;color:var(--orange)">No curl-pipe-bash</td><td>CI script injection (Codecov class attack)</td><td>Hash-verify downloaded scripts or use pinned container images</td><td>sha256sum --check</td></tr>
+  </table>
+</div>
+
+<!-- NAV FOOTER -->
+<div class="nav-footer">
+  <a class="nf-btn" href="#"><span class="nf-dir">&larr; Previous</span><span class="nf-title">16 &mdash; Security Architecture</span></a>
+  <a class="nf-btn next" href="#"><span class="nf-dir">Next Lesson &rarr;</span><span class="nf-title">18 &mdash; WAF</span></a>
+</div>
+
+</div>
+</div>
+
+<!-- REVEAL HTML in hidden DOM - no HTML in JS strings -->
+<div id="reveal-html" style="display:none">
+<strong>Model Answer &mdash; Supply Chain Vulnerabilities in the Pipeline</strong><br><br>
+<strong>Vulnerability 1 &mdash; GitHub Actions pinned by mutable tag (CI/CD pipeline injection):</strong><br>
+actions/checkout@v4, actions/setup-python@v5, and docker/build-push-action@v5 are all pinned by mutable tags. If any of these Action repositories is compromised (account takeover, malicious maintainer) and the attacker pushes malicious code under the same tag, your pipeline runs the attacker's code with full access to all your CI secrets and the ability to push to your registry. Attack: attacker compromises the docker/build-push-action repository, updates the v5 tag to point to malicious code that also exfiltrates the AWS credentials. Fix: pin every Action by commit SHA. Add a comment with the tag for human readability. Use Dependabot for GitHub Actions to receive PRs when new versions are available, reviewing the SHA update explicitly.<br><br>
+<strong>Vulnerability 2 &mdash; curl-pipe-bash security scanner (CI/CD script injection):</strong><br>
+curl https://security-scanner.io/scan.sh | bash executes arbitrary remote code with full access to the CI environment's secrets. If security-scanner.io is compromised (Codecov 2021), or if the script changes between runs, or if DNS is hijacked, the attacker runs code in the pipeline. In this pipeline that means access to AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, and Docker registry credentials. Fix: replace with the official GitHub Action for the scanner (pinned by commit SHA), or download the script and SHA256-verify it against a published hash before executing. Better: use a pinned container image of the scanner.<br><br>
+<strong>Vulnerability 3 &mdash; Unpinned Python dependencies (malicious dependency / version-overwrite):</strong><br>
+requirements.txt uses version ranges (django>=4.0, requests, cryptography>=40.0) rather than exact versions with hash pinning. A compromised PyPI account for any of these packages could push a malicious version that satisfies the range and gets installed on the next build. There is no cryptographic verification that the installed package is the same one that was previously tested. Fix: generate a requirements.lock file using pip-compile --generate-hashes. Install using pip install -r requirements.lock --require-hashes. The lock file pins exact versions and SHA256 hashes for every package in the full transitive tree. A compromised registry cannot serve a different package even if it matches the version range.<br><br>
+<strong>Vulnerability 4 &mdash; Static long-lived AWS credentials in secrets (CI/CD pipeline injection risk):</strong><br>
+AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY are static long-lived credentials stored as GitHub secrets. They are visible in the CI environment and accessible to any code that runs in the pipeline, including the malicious scan.sh from Vulnerability 2. Static credentials do not expire, so a leaked key gives permanent access until manually rotated. Fix: use GitHub OIDC for AWS authentication. Add permissions: id-token: write to the job. Use aws-actions/configure-aws-credentials with role-to-assume instead of static keys. The pipeline receives 15-minute temporary credentials via OIDC, with no long-lived secrets that could be exfiltrated and reused.<br><br>
+<strong>Vulnerability 5 &mdash; Image tagged as :latest (mutable tag / no provenance):</strong><br>
+The image is pushed as registry.io/app:latest. Mutable tags mean the same tag resolves to different digests over time. If Kubernetes pulls latest, it may get a different (older or compromised) image than the one just built. Additionally, latest provides no provenance: you cannot tell from the tag which commit or build produced the running image. Fix: use immutable tags: at minimum registry.io/app:${{ github.sha }}. Better: sign the image and attest SBOM and SLSA provenance at the image digest. Reference images by digest in Kubernetes deployments. Add Kyverno policy requiring signed images with valid provenance in production.<br><br>
+<strong>Vulnerability 6 &mdash; No SBOM generation (no supply chain inventory):</strong><br>
+The pipeline builds and pushes an image with no SBOM. If a critical CVE is disclosed in a dependency (log4j-class), there is no automated way to determine whether this image is affected without manually rebuilding and scanning. For a financial services company this is also likely to be a regulatory gap. Fix: add anchore/sbom-action after the build step to generate a CycloneDX SBOM. Attach it to the image as a cosign attestation. Upload to Dependency-Track for continuous monitoring. This enables sub-hour CVE impact assessment across the fleet.<br><br>
+<strong>Vulnerability 7 &mdash; No image signing (unauthorized image deployment):</strong><br>
+The built image has no cryptographic signature. Any attacker who can write to registry.io could replace the image with a malicious one. Kubernetes has no way to distinguish the legitimate image from an attacker-controlled one. Fix: add cosign sign --yes after the push step. Add a Kyverno ClusterPolicy with verifyImages requiring a valid signature from the GitHub Actions OIDC identity before any image is admitted to production.<br><br>
+<strong>Rewritten pipeline highlights:</strong><br>
+Pin all three Actions by commit SHA with version comments. Replace curl-pipe-bash with pinned official Action. Add pip install -r requirements.lock --require-hashes. Add permissions: id-token: write and use aws-actions/configure-aws-credentials with role-to-assume (OIDC). Push image tagged by git SHA (not latest). Add anchore/sbom-action for SBOM generation. Add sigstore/cosign-installer and cosign sign --yes. Add cosign attest for SBOM attestation. Add slsa-github-generator workflow for SLSA 3 provenance.
+</div>
+
+<!-- JAVASCRIPT - no HTML in JS strings -->
+<script>
+function tp(id) {
+  document.getElementById(id).classList.toggle('open');
+}
+document.getElementById('pan-taxonomy').classList.add('open');
+
+function toggleIC(id) {
+  document.getElementById(id).classList.toggle('open');
+}
+toggleIC('ic-solarwinds');
+
+function toggleSLSA(id) {
+  document.getElementById(id).classList.toggle('open');
+}
+toggleSLSA('slsa3');
+
+function switchTab(btn, paneId) {
+  var bar = btn.parentElement;
+  bar.querySelectorAll('.ttab').forEach(function(t) { t.classList.remove('active'); });
+  btn.classList.add('active');
+  var wrap = bar.parentElement;
+  wrap.querySelectorAll('.tool-pane').forEach(function(p) { p.classList.remove('active'); });
+  var pane = document.getElementById(paneId);
+  if (pane) { pane.classList.add('active'); }
+}
+
+function doQ(qid, el, result) {
+  var container = document.getElementById(qid);
+  container.querySelectorAll('.qo').forEach(function(o) { o.onclick = null; });
+  el.classList.add(result === 'correct' ? 'correct' : 'wrong');
+  var exp = document.getElementById(qid + '-exp');
+  if (exp) { exp.classList.add('show'); }
+}
+
+function checkCh() {
+  var ans = document.getElementById('ch-ans').value.toLowerCase();
+  var fb  = document.getElementById('ch-fb');
+  var checks = [
+    (ans.includes('actions') || ans.includes('action')) && (ans.includes('sha') || ans.includes('pin') || ans.includes('tag')),
+    (ans.includes('curl') || ans.includes('bash') || ans.includes('scan.sh')) && (ans.includes('hash') || ans.includes('verify') || ans.includes('codecov')),
+    (ans.includes('requirements') || ans.includes('pip') || ans.includes('dependency')) && (ans.includes('hash') || ans.includes('lock') || ans.includes('pin')),
+    (ans.includes('aws') || ans.includes('credential') || ans.includes('oidc') || ans.includes('static')) && (ans.includes('oidc') || ans.includes('role') || ans.includes('short') || ans.includes('token')),
+    (ans.includes('latest') || ans.includes('mutable') || ans.includes('tag')) && (ans.includes('sha') || ans.includes('digest') || ans.includes('sign')),
+    ans.includes('sbom') || ans.includes('provenance') || ans.includes('slsa'),
+    ans.includes('sign') || (ans.includes('cosign') && ans.includes('image'))
+  ];
+  var score = checks.filter(Boolean).length;
+  fb.className = 'ch-fb show ' + (score >= 5 ? 'good' : 'hint');
+  if (score >= 5) {
+    fb.textContent = 'Excellent — ' + score + '/7 vulnerability classes found. You are thinking about supply chain security end-to-end. The most critical issue in a financial services context is the curl-pipe-bash security scanner: it is the Codecov attack scenario almost exactly, and it runs in a pipeline that has AWS credentials and Docker push access. An attacker who compromises security-scanner.io gets both. The second most critical is the static AWS credentials: OIDC eliminates an entire class of credential-exfiltration risk because there is nothing to exfiltrate.';
+  } else if (score >= 3) {
+    fb.textContent = 'Good work — ' + score + '/7 covered. Key issues to add: (1) The curl-pipe-bash pattern is the most acute risk: it gives external code access to all your CI secrets including AWS credentials. (2) Unpinned dependencies (requirements.txt with ranges) combined with no hash verification means a compromised PyPI package matching the version range installs silently. (3) OIDC for AWS replaces long-lived credentials with 15-minute OIDC tokens — even if scan.sh exfiltrates them, they expire in minutes.';
+  } else {
+    fb.textContent = 'Go through each line of the workflow file and ask: what executes here? Who controls what is executed? What can it access? The curl line executes code controlled by a third party with access to AWS_ACCESS_KEY_ID and the Docker registry. The @v4 tags are controlled by whoever controls those repos. The requirements.txt ranges could install any package version matching the range. Each is a different attack vector with a different fix.';
+  }
+}
+
+function revealCh() {
+  var fb  = document.getElementById('ch-fb');
+  var src = document.getElementById('reveal-html');
+  fb.className = 'ch-fb show reveal';
+  fb.innerHTML = src ? src.innerHTML : 'Model answer unavailable.';
+}
+</script>
+</body>
+</html>

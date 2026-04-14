@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AppSec Engineer — Lesson 18: WAF</title>
+<link href="https://fonts.googleapis.com/css2?family=Rubik:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=JetBrains+Mono:wght@400;500;600;700&family=Zilla+Slab:ital,wght@0,600;0,700;1,500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f8f6f1;--surface:#ffffff;--surface2:#f0ede6;--surface3:#e5e1d8;
+  --border:#d5d0c4;--border2:#b8b2a4;--ink:#1e1a10;--ink2:#524c3a;--ink3:#9a9280;
+  --accent:#b85c00;--accent-bg:rgba(184,92,0,0.07);
+  --red:#c02828;--red-bg:rgba(192,40,40,0.06);
+  --orange:#b85c00;--orange-bg:rgba(184,92,0,0.06);
+  --yellow:#9a7800;--yellow-bg:rgba(154,120,0,0.07);
+  --green:#2a7a3a;--green-bg:rgba(42,122,58,0.07);
+  --blue:#1a4a9a;--blue-bg:rgba(26,74,154,0.07);
+  --purple:#6a2a8a;--purple-bg:rgba(106,42,138,0.07);
+  --teal:#1a7a6a;--teal-bg:rgba(26,122,106,0.07);
+  --code-bg:#1e1a10;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--ink);font-family:'Rubik',sans-serif;font-size:15px;line-height:1.8;}
+.sidebar{position:fixed;left:0;top:0;bottom:0;width:252px;background:var(--ink);overflow-y:auto;z-index:100;}
+.sb-brand{padding:1.4rem 1.2rem 1rem;border-bottom:1px solid rgba(255,255,255,.07);}
+.sb-badge{font-family:'JetBrains Mono',monospace;font-size:9px;background:var(--accent);color:#fff;padding:2px 8px;border-radius:2px;letter-spacing:.12em;display:inline-block;margin-bottom:7px;text-transform:uppercase;font-weight:700;}
+.sb-brand h2{font-size:13px;font-weight:400;color:rgba(255,255,255,.35);line-height:1.4;}
+.sb-sect{padding:.7rem 1.2rem .2rem;font-size:9px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:rgba(255,255,255,.18);margin-top:.25rem;}
+.nav-item{display:flex;align-items:center;gap:9px;padding:.38rem 1.2rem;cursor:pointer;border-left:2px solid transparent;font-size:12.5px;color:rgba(255,255,255,.22);text-decoration:none;transition:all .15s;}
+.nav-item:hover{color:rgba(255,255,255,.6);background:rgba(255,255,255,.04);}
+.nav-item.done{color:rgba(255,255,255,.28);}
+.nav-item.active{color:#fff;border-left-color:var(--accent);background:var(--accent-bg);}
+.nav-item .num{font-family:'JetBrains Mono',monospace;font-size:10px;min-width:22px;opacity:.28;}
+.nav-item.active .num{opacity:1;color:var(--accent);}
+.main{margin-left:252px;}
+.topbar{position:sticky;top:0;background:rgba(248,246,241,.96);backdrop-filter:blur(14px);border-bottom:1px solid var(--border);padding:.65rem 2.5rem;display:flex;align-items:center;justify-content:space-between;z-index:50;}
+.bc{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink3);}
+.bc span{color:var(--accent);font-weight:700;}
+.top-badge{font-family:'JetBrains Mono',monospace;font-size:10px;padding:3px 10px;background:var(--ink);color:rgba(255,255,255,.6);border-radius:2px;}
+.content{padding:3rem 2.5rem 5rem;max-width:960px;}
+.hero{margin-bottom:3.5rem;padding-bottom:2.5rem;border-bottom:2px solid var(--border);}
+.hero-meta{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1rem;}
+.tag{font-family:'JetBrains Mono',monospace;font-size:10px;padding:3px 10px;border-radius:2px;font-weight:600;letter-spacing:.04em;}
+.t-beg{background:var(--green-bg);color:var(--green);border:1px solid rgba(42,122,58,.2);}
+.t-frm{background:var(--blue-bg);color:var(--blue);border:1px solid rgba(26,74,154,.2);}
+.t-time{background:var(--purple-bg);color:var(--purple);border:1px solid rgba(106,42,138,.2);}
+.hero h1{font-family:'Zilla Slab',serif;font-size:3.2rem;font-weight:700;line-height:1.1;color:var(--ink);margin-bottom:.85rem;}
+.hero h1 .hl{color:var(--accent);}
+.hero-sub{font-size:14.5px;color:var(--ink2);max-width:660px;line-height:1.8;margin-bottom:1.75rem;}
+.level-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:6px;overflow:hidden;}
+.lv-cell{background:var(--surface);padding:.9rem 1rem;}
+.lv-pip{width:8px;height:8px;border-radius:50%;margin-bottom:7px;}
+.lv-label{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink3);margin-bottom:3px;}
+.lv-title{font-size:13px;font-weight:600;color:var(--ink);margin-bottom:2px;}
+.lv-desc{font-size:12px;color:var(--ink3);line-height:1.5;}
+.section{margin-bottom:3.5rem;}
+.eyebrow{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.15em;color:var(--accent);margin-bottom:5px;font-weight:700;}
+.sec-title{font-family:'Zilla Slab',serif;font-size:1.9rem;color:var(--ink);line-height:1.2;margin-bottom:.35rem;}
+.sec-sub{font-size:14px;color:var(--ink2);max-width:660px;line-height:1.75;margin-bottom:1.5rem;}
+.callout{border-radius:4px;padding:.9rem 1.1rem;margin:1rem 0;display:flex;gap:10px;align-items:flex-start;border-left:3px solid;}
+.cl-warn{background:var(--red-bg);border-color:var(--red);}
+.cl-info{background:var(--blue-bg);border-color:var(--blue);}
+.cl-tip{background:var(--green-bg);border-color:var(--green);}
+.cl-note{background:var(--yellow-bg);border-color:var(--yellow);}
+.cl-accent{background:var(--accent-bg);border-color:var(--accent);}
+.cl-teal{background:var(--teal-bg);border-color:var(--teal);}
+.cl-purple{background:var(--purple-bg);border-color:var(--purple);}
+.cl-icon{font-size:15px;flex-shrink:0;margin-top:2px;}
+.cl-text{font-size:13.5px;color:var(--ink2);line-height:1.7;}
+.cl-text strong{color:var(--ink);}
+.cl-text code{font-family:'JetBrains Mono',monospace;font-size:11.5px;background:rgba(0,0,0,.06);padding:1px 5px;border-radius:2px;color:var(--accent);}
+pre{background:var(--code-bg);color:#d8d4c8;border-radius:6px;padding:1.25rem;font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.8;overflow-x:auto;margin:.85rem 0;position:relative;border:1px solid rgba(255,255,255,.05);}
+.ctag{position:absolute;top:10px;right:12px;font-family:'JetBrains Mono',monospace;font-size:9px;color:rgba(255,255,255,.2);text-transform:uppercase;letter-spacing:.1em;}
+.ck{color:#c084fc;}.cf{color:#7dd3fc;}.cs{color:#86efac;}.cm{color:#374151;}.cv{color:#fcd34d;}.ce{color:#fb923c;}.cr{color:#f87171;}.cg{color:#4ade80;}.ct{color:#2dd4bf;}.cw{color:#f9a8d4;}
+.lb{display:block;background:rgba(192,40,40,.09);border-left:2px solid #ef4444;margin:0 -1.25rem;padding:0 1.25rem;}
+.lg{display:block;background:rgba(42,122,58,.08);border-left:2px solid #22c55e;margin:0 -1.25rem;padding:0 1.25rem;}
+.lw{display:block;background:rgba(252,211,77,.07);border-left:2px solid #f59e0b;margin:0 -1.25rem;padding:0 1.25rem;}
+table{width:100%;border-collapse:collapse;font-size:13px;margin:1rem 0;}
+th{padding:.55rem .9rem;text-align:left;background:var(--ink);color:rgba(255,255,255,.7);font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.08em;}
+th:first-child{border-radius:4px 0 0 0;}th:last-child{border-radius:0 4px 0 0;}
+td{padding:.55rem .9rem;border-bottom:1px solid var(--border);color:var(--ink2);line-height:1.5;vertical-align:top;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:var(--surface2);}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:6px;overflow:hidden;margin-bottom:.75rem;}
+.panel-h{display:flex;align-items:center;gap:10px;padding:.9rem 1.1rem;cursor:pointer;transition:background .15s;user-select:none;}
+.panel-h:hover{background:var(--surface2);}
+.panel-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.panel-title{font-size:13.5px;font-weight:600;flex:1;color:var(--ink);}
+.panel-sub{font-size:12px;color:var(--ink3);}
+.panel-tog{color:var(--ink3);font-size:13px;transition:transform .2s;}
+.panel.open .panel-tog{transform:rotate(180deg);}
+.panel-body{display:none;padding:0 1.1rem 1.1rem;border-top:1px solid var(--border);}
+.panel.open .panel-body{display:block;}
+.panel-body h4{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--ink3);margin:1rem 0 .5rem;font-weight:600;}
+.panel-body p{font-size:13.5px;color:var(--ink2);line-height:1.75;margin-top:.6rem;}
+.tool-tabs{border:1px solid var(--border);border-radius:6px;overflow:hidden;margin:1.25rem 0;}
+.tool-tab-bar{display:flex;background:var(--surface2);border-bottom:1px solid var(--border);flex-wrap:wrap;}
+.ttab{padding:.55rem 1rem;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;cursor:pointer;color:var(--ink3);border-right:1px solid var(--border);transition:all .15s;user-select:none;}
+.ttab:hover{color:var(--ink);}
+.ttab.active{background:var(--surface);color:var(--accent);border-bottom:2px solid var(--accent);}
+.tool-pane{display:none;padding:1.25rem;}
+.tool-pane.active{display:block;}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin:1rem 0;}
+.cb{background:var(--red-bg);border:1px solid rgba(192,40,40,.15);border-radius:6px;padding:1rem;}
+.cg-box{background:var(--green-bg);border:1px solid rgba(42,122,58,.15);border-radius:6px;padding:1rem;}
+.cmp-l{font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.12em;font-weight:700;margin-bottom:.6rem;}
+.cb .cmp-l{color:var(--red);}
+.cg-box .cmp-l{color:var(--green);}
+.pill{font-size:11px;padding:3px 9px;border-radius:2px;font-family:'JetBrains Mono',monospace;font-weight:600;}
+.pr{background:var(--red-bg);color:var(--red);border:1px solid rgba(192,40,40,.2);}
+.pg{background:var(--green-bg);color:var(--green);border:1px solid rgba(42,122,58,.2);}
+.py{background:var(--yellow-bg);color:var(--yellow);border:1px solid rgba(154,120,0,.2);}
+.pb{background:var(--blue-bg);color:var(--blue);border:1px solid rgba(26,74,154,.2);}
+.pp{background:var(--purple-bg);color:var(--purple);border:1px solid rgba(106,42,138,.2);}
+.pt{background:var(--teal-bg);color:var(--teal);border:1px solid rgba(26,122,106,.2);}
+.pa{background:var(--accent-bg);color:var(--accent);border:1px solid rgba(184,92,0,.2);}
+.pill-row{display:flex;flex-wrap:wrap;gap:6px;margin:.5rem 0;}
+.quiz-block{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:1.25rem;margin-bottom:1rem;}
+.quiz-q{font-size:14.5px;font-weight:600;color:var(--ink);margin-bottom:.85rem;line-height:1.55;}
+.quiz-opts{display:flex;flex-direction:column;gap:7px;}
+.qo{padding:.65rem 1rem;border:1px solid var(--border);border-radius:4px;cursor:pointer;font-size:13.5px;color:var(--ink2);background:var(--surface2);transition:all .15s;}
+.qo:hover{border-color:var(--accent);color:var(--ink);}
+.qo.correct{border-color:var(--green);color:var(--green);background:var(--green-bg);cursor:default;}
+.qo.wrong{border-color:var(--red);color:var(--red);background:var(--red-bg);cursor:default;}
+.quiz-exp{font-size:13px;color:var(--ink2);line-height:1.7;padding:.75rem 1rem;background:var(--surface2);border-radius:4px;border-left:3px solid var(--green);display:none;margin-top:.5rem;}
+.quiz-exp.show{display:block;}
+.challenge{background:var(--ink);border-radius:10px;padding:2rem;margin:3rem 0;position:relative;overflow:hidden;}
+.challenge::before{content:'';position:absolute;top:-60px;right:-60px;width:220px;height:220px;background:radial-gradient(circle,rgba(184,92,0,.12) 0%,transparent 70%);pointer-events:none;}
+.ch-ey{font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.15em;color:var(--accent);margin-bottom:.5rem;}
+.ch h3{font-family:'Zilla Slab',serif;font-size:1.55rem;color:#fff;margin-bottom:.7rem;}
+.ch-desc{font-size:13.5px;color:rgba(255,255,255,.45);line-height:1.75;margin-bottom:1.25rem;}
+.scenario{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:5px;padding:1rem 1.1rem;margin-bottom:1.25rem;}
+.scenario p{font-size:13px;color:rgba(255,255,255,.55);line-height:1.75;}
+.scenario strong{color:rgba(255,255,255,.9);}
+.challenge textarea{width:100%;min-height:190px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:4px;padding:1rem;font-family:'JetBrains Mono',monospace;font-size:12px;color:rgba(255,255,255,.85);resize:vertical;outline:none;transition:border-color .2s;margin-bottom:1rem;}
+.challenge textarea:focus{border-color:var(--accent);}
+.challenge textarea::placeholder{color:rgba(255,255,255,.2);}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap;}
+.btn{padding:9px 20px;border-radius:4px;font-size:13px;font-family:'Rubik',sans-serif;font-weight:600;cursor:pointer;border:1px solid;transition:all .15s;}
+.btn-p{background:var(--accent);color:#fff;border-color:var(--accent);}
+.btn-p:hover{background:#964a00;}
+.btn-g{background:transparent;color:rgba(255,255,255,.45);border-color:rgba(255,255,255,.14);}
+.btn-g:hover{color:#fff;border-color:rgba(255,255,255,.35);}
+.ch-fb{margin-top:1rem;padding:1rem 1.1rem;border-radius:5px;font-size:13.5px;line-height:1.7;display:none;}
+.ch-fb.show{display:block;}
+.ch-fb.good{background:rgba(42,122,58,.15);border:1px solid rgba(42,122,58,.3);color:#4ade80;}
+.ch-fb.hint{background:rgba(252,211,77,.1);border:1px solid rgba(252,211,77,.25);color:#fcd34d;}
+.ch-fb.reveal{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.75);}
+.nav-footer{display:flex;justify-content:space-between;margin-top:4rem;padding-top:2rem;border-top:2px solid var(--border);}
+.nf-btn{padding:.85rem 1.5rem;border:1px solid var(--border);border-radius:4px;font-size:13px;cursor:pointer;background:var(--surface);color:var(--ink2);text-align:left;transition:all .15s;text-decoration:none;display:block;}
+.nf-btn:hover{border-color:var(--accent);}
+.nf-btn.next{background:var(--accent);color:#fff;border-color:var(--accent);text-align:right;}
+.nf-btn.next:hover{background:#964a00;}
+.nf-dir{font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:var(--ink3);display:block;margin-bottom:3px;}
+.nf-btn.next .nf-dir{color:rgba(255,255,255,.4);}
+.nf-title{font-weight:700;display:block;}
+code{font-family:'JetBrains Mono',monospace;font-size:12px;background:rgba(0,0,0,.06);padding:1px 5px;border-radius:2px;color:var(--accent);}
+pre code{background:none;padding:0;color:inherit;font-size:inherit;}
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px;}
+@media(max-width:860px){.sidebar{display:none;}.main{margin-left:0;}.content{padding:1.5rem 1.1rem 3rem;}.level-strip,.two-col{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+<nav class="sidebar">
+  <div class="sb-brand"><div class="sb-badge">AppSec Engineer</div><h2>Application Security<br>Learning Path</h2></div>
+  <div class="sb-sect">Module 1 &mdash; Foundations</div>
+  <a class="nav-item done" href="#"><span class="num">01</span>OWASP Top 10 2021</a>
+  <a class="nav-item done" href="#"><span class="num">02</span>Secure SDLC</a>
+  <a class="nav-item done" href="#"><span class="num">03</span>Threat Modeling</a>
+  <div class="sb-sect">Module 2 &mdash; Testing Tools</div>
+  <a class="nav-item done" href="#"><span class="num">04</span>SAST</a>
+  <a class="nav-item done" href="#"><span class="num">05</span>DAST</a>
+  <a class="nav-item done" href="#"><span class="num">06</span>SCA</a>
+  <a class="nav-item done" href="#"><span class="num">07</span>IAST &amp; RASP</a>
+  <div class="sb-sect">Module 3 &mdash; API Security</div>
+  <a class="nav-item done" href="#"><span class="num">08</span>OWASP API Top 10</a>
+  <a class="nav-item done" href="#"><span class="num">09</span>API Security Testing</a>
+  <a class="nav-item done" href="#"><span class="num">10</span>GraphQL Security</a>
+  <div class="sb-sect">Module 4 &mdash; DevSecOps</div>
+  <a class="nav-item done" href="#"><span class="num">11</span>DevSecOps Pipeline</a>
+  <a class="nav-item done" href="#"><span class="num">12</span>Secrets Management</a>
+  <a class="nav-item done" href="#"><span class="num">13</span>Container Security</a>
+  <a class="nav-item done" href="#"><span class="num">14</span>Dependency Scanning</a>
+  <a class="nav-item done" href="#"><span class="num">15</span>SBOM</a>
+  <div class="sb-sect">Module 5 &mdash; Architecture</div>
+  <a class="nav-item done" href="#"><span class="num">16</span>Security Architecture</a>
+  <a class="nav-item done" href="#"><span class="num">17</span>Supply Chain Security</a>
+  <a class="nav-item active" href="#"><span class="num">18</span>WAF</a>
+  <a class="nav-item" href="#"><span class="num">19</span>Code Review</a>
+  <a class="nav-item" href="#"><span class="num">20</span>RASP</a>
+</nav>
+
+<div class="main">
+<div class="topbar">
+  <div class="bc">appsec-engineer / module-5 / <span>waf</span></div>
+  <div class="top-badge">Lesson 18 / 20</div>
+</div>
+<div class="content">
+
+<div class="hero">
+  <div class="hero-meta">
+    <span class="tag t-beg">Beginner &rarr; Advanced</span>
+    <span class="tag t-frm">Runtime Defence</span>
+    <span class="tag t-time">~55 min</span>
+  </div>
+  <h1>Web Application<br><span class="hl">Firewall</span></h1>
+  <p class="hero-sub">A Web Application Firewall inspects HTTP/HTTPS traffic between clients and your application, blocking requests that match attack patterns before they reach application code. A WAF is not a substitute for secure code — SQL injection that would succeed at the database layer will eventually bypass any WAF rule. But as a defence-in-depth layer, a well-tuned WAF blocks the vast majority of automated attacks, buys time when a zero-day is disclosed, and provides crucial visibility into attack traffic. This lesson covers WAF mechanics, deployment models, the OWASP Core Rule Set, tuning to near-zero false positives, and the limits every AppSec engineer must know.</p>
+  <div class="level-strip">
+    <div class="lv-cell"><div class="lv-pip" style="background:var(--green)"></div><div class="lv-label">Beginner</div><div class="lv-title">How WAFs work</div><div class="lv-desc">Positive vs negative security models, detection methods, deployment modes, what a WAF can and cannot do</div></div>
+    <div class="lv-cell"><div class="lv-pip" style="background:var(--yellow)"></div><div class="lv-label">Intermediate</div><div class="lv-title">OWASP CRS &amp; cloud WAFs</div><div class="lv-desc">OWASP Core Rule Set, paranoia levels, AWS WAF, Cloudflare WAF, ModSecurity configuration</div></div>
+    <div class="lv-cell"><div class="lv-pip" style="background:var(--red)"></div><div class="lv-label">Advanced</div><div class="lv-title">Tuning, bypasses &amp; limitations</div><div class="lv-desc">False positive elimination, WAF bypass techniques, virtual patching, WAF vs RASP comparison</div></div>
+  </div>
+</div>
+
+<!-- BEGINNER: HOW WAFs WORK -->
+<div class="section">
+  <div class="eyebrow">&#x1F7E2; Beginner &mdash; How WAFs Work</div>
+  <div class="sec-title">Inspection, detection models, and deployment</div>
+  <div class="sec-sub">A WAF sits between your clients and your application, inspecting every HTTP request and response. Understanding how it makes blocking decisions is essential for both configuring it and understanding its limits.</div>
+
+  <div class="callout cl-warn">
+    <div class="cl-icon">&#x26A0;&#xFE0F;</div>
+    <div class="cl-text"><strong>The WAF is not a cure:</strong> A WAF is defence-in-depth layer 1, not a replacement for secure code. A skilled attacker given enough time will bypass any WAF rule set. The WAF's job is to stop commodity attacks, automated scanners, and known exploit patterns at scale, and to slow down targeted attackers enough for detection. If your code has a SQL injection vulnerability, fixing the code is the right answer. Adding a WAF rule is a temporary compensating control — virtual patching — not a solution.</div>
+  </div>
+
+  <div class="panel" id="pan-models">
+    <div class="panel-h" onclick="tp('pan-models')">
+      <div class="panel-dot" style="background:var(--blue)"></div>
+      <div class="panel-title">Positive vs negative security models</div>
+      <div class="panel-sub">The two fundamental detection approaches and when to use each</div>
+      <div class="panel-tog">&#x25BC;</div>
+    </div>
+    <div class="panel-body">
+      <div class="two-col">
+        <div class="cb">
+          <div class="cmp-l">Negative security (blocklist)</div>
+          <p style="font-size:13px;color:var(--ink2);">Block known-bad patterns. Allow everything else. Rules block SQLi, XSS, path traversal, command injection patterns. Easy to start; hard to be comprehensive. An attacker who finds a payload variant not in the ruleset bypasses it.</p>
+        </div>
+        <div class="cg-box">
+          <div class="cmp-l">Positive security (allowlist)</div>
+          <p style="font-size:13px;color:var(--ink2);">Allow known-good traffic. Block everything else. Define exactly what parameters each endpoint accepts, what format they take, what ranges are valid. Highly effective but expensive to maintain. Any new API endpoint requires rule updates.</p>
+        </div>
+      </div>
+      <h4>WAF detection methods</h4>
+      <table>
+        <tr><th>Method</th><th>How it works</th><th>Strengths</th><th>Weaknesses</th></tr>
+        <tr><td style="font-weight:600">Signature/pattern matching</td><td>Regex rules match known attack strings in request URI, headers, body</td><td>Fast, low false negatives for known attacks</td><td>Bypassed by encoding, obfuscation, novel payloads</td></tr>
+        <tr><td style="font-weight:600">Anomaly scoring</td><td>Each matched rule adds a score; block if total exceeds threshold</td><td>Resilient to partial bypasses; multiple rules combine</td><td>Tuning needed; high thresholds reduce detection</td></tr>
+        <tr><td style="font-weight:600">Machine learning</td><td>Model trained on normal traffic; anomalous requests flagged</td><td>Catches novel attack patterns; adapts to app behaviour</td><td>Training data needed; false positive risk; explainability hard</td></tr>
+        <tr><td style="font-weight:600">Protocol validation</td><td>Validates HTTP spec compliance; blocks malformed requests</td><td>Zero-day protection for protocol-level attacks</td><td>Some legitimate clients send non-standard requests</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="panel" id="pan-deploy">
+    <div class="panel-h" onclick="tp('pan-deploy')">
+      <div class="panel-dot" style="background:var(--green)"></div>
+      <div class="panel-title">WAF deployment modes &mdash; where it sits in the architecture</div>
+      <div class="panel-sub">Inline, out-of-band, cloud edge, and Kubernetes-native</div>
+      <div class="panel-tog">&#x25BC;</div>
+    </div>
+    <div class="panel-body">
+      <table>
+        <tr><th>Deployment mode</th><th>How traffic flows</th><th>Latency</th><th>Best for</th><th>Example</th></tr>
+        <tr><td style="font-weight:700;color:var(--red)">Inline (blocking)</td><td>All traffic passes through WAF; malicious requests dropped before app</td><td>+2-10ms</td><td>Production enforcement</td><td>ModSecurity in Nginx, AWS WAF on ALB</td></tr>
+        <tr><td style="font-weight:700;color:var(--yellow)">Detection-only (monitor)</td><td>Traffic inspected and logged but never blocked; alerts only</td><td>Near zero</td><td>Initial tuning, baseline</td><td>ModSecurity DetectionOnly mode</td></tr>
+        <tr><td style="font-weight:700;color:var(--blue)">Cloud edge</td><td>DNS points to CDN/WAF; origin only reachable via WAF</td><td>+0-5ms (CDN accelerates)</td><td>Internet-facing apps, DDoS protection</td><td>Cloudflare, Fastly, AWS CloudFront + WAF</td></tr>
+        <tr><td style="font-weight:700;color:var(--teal)">API gateway</td><td>WAF rules enforced at API gateway layer before backend services</td><td>+1-5ms</td><td>API-first architectures, microservices</td><td>AWS API Gateway + WAF, Kong + OWASP plugin</td></tr>
+        <tr><td style="font-weight:700;color:var(--purple)">K8s sidecar/ingress</td><td>ModSecurity runs as Nginx/Envoy ingress with WAF rules</td><td>+2-8ms</td><td>Kubernetes clusters</td><td>Nginx Ingress + ModSecurity, Envoy ext_proc</td></tr>
+      </table>
+      <div class="callout cl-tip" style="margin-top:.75rem;">
+        <div class="cl-icon">&#x1F4A1;</div>
+        <div class="cl-text"><strong>Always start in detection-only mode.</strong> Deploy the WAF in monitor/log mode for at least 2 weeks before enabling blocking. This reveals what legitimate traffic would have been blocked (false positives) before you cause production incidents. Only switch to blocking after tuning the rule set to near-zero false positives on your actual traffic.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel" id="pan-limits">
+    <div class="panel-h" onclick="tp('pan-limits')">
+      <div class="panel-dot" style="background:var(--accent)"></div>
+      <div class="panel-title">What a WAF cannot do &mdash; know the limits</div>
+      <div class="panel-sub">Understanding what the WAF is blind to prevents over-reliance</div>
+      <div class="panel-tog">&#x25BC;</div>
+    </div>
+    <div class="panel-body">
+      <table>
+        <tr><th>WAF cannot detect</th><th>Why</th><th>What does catch it</th></tr>
+        <tr><td style="font-weight:600">Business logic flaws</td><td>A request to transfer $1M to an attacker's account looks identical to a legitimate transfer request</td><td>Application-layer auth and limit checks; RASP</td></tr>
+        <tr><td style="font-weight:600">Authenticated attacks</td><td>Requests from a valid session with a valid token look legitimate to the WAF</td><td>RBAC, BOLA checks in application code</td></tr>
+        <tr><td style="font-weight:600">Encrypted payloads inside HTTPS body (if TLS terminates upstream)</td><td>If TLS terminates before the WAF, the WAF sees plaintext. If the WAF is not in the TLS path, it sees ciphertext.</td><td>TLS inspection (man-in-the-middle mode) or inline TLS termination at WAF</td></tr>
+        <tr><td style="font-weight:600">Second-order injection</td><td>Malicious payload stored safely, executed later. WAF inspects the store request (clean) not the later execute request.</td><td>SAST, code review, parameterised queries</td></tr>
+        <tr><td style="font-weight:600">Novel zero-days with no existing pattern</td><td>No rule exists for a brand new attack technique</td><td>Anomaly detection, RASP, security monitoring</td></tr>
+        <tr><td style="font-weight:600">Insider threats</td><td>Legitimate users with valid credentials performing malicious actions</td><td>UEBA, audit logging, DLP</td></tr>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- INTERMEDIATE: OWASP CRS & CLOUD WAFs -->
+<div class="section">
+  <div class="eyebrow">&#x1F7E1; Intermediate &mdash; OWASP CRS &amp; Cloud WAFs</div>
+  <div class="sec-title">The Core Rule Set and major WAF platforms</div>
+  <div class="sec-sub">The OWASP Core Rule Set (CRS) is the industry-standard WAF rule set. Understanding it is essential whether you use ModSecurity, AWS WAF, Cloudflare, or any other platform.</div>
+
+  <div class="panel" id="pan-crs">
+    <div class="panel-h" onclick="tp('pan-crs')">
+      <div class="panel-dot" style="background:var(--accent)"></div>
+      <div class="panel-title">OWASP Core Rule Set &mdash; structure and paranoia levels</div>
+      <div class="panel-sub">How the CRS is organised and how to choose the right paranoia level</div>
+      <div class="panel-tog">&#x25BC;</div>
+    </div>
+    <div class="panel-body">
+      <p>The OWASP CRS is a set of generic attack detection rules for ModSecurity (and compatible engines) covering the OWASP Top 10 and more. It uses an anomaly scoring approach: each triggered rule adds to a transaction score, and requests are blocked when the cumulative score exceeds a threshold (default: 5). Paranoia level controls how aggressively rules trigger.</p>
+      <table>
+        <tr><th>Paranoia level</th><th>Rules active</th><th>False positive rate</th><th>Best for</th></tr>
+        <tr><td style="font-weight:700;color:var(--green)">PL1 (default)</td><td>Core rules only — high-confidence, low false-positive rules</td><td>Low</td><td>Starting point for all deployments</td></tr>
+        <tr><td style="font-weight:700;color:var(--yellow)">PL2</td><td>Adds more rules for better detection; more PHP/SQL-specific patterns</td><td>Medium</td><td>After tuning PL1 for 2+ weeks</td></tr>
+        <tr><td style="font-weight:700;color:var(--orange)">PL3</td><td>Adds rules that generate more false positives; catches evasion techniques</td><td>High</td><td>High-security environments with dedicated tuning</td></tr>
+        <tr><td style="font-weight:700;color:var(--red)">PL4</td><td>Very aggressive; blocks nearly everything unusual</td><td>Very high</td><td>Extremely restricted applications only</td></tr>
+      </table>
+<pre>
+<span class="ctag">ModSecurity + OWASP CRS (Nginx)</span>
+<span class="cm"># /etc/nginx/conf.d/waf.conf</span>
+server {
+    listen 443 ssl;
+    server_name api.myapp.com;
+
+    <span class="cm"># Enable ModSecurity</span>
+    modsecurity on;
+    modsecurity_rules_file /etc/nginx/modsec/main.conf;
+}
+
+<span class="cm"># /etc/nginx/modsec/main.conf</span>
+Include /etc/nginx/modsec/modsecurity.conf
+Include /usr/local/coreruleset/crs-setup.conf
+Include /usr/local/coreruleset/rules/*.conf
+
+<span class="cm"># /usr/local/coreruleset/crs-setup.conf (key settings)</span>
+SecRuleEngine On                          <span class="cm"># DetectionOnly for initial tuning</span>
+SecRequestBodyAccess On
+SecResponseBodyAccess On
+SecResponseBodyMimeType text/plain text/html application/json
+
+<span class="cm"># Anomaly scoring thresholds</span>
+SecAction \
+  "id:900110,phase:1,nolog,pass,t:none,\
+  setvar:tx.inbound_anomaly_score_threshold=5,\  <span class="cm"># block at score 5</span>
+  setvar:tx.outbound_anomaly_score_threshold=4"
+
+<span class="cm"># Paranoia level</span>
+SecAction \
+  "id:900000,phase:1,nolog,pass,t:none,\
+  setvar:tx.paranoia_level=1"                    <span class="cm"># start at PL1</span>
+
+<span class="cm"># Disable specific rule for legitimate traffic</span>
+SecRuleRemoveById 920300   <span class="cm"># Remove "Missing Accept Header" if your API clients don't send it</span>
+</pre>
+    </div>
+  </div>
+
+  <div class="tool-tabs">
+    <div class="tool-tab-bar">
+      <div class="ttab active" onclick="switchTab(this,'t-aws-waf')">AWS WAF</div>
+      <div class="ttab" onclick="switchTab(this,'t-cf-waf')">Cloudflare</div>
+      <div class="ttab" onclick="switchTab(this,'t-nginx-waf')">ModSecurity</div>
+    </div>
+
+    <div class="tool-pane active" id="t-aws-waf">
+      <p style="font-size:13.5px;color:var(--ink2);line-height:1.75;margin-bottom:.85rem;">AWS WAF integrates natively with ALB, API Gateway, CloudFront, and AppSync. It uses Managed Rule Groups (including the AWS-managed OWASP equivalent and third-party rules from Fortinet, F5) or custom rules in Web ACLs. Pricing: per Web ACL + per rule + per request.</p>
+<pre>
+<span class="ctag">AWS WAF Web ACL (Terraform)</span>
+resource "aws_wafv2_web_acl" "api" {
+  name  = "api-waf"
+  scope = "REGIONAL"    <span class="cm"># CLOUDFRONT for global</span>
+
+  default_action { allow {} }
+
+  <span class="cm"># Rule 1: AWS Managed OWASP Core Rule Set</span>
+  rule {
+    name     = "AWSManagedRulesCommonRuleSet"
+    priority = 1
+    override_action { none {} }
+    statement {
+      managed_rule_group_statement {
+        name        = "AWSManagedRulesCommonRuleSet"
+        vendor_name = "AWS"
+        <span class="cm"># Override individual rules to Count (not Block) during tuning</span>
+        rule_action_override {
+          name          = "SizeRestrictions_BODY"
+          action_to_use { count {} }  <span class="cm"># tune before blocking</span>
+        }
+      }
+    }
+    visibility_config {
+      cloudwatch_metrics_enabled = true
+      metric_name                = "CommonRuleSet"
+      sampled_requests_enabled   = true
+    }
+  }
+
+  <span class="cm"># Rule 2: AWS Managed SQL injection rule set</span>
+  rule {
+    name     = "AWSManagedRulesSQLiRuleSet"
+    priority = 2
+    override_action { none {} }
+    statement {
+      managed_rule_group_statement {
+        name        = "AWSManagedRulesSQLiRuleSet"
+        vendor_name = "AWS"
+      }
+    }
+    visibility_config {
+      cloudwatch_metrics_enabled = true
+      metric_name                = "SQLiRuleSet"
+      sampled_requests_enabled   = true
+    }
+  }
+
+  <span class="cm"># Rule 3: Rate limiting (per IP)</span>
+  rule {
+    name     = "RateLimitPerIP"
+    priority = 10
+    action { block {} }
+    statement {
+      rate_based_statement {
+        limit              = 2000   <span class="cm"># per 5 minutes per IP</span>
+        aggregate_key_type = "IP"
+      }
+    }
+    visibility_config {
+      cloudwatch_metrics_enabled = true
+      metric_name                = "RateLimit"
+      sampled_requests_enabled   = true
+    }
+  }
+}
+
+<span class="cm"># Associate with ALB</span>
+resource "aws_wafv2_web_acl_association" "api" {
+  resource_arn = aws_lb.api.arn
+  web_acl_arn  = aws_wafv2_web_acl.api.arn
+}
+</pre>
+    </div>
+
+    <div class="tool-pane" id="t-cf-waf">
+      <p style="font-size:13.5px;color:var(--ink2);line-height:1.75;margin-bottom:.85rem;">Cloudflare WAF sits at the CDN edge, meaning attack traffic is absorbed at Cloudflare's network before reaching your origin. It includes managed rules (OWASP equivalent), custom rules, rate limiting, bot management, and DDoS protection. The primary advantage over a self-managed WAF: Cloudflare sees attack patterns from across all its customers and updates rules automatically.</p>
+<pre>
+<span class="ctag">Cloudflare WAF (Terraform)</span>
+resource "cloudflare_ruleset" "waf" {
+  zone_id = var.zone_id
+  name    = "API WAF"
+  kind    = "zone"
+  phase   = "http_request_firewall_managed"
+
+  rules {
+    action = "execute"
+    action_parameters {
+      id = "efb7b8c949ac4650a09736fc376e9aee"  <span class="cm"># Cloudflare OWASP CRS</span>
+      overrides {
+        <span class="cm"># Disable noisy rule during tuning</span>
+        rules {
+          id     = "6179ae15870a4bb7b2d480d4843b323c"
+          status = "disabled"
+        }
+        categories {
+          category = "paranoia-level-2"
+          status   = "disabled"    <span class="cm"># only PL1 initially</span>
+        }
+      }
+    }
+    expression  = "true"
+    description = "OWASP CRS"
+    enabled     = true
+  }
+}
+
+<span class="cm"># Custom rule: block SQL injection with known bypasses</span>
+resource "cloudflare_ruleset" "custom" {
+  zone_id = var.zone_id
+  kind    = "zone"
+  phase   = "http_request_firewall_custom"
+
+  rules {
+    action      = "block"
+    expression  = "(http.request.uri.query contains \"UNION SELECT\" or http.request.uri.query contains \"1=1\")"
+    description = "Basic SQLi patterns"
+    enabled     = true
+  }
+
+  <span class="cm"># Rate limit login endpoint specifically</span>
+  rules {
+    action = "block"
+    ratelimit {
+      characteristics     = ["cf.unique_visitor_id"]
+      period              = 60
+      requests_per_period = 5
+      mitigation_timeout  = 600
+    }
+    expression  = "(http.request.uri.path eq \"/api/auth/login\")"
+    description = "Login rate limit"
+    enabled     = true
+  }
+}
+</pre>
+    </div>
+
+    <div class="tool-pane" id="t-nginx-waf">
+      <p style="font-size:13.5px;color:var(--ink2);line-height:1.75;margin-bottom:.85rem;">ModSecurity (now Coraza) is the open-source WAF engine that runs as an Nginx/Apache module or as a standalone proxy. It uses the OWASP CRS. Free but requires operational expertise. Best for: Kubernetes ingress WAF, on-premises deployments, or anywhere cloud WAF isn't available.</p>
+<pre>
+<span class="ctag">ModSecurity custom rules &mdash; virtual patching</span>
+<span class="cm"># Virtual patch: block exploitation of a known CVE before the fix is deployed
+# CVE-2024-XXXX: path traversal in /api/files endpoint
+# The regex blocks /../ patterns in the files path specifically</span>
+
+SecRule REQUEST_URI "@rx ^/api/files/.*\.\./.*" \
+    "id:9000001,\
+    phase:1,\
+    deny,\
+    status:400,\
+    log,\
+    msg:'Virtual patch: path traversal CVE-2024-XXXX',\
+    tag:'CVE-2024-XXXX'"
+
+<span class="cm"># Custom rule: block user-agent strings from known scanners</span>
+SecRule REQUEST_HEADERS:User-Agent "@pmFromFile /etc/nginx/modsec/bad-bots.txt" \
+    "id:9000002,\
+    phase:1,\
+    deny,\
+    status:403,\
+    log,\
+    msg:'Known scanner blocked'"
+
+<span class="cm"># Custom rule: only allow known Content-Type values for API</span>
+SecRule REQUEST_METHOD "!@streq GET" \
+    "id:9000003,\
+    phase:1,\
+    chain,\
+    msg:'Invalid content-type'"
+SecRule REQUEST_HEADERS:Content-Type "!@rx ^(application/json|multipart/form-data)" \
+    "deny,\
+    status:415"
+
+<span class="cm"># Exception: whitelist legitimate traffic that triggers a rule</span>
+SecRule REQUEST_URI "@beginsWith /api/search" \
+    "id:9000010,\
+    phase:1,\
+    pass,\
+    nolog,\
+    ctl:ruleRemoveById=942100,\   <span class="cm"># disable SQLi rule for search endpoint</span>
+    ctl:ruleRemoveById=942200"    <span class="cm"># (search legitimately contains SQL keywords)</span>
+</pre>
+    </div>
+  </div>
+</div>
+
+<!-- ADVANCED: TUNING & BYPASSES -->
+<div class="section">
+  <div class="eyebrow">&#x1F534; Advanced &mdash; Tuning &amp; WAF Bypasses</div>
+  <div class="sec-title">Making the WAF trustworthy and understanding its limits</div>
+  <div class="sec-sub">A WAF that blocks legitimate traffic destroys developer trust and gets disabled. A WAF with known bypass patterns is theatre. Both tuning and bypass awareness are essential operational skills.</div>
+
+  <div class="panel" id="pan-tuning">
+    <div class="panel-h" onclick="tp('pan-tuning')">
+      <div class="panel-dot" style="background:var(--green)"></div>
+      <div class="panel-title">Systematic tuning process &mdash; from noisy to trustworthy</div>
+      <div class="panel-sub">The step-by-step process to reach near-zero false positives before enabling blocking</div>
+      <div class="panel-tog">&#x25BC;</div>
+    </div>
+    <div class="panel-body">
+<pre>
+<span class="ctag">WAF tuning workflow</span>
+<span class="cm"># Phase 1: Deploy in detection-only mode and collect data (2 weeks)</span>
+SecRuleEngine DetectionOnly    <span class="cm"># log everything, block nothing</span>
+
+<span class="cm"># Phase 2: Analyse ModSecurity logs to find top-hit rules</span>
+$ cat /var/log/nginx/modsec_audit.log | \
+    python3 -c "
+import sys, json, collections
+rule_hits = collections.Counter()
+for line in sys.stdin:
+    if 'id' in line:
+        for part in line.split(','):
+            if '\"id\"' in part:
+                rule_hits[part.strip()] += 1
+for rule, count in rule_hits.most_common(20):
+    print(f'{count:5d} {rule}')
+"
+
+<span class="cm"># Top-hit example output:</span>
+<span class="cm">#  2847  "id":"920300"   Accept header missing  &larr; API clients don't send Accept</span>
+<span class="cm">#  1204  "id":"932100"   Remote file inclusion   &larr; file paths in JSON params</span>
+<span class="cm">#   891  "id":"942100"   SQL injection           &larr; search endpoint uses SQL keywords</span>
+
+<span class="cm"># Phase 3: For each top rule, determine: false positive or true positive?
+# Review 10 sample requests per rule. Classification:
+# - Legitimate traffic: add exception
+# - Real attack: confirm rule is correct, no exception needed
+# - Noisy rule on benign pattern: tune score down or disable</span>
+
+<span class="cm"># Phase 4: Add exceptions for confirmed false positives</span>
+<span class="cm"># Method A: Disable rule globally (use sparingly)</span>
+SecRuleRemoveById 920300
+
+<span class="cm"># Method B: Disable rule for specific endpoint + condition (preferred)</span>
+SecRule REQUEST_URI "@beginsWith /api/search" \
+    "id:90001,phase:1,pass,nolog,\
+    ctl:ruleRemoveById=942100"
+
+<span class="cm"># Method C: Lower anomaly score for a specific rule</span>
+SecRuleUpdateActionById 932100 "setvar:tx.anomaly_score_pl1=+1"  <span class="cm"># was +5</span>
+
+<span class="cm"># Phase 5: Enable blocking at high threshold first</span>
+setvar:tx.inbound_anomaly_score_threshold=20   <span class="cm"># week 1: very permissive</span>
+setvar:tx.inbound_anomaly_score_threshold=10   <span class="cm"># week 2: tighten</span>
+setvar:tx.inbound_anomaly_score_threshold=5    <span class="cm"># week 3: CRS default</span>
+
+<span class="cm"># Monitor alert rate (should be &lt;0.01% of legitimate requests)</span>
+$ grep "Access denied" /var/log/nginx/error.log | wc -l
+</pre>
+    </div>
+  </div>
+
+  <div class="panel" id="pan-bypass">
+    <div class="panel-h" onclick="tp('pan-bypass')">
+      <div class="panel-dot" style="background:var(--red)"></div>
+      <div class="panel-title">Common WAF bypass techniques &mdash; why WAF is not the last line of defence</div>
+      <div class="panel-sub">Every AppSec engineer needs to know these; they explain why WAF alone is never sufficient</div>
+      <div class="panel-tog">&#x25BC;</div>
+    </div>
+    <div class="panel-body">
+<pre>
+<span class="ctag">WAF bypass techniques</span>
+<span class="cm"># 1. ENCODING bypasses &mdash; WAF decodes once, app decodes twice</span>
+<span class="cm"># Double URL encoding:</span>
+<span class="lb">/api?id=1' OR 1=1--               <span class="cm"># WAF blocks: obvious SQLi</span></span>
+<span class="lg">/api?id=1%2527%2520OR%25201%253D1  <span class="cm"># WAF misses: double URL-encoded</span></span>
+<span class="cm"># HTML entity encoding in JSON:</span>
+<span class="lg">{"name": "&#x3C;&#x73;&#x63;&#x72;&#x69;&#x70;&#x74;&#x3E;"}  <span class="cm"># WAF sees entities; browser renders XSS</span></span>
+
+<span class="cm"># 2. CASE / COMMENT obfuscation in SQL</span>
+<span class="lb">SELECT * FROM users WHERE id='1' UNION SELECT...</span>
+<span class="lg">SeLeCt * FrOm users WhErE id='1' uNiOn sElEcT...</span>
+<span class="lg">SELECT/*!*/1,/*!*/2,/*!*/3 FROM users           <span class="cm"># MySQL inline comments</span></span>
+<span class="lg">SEL/*comment*/ECT * FR/**/OM users              <span class="cm"># split keyword with comment</span></span>
+
+<span class="cm"># 3. HTTP parameter pollution</span>
+<span class="cm"># WAF inspects first value; app uses last value (or vice versa)</span>
+<span class="lg">GET /search?q=hello&amp;q=1' OR '1'='1</span>
+
+<span class="cm"># 4. Content-Type confusion</span>
+<span class="cm"># WAF only inspects JSON; app also processes form-encoded body</span>
+<span class="lb">Content-Type: application/json</span>
+<span class="lb">{"username": "admin'--"}</span>
+<span class="cm"># Attacker sends:</span>
+<span class="lg">Content-Type: application/x-www-form-urlencoded</span>
+<span class="lg">username=admin'--</span>
+<span class="cm"># If WAF only inspects JSON and app accepts both: bypass</span>
+
+<span class="cm"># 5. Large body fragmentation</span>
+<span class="cm"># WAF has a body inspection limit (e.g., 128KB)</span>
+<span class="cm"># Attacker puts payload after 128KB of padding: WAF stops inspecting</span>
+
+<span class="cm"># 6. JSON/GraphQL attacks that look legitimate</span>
+<span class="cm"># WAF has no context for your API's schema</span>
+<span class="cm"># {"userId": "1 OR 1=1"} &mdash; looks like normal JSON to WAF</span>
+<span class="cm"># App uses userId in raw SQL &mdash; injected</span>
+
+<span class="cm"># CONCLUSION: Fix the vulnerability. Use the WAF as a layer, not the last line.</span>
+</pre>
+    </div>
+  </div>
+
+  <div class="panel" id="pan-virtual-patch">
+    <div class="panel-h" onclick="tp('pan-virtual-patch')">
+      <div class="panel-dot" style="background:var(--teal)"></div>
+      <div class="panel-title">Virtual patching &mdash; WAF as emergency compensating control</div>
+      <div class="panel-sub">How to use WAF rules to buy time when you cannot deploy a code fix immediately</div>
+      <div class="panel-tog">&#x25BC;</div>
+    </div>
+    <div class="panel-body">
+      <p>Virtual patching is using a WAF rule to block exploitation of a known vulnerability while the real code fix is being developed and deployed. It is a temporary compensating control, not a permanent solution. Always track virtual patches as technical debt with a target date for replacement by a proper fix.</p>
+<pre>
+<span class="ctag">Virtual patching workflow</span>
+<span class="cm"># Scenario: Critical SQLi found in /api/products?sort= parameter
+# Code fix takes 3 days to test and deploy
+# WAF virtual patch blocks exploitation immediately</span>
+
+<span class="cm"># Step 1: Understand the vulnerability</span>
+<span class="cm"># Vulnerable: GET /api/products?sort=name' UNION SELECT password FROM users--</span>
+<span class="cm"># The sort parameter accepts ORDER BY clause directly (never do this)</span>
+
+<span class="cm"># Step 2: Write the minimal WAF rule</span>
+<span class="cm"># Block SQL keywords specifically in the sort parameter</span>
+SecRule ARGS:sort "@rx (?i)(union|select|insert|update|delete|drop|--|;)" \
+    "id:9001001,\
+    phase:2,\
+    deny,\
+    status:400,\
+    log,\
+    auditlog,\
+    msg:'Virtual patch: SQLi in sort param (CVE ticket: PROD-4521)',\
+    tag:'VIRTUAL_PATCH'"
+
+<span class="cm"># Step 3: Test the rule in detection-only first</span>
+<span class="cm"># Step 4: Deploy and monitor for false positives</span>
+<span class="cm"># Step 5: Track in ticket system: remove when code fix deployed</span>
+<span class="cm"># Step 6: Verify rule removed after code fix: never accumulate virtual patches</span>
+
+<span class="cm"># AWS WAF virtual patch:</span>
+rule {
+  name     = "VirtualPatch-PROD4521"
+  priority = 1      <span class="cm"># high priority, check first</span>
+  action { block {} }
+  statement {
+    byte_match_statement {
+      field_to_match { query_string {} }
+      positional_constraint = "CONTAINS"
+      search_string         = "union"
+      text_transformations {
+        priority = 0
+        type     = "LOWERCASE"
+      }
+    }
+  }
+}
+</pre>
+      <div class="pill-row"><span class="pill py">Temporary compensating control</span><span class="pill pg">Track as technical debt</span><span class="pill pr">Remove when code fix deployed</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- QUIZ -->
+<div class="section">
+  <div class="eyebrow">Knowledge Check</div>
+  <div class="sec-title">WAF interview questions</div>
+
+  <div class="quiz-block">
+    <div class="quiz-q">Q1. A security engineer proposes: "If we deploy a WAF, we don't need to fix the SQL injection in our code — the WAF will block it." Why is this wrong, and what is the correct role of the WAF?</div>
+    <div class="quiz-opts" id="q1">
+      <div class="qo" onclick="doQ('q1',this,'wrong')">Correct &mdash; a well-configured WAF blocks all SQL injection attacks</div>
+      <div class="qo" onclick="doQ('q1',this,'correct')">Wrong. WAFs can be bypassed using encoding, obfuscation, comment injection, parameter pollution, and other techniques. A skilled attacker given time will bypass WAF rules for a known vulnerability. The WAF blocks commodity attacks and automated scanners but is not a substitute for parameterised queries. The correct role: WAF as defence-in-depth layer 1 and as a virtual patch while the code fix is developed. The code fix is the actual solution.</div>
+      <div class="qo" onclick="doQ('q1',this,'wrong')">Wrong only because WAFs are expensive to maintain</div>
+      <div class="qo" onclick="doQ('q1',this,'wrong')">Correct, but only for cloud WAFs — not self-hosted ones</div>
+    </div>
+    <div class="quiz-exp" id="q1-exp">The WAF provides broad protection against known attack patterns but is not a substitute for secure code for three reasons: (1) Bypass techniques exist for every WAF rule — encoding, obfuscation, comment injection, HTTP parameter pollution. A determined attacker will find a bypass. (2) Second-order attacks: a malicious payload that is stored and later executed bypasses WAF inspection at storage time. (3) Business logic attacks look like legitimate requests. The correct model: WAF is a valuable defence-in-depth control and an excellent virtual patching tool while code fixes are in progress, but the underlying vulnerability must still be fixed. "WAF blocks it" should trigger a ticket, not close one.</div>
+  </div>
+
+  <div class="quiz-block">
+    <div class="quiz-q">Q2. You deploy the OWASP CRS at Paranoia Level 1 and immediately see hundreds of 403 responses on legitimate traffic. What went wrong and what is the correct process?</div>
+    <div class="quiz-opts" id="q2">
+      <div class="qo" onclick="doQ('q2',this,'wrong')">The CRS is too aggressive and should be replaced with a custom rule set</div>
+      <div class="qo" onclick="doQ('q2',this,'correct')">The WAF was deployed in blocking mode without a detection-only tuning period. The correct process: deploy in DetectionOnly (log but don't block), collect 2 weeks of logs, identify which rules fire most on legitimate traffic, add targeted exceptions for confirmed false positives, then enable blocking starting at a high anomaly score threshold (20) and gradually lowering it to the default (5) over 2-3 weeks while monitoring false positive rates.</div>
+      <div class="qo" onclick="doQ('q2',this,'wrong')">PL1 is too aggressive; start at PL0 which has no rules</div>
+      <div class="qo" onclick="doQ('q2',this,'wrong')">The CRS must be disabled for API endpoints since it only works for web apps</div>
+    </div>
+    <div class="quiz-exp" id="q2-exp">The classic mistake is enabling blocking without a baseline tuning period. Every application generates unique traffic patterns that the CRS may flag as suspicious: search boxes with natural language that resembles SQL, file paths in API parameters, base64-encoded data, legitimate scanner agents, etc. The CRS has no knowledge of your specific application. The tuning process: (1) DetectionOnly for 2 weeks. (2) Analyse logs for most-triggered rules. (3) For each: legitimate traffic or real attack? (4) Add exceptions for legitimate patterns. (5) Enable blocking at threshold=20. (6) Tighten to 10, then 5 over weeks while monitoring error rates. The goal: &lt;0.01% of legitimate requests blocked before reaching default threshold.</div>
+  </div>
+</div>
+
+<!-- CHALLENGE -->
+<div class="challenge">
+  <div class="ch-ey">Capstone Challenge &mdash; WAF Design for a Healthcare API</div>
+  <div class="ch">
+    <h3>Design the WAF configuration for a HIPAA-regulated API</h3>
+    <p class="ch-desc">You are securing a REST API that handles patient health records. The API uses JWT auth, accepts JSON bodies up to 10MB for medical imaging uploads, and has a text-search endpoint that legitimately includes SQL-like keywords in queries (e.g., "patients with elevated creatinine AND BUN levels"). Design the WAF configuration addressing: deployment model, rule sets, specific exceptions needed, and rate limiting.</p>
+    <div class="scenario">
+      <p><strong>Known traffic patterns:</strong> Medical imaging uploads up to 10MB JSON payloads. Search endpoint at <code>/api/search</code> regularly includes clinical terms like "elevated", "AND", "OR", "SELECT" (as English words). Admin users at <code>/api/admin/*</code> access from a specific IP range (10.20.0.0/16). API clients do not send the Accept header. Roughly 5,000 requests per minute at peak.</p>
+    </div>
+    <textarea id="ch-ans" placeholder="Deployment model: ...
+
+Rule set choice and configuration: ...
+
+Exceptions required (with justification): ...
+
+Rate limiting configuration: ...
+
+Rollout plan: ..."></textarea>
+    <div class="btn-row">
+      <button class="btn btn-p" onclick="checkCh()">Submit</button>
+      <button class="btn btn-g" onclick="revealCh()">Reveal model answer</button>
+    </div>
+    <div class="ch-fb" id="ch-fb"></div>
+  </div>
+</div>
+
+<!-- SUMMARY -->
+<div class="section">
+  <div class="eyebrow">Quick Reference</div>
+  <div class="sec-title">WAF cheat sheet</div>
+  <table>
+    <tr><th>Topic</th><th>Key fact</th></tr>
+    <tr><td style="font-weight:700;color:var(--accent)">WAF role</td><td>Defence-in-depth layer 1; blocks commodity attacks; not a code-fix substitute; excellent for virtual patching</td></tr>
+    <tr><td style="font-weight:700;color:var(--blue)">OWASP CRS paranoia</td><td>Start at PL1. Increase only after tuning. PL2+ significantly increases false positives.</td></tr>
+    <tr><td style="font-weight:700;color:var(--green)">Tuning process</td><td>DetectionOnly → 2 weeks → analyse logs → add exceptions → blocking at threshold 20 → tighten to 5</td></tr>
+    <tr><td style="font-weight:700;color:var(--red)">Common bypasses</td><td>Double encoding, SQL comment obfuscation, HPP, content-type confusion, body size limits, GraphQL/JSON opacity</td></tr>
+    <tr><td style="font-weight:700;color:var(--teal)">Virtual patching</td><td>WAF rule blocks exploitation while code fix is in progress; remove rule after fix deployed; track as tech debt</td></tr>
+    <tr><td style="font-weight:700;color:var(--yellow)">Cannot block</td><td>Business logic flaws, authenticated attacks, second-order injection, novel zero-days, insider threats</td></tr>
+    <tr><td style="font-weight:700;color:var(--purple)">Deployment order</td><td>Cloud edge (Cloudflare/AWS CloudFront) → ALB/API Gateway → Nginx ingress (K8s)</td></tr>
+  </table>
+</div>
+
+<div class="nav-footer">
+  <a class="nf-btn" href="#"><span class="nf-dir">&larr; Previous</span><span class="nf-title">17 &mdash; Supply Chain Security</span></a>
+  <a class="nf-btn next" href="#"><span class="nf-dir">Next Lesson &rarr;</span><span class="nf-title">19 &mdash; Code Review</span></a>
+</div>
+
+</div>
+</div>
+
+<!-- REVEAL HTML in hidden DOM -->
+<div id="reveal-html" style="display:none">
+<strong>Model Answer &mdash; WAF Configuration for Healthcare API</strong><br><br>
+<strong>Deployment model:</strong> AWS WAF on the ALB (HIPAA requires that PHI traffic be inspectable — cloud edge at a CDN is acceptable but requires HIPAA BAA with Cloudflare/AWS; ALB-level WAF keeps data within your AWS environment). For the admin subnet: use a separate WAF rule that allows /api/admin/* only from 10.20.0.0/16 IP range, blocking all other sources regardless of authentication. Deploy initially in Count mode (AWS) or DetectionOnly (ModSec), not blocking, for 2 weeks.<br><br>
+<strong>Rule sets:</strong> AWS Managed Rules Common Rule Set (the OWASP equivalent) and AWS Managed SQLi Rule Set both in Count mode for the first 2 weeks, then blocking. Add the AWS Managed Known Bad Inputs Rule Set (blocks Log4Shell, Spring4Shell class patterns). Custom rule: Content-Type must be application/json for all non-upload endpoints; multipart/form-data only for /api/imaging/upload.<br><br>
+<strong>Exceptions required (with justification):</strong><br>
+1. /api/search endpoint: disable SQLi rules 942100, 942200, 942260 for this endpoint only. Clinical search legitimately includes AND, OR, SELECT, UNION as English medical terminology. Exception scoped to this path only, not globally. Document: "Clinical search terms trigger SQL rules. Search uses parameterised full-text search; SQLi not possible at application layer. Reviewed by AppSec on [date]."<br>
+2. Disable rule 920300 (Missing Accept header) globally: API clients are medical devices and don't send Accept headers. This is a design constraint, not an attack signal.<br>
+3. Increase body size limit to 12MB for /api/imaging/upload: default CRS body limit is 128KB which would block all imaging uploads. Scope the exception to the upload endpoint only.<br>
+4. IP allowlist for /api/admin/*: custom rule ALLOW only if source IP is in 10.20.0.0/16, BLOCK otherwise. This is tighter than any CRS rule.<br><br>
+<strong>Rate limiting:</strong> Global: 2000 requests per 5 minutes per IP. /api/auth/login: 5 per minute per IP (credential stuffing protection). /api/search: 60 per minute per authenticated user (expensive full-text search — prevent DoS). /api/imaging/upload: 10 per minute per user (large payload limit). Admin endpoints: no additional rate limit beyond IP allowlist (admin users need unrestricted access from their subnet).<br><br>
+<strong>Rollout plan:</strong> Week 1-2: Count/DetectionOnly mode, all rules. Generate daily report of top-5 rule hits on legitimate traffic. Week 3: Add documented exceptions for search, Accept header, and body size. Switch SQLi and Common rules to blocking. Monitoring target: less than 0.1% legitimate requests blocked. Week 4: Tighten to default thresholds. Enable admin IP restriction. Brief developers on virtual patching process for any future vulnerabilities. For HIPAA: all WAF logs must be retained for 6 years (CloudWatch → S3 with lifecycle policy).
+</div>
+
+<script>
+function tp(id) { document.getElementById(id).classList.toggle('open'); }
+document.getElementById('pan-models').classList.add('open');
+document.getElementById('pan-limits').classList.add('open');
+
+function switchTab(btn, paneId) {
+  var bar = btn.parentElement;
+  bar.querySelectorAll('.ttab').forEach(function(t) { t.classList.remove('active'); });
+  btn.classList.add('active');
+  var wrap = bar.parentElement;
+  wrap.querySelectorAll('.tool-pane').forEach(function(p) { p.classList.remove('active'); });
+  var pane = document.getElementById(paneId);
+  if (pane) { pane.classList.add('active'); }
+}
+
+function doQ(qid, el, result) {
+  var container = document.getElementById(qid);
+  container.querySelectorAll('.qo').forEach(function(o) { o.onclick = null; });
+  el.classList.add(result === 'correct' ? 'correct' : 'wrong');
+  var exp = document.getElementById(qid + '-exp');
+  if (exp) { exp.classList.add('show'); }
+}
+
+function checkCh() {
+  var ans = document.getElementById('ch-ans').value.toLowerCase();
+  var fb  = document.getElementById('ch-fb');
+  var checks = [
+    ans.includes('alb') || ans.includes('aws') || (ans.includes('cloud') && ans.includes('deploy')),
+    ans.includes('detection') || ans.includes('monitor') || ans.includes('count mode') || ans.includes('detect'),
+    ans.includes('search') && (ans.includes('except') || ans.includes('disable') || ans.includes('whitelist')),
+    ans.includes('accept') || (ans.includes('920300') || ans.includes('header') && ans.includes('except')),
+    ans.includes('body') && (ans.includes('size') || ans.includes('limit') || ans.includes('10mb') || ans.includes('upload')),
+    ans.includes('rate') && (ans.includes('login') || ans.includes('limit')),
+    ans.includes('admin') && (ans.includes('ip') || ans.includes('10.20') || ans.includes('range') || ans.includes('subnet'))
+  ];
+  var score = checks.filter(Boolean).length;
+  fb.className = 'ch-fb show ' + (score >= 5 ? 'good' : 'hint');
+  if (score >= 5) {
+    fb.textContent = 'Excellent — ' + score + '/7 key design decisions covered. The search endpoint exception is the trickiest part: clinical terminology legitimately includes SQL keywords, so you cannot use SQLi rules on that endpoint. The correct approach is to scope the exception tightly (/api/search only, documented, with justification that the endpoint uses parameterised full-text search). Globally disabling SQLi rules for search terms would be wrong. Also critical for HIPAA: WAF logs must be retained for 6 years.';
+  } else if (score >= 3) {
+    fb.textContent = 'Good start — ' + score + '/7 covered. Key gaps: (1) Always start in detection/count mode, not blocking — 2 weeks minimum on a new healthcare API before enabling blocking. (2) The /api/search exception is mandatory: clinical terms trigger SQLi rules. Scope it narrowly to the search endpoint. (3) The 10MB imaging upload requires increasing body inspection limits specifically for the upload endpoint. (4) Admin endpoint IP restriction is the most important rule for HIPAA admin access.';
+  } else {
+    fb.textContent = 'Think through each traffic pattern: medical images (body size limit issue), clinical search terms (SQLi false positive), API clients without Accept headers (false positive), admin access (IP restriction), login endpoint (rate limiting). Each creates a specific WAF configuration challenge.';
+  }
+}
+
+function revealCh() {
+  var fb  = document.getElementById('ch-fb');
+  var src = document.getElementById('reveal-html');
+  fb.className = 'ch-fb show reveal';
+  fb.innerHTML = src ? src.innerHTML : 'Model answer unavailable.';
+}
+</script>
+</body>
+</html>
