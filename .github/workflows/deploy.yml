@@ -32,7 +32,7 @@ jobs:
       - name: Upload build
         uses: actions/upload-pages-artifact@v3
         with:
-          path: dist/appsec-angular
+          path: dist/appsec-curriculum
 
   deploy:
     needs: build
