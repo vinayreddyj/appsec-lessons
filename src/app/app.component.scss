@@ -36,7 +36,8 @@ $footer-height: 64px;
 
   // router-outlet renders the component directly
   > * {
-    flex: 0 ;
+    display: none;
+    flex: 1 ;
     min-height: 0;
   }
 }
