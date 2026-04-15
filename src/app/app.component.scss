@@ -1,48 +1,52 @@
 // src/app/app.component.scss
+
 $sidebar-width: 258px;
-$topbar-height: 46px;
-$footer-height: 64px;
 
 .app-shell {
   display: flex;
-  height: 100vh;
-  overflow: hidden;
+  height: 100dvh;
+  overflow: visible;
   position: relative;
 }
 
-// ── Sidebar wrapper ───────────────────────────────────────────────────────────
+// ── Sidebar ─────────────────────────────────────────────
 .sidebar-wrap {
   width: $sidebar-width;
   flex-shrink: 0;
-  height: 100%;
+  height: 100dvh;
   position: relative;
   z-index: 200;
-  transition: width 0.2s ease, transform 0.2s ease;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .app-shell.sidebar-closed .sidebar-wrap {
   width: 0;
 }
 
-// ── Main content ──────────────────────────────────────────────────────────────
+// ── Main content ────────────────────────────────────────
 .main-content {
   flex: 1;
   min-width: 0;
-  height: 100%;
-  overflow: hidden;
+  min-height: 0; // 🔥 critical fix
   display: flex;
   flex-direction: column;
-
-  // router-outlet renders the component directly
-  > * {
-    display: none;
-    flex: 1 ;
-    min-height: 0;
-  }
 }
 
-// ── Mobile hamburger ──────────────────────────────────────────────────────────
+/* Header stays fixed at top */
+app-header {
+  flex: 0 0 auto;
+  position: relative;
+  z-index: 10;
+}
+
+/* Routed page takes remaining space */
+.main-content router-outlet + * {
+  flex: 1;
+  min-height: 0;   // 🔥 prevents overflow bug
+  overflow: auto;
+}
+
+// ── Mobile menu button ──────────────────────────────────
 .mobile-menu-btn {
   display: none;
   position: fixed;
@@ -59,34 +63,25 @@ $footer-height: 64px;
   align-items: center;
   justify-content: center;
   gap: 5px;
-  padding: 0;
 
   span {
     display: block;
     width: 18px;
     height: 1.5px;
     background: var(--text);
-    border-radius: 1px;
-    transition: transform 0.2s, opacity 0.2s;
-  }
-
-  &.open {
-    span:nth-child(1) { transform: translateY(6.5px) rotate(45deg); }
-    span:nth-child(2) { opacity: 0; }
-    span:nth-child(3) { transform: translateY(-6.5px) rotate(-45deg); }
   }
 }
 
+// ── Overlay ─────────────────────────────────────────────
 .sidebar-overlay {
   display: none;
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.6);
   z-index: 150;
-  backdrop-filter: blur(2px);
 }
 
-// ── Responsive ────────────────────────────────────────────────────────────────
+// ── Responsive ──────────────────────────────────────────
 @media (max-width: 900px) {
   .mobile-menu-btn {
     display: flex;

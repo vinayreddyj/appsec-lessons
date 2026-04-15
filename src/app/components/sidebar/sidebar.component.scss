@@ -2,12 +2,10 @@
 .sidebar {
   display: flex;
   flex-direction: column;
-  height: 100%;
-  overflow: hidden;
-  background: var(--surface);
-  border-right: 1px solid var(--border);
+  height: 100%;      // ✅ NOT 100vh
+  min-height: 0;     // 🔥 CRITICAL
+  overflow: hidden;  // keep layout clean
 }
-
 // ── Brand ────────────────────────────────────────────────────────────────────
 .sidebar-brand {
   padding: 1.4rem 1.25rem 1.1rem;
@@ -127,7 +125,9 @@ h2 {
 // ── Module list ───────────────────────────────────────────────────────────────
 .modules-list {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 0.5rem 0 2rem;
 
   // Scrollbar styling
@@ -213,8 +213,8 @@ h2 {
 
 // ── Lesson items ──────────────────────────────────────────────────────────────
 .lesson-list {
-  overflow: hidden;
-  max-height: 600px;
+  overflow: visible;
+  max-height: none;
   transition: max-height 0.25s ease, opacity 0.2s;
   opacity: 1;
 

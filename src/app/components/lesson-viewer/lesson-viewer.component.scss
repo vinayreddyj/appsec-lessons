@@ -2,8 +2,8 @@
 .viewer-shell {
   display: flex;
   flex-direction: column;
-  height: 100%;
-  overflow: hidden;
+  min-height: 100dvh;   // 👈 important
+  overflow: visible;    // 👈 remove clipping
   background: var(--bg);
 }
 
@@ -19,8 +19,10 @@
   background: rgba(var(--bg-rgb), 0.95);
   backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border);
-  position: relative;
-  z-index: 10;
+  flex-shrink: 0;
+  top: 0;
+  position: sticky;
+  z-index: 100;
 }
 
 .topbar-left {
@@ -156,10 +158,11 @@
 .frame-wrap {
   flex: 1;
   position: relative;
-  overflow: hidden;
+  overflow: auto;   // 🔥 allow scroll
+  // padding-bottom: 64px; // space for footer
 }
 
-.loading-overlay {
+.loading-overlay { 
   position: absolute;
   inset: 0;
   background: var(--bg);
@@ -222,6 +225,8 @@
   display: block;
   opacity: 0;
   transition: opacity 0.25s ease;
+  position: relative;
+  z-index: 1;
 
   &.ready {
     opacity: 1;
@@ -230,14 +235,21 @@
 
 // ── Footer nav ────────────────────────────────────────────────────────────────
 .nav-footer {
+  position: fixed;
+  bottom: 0;
+
+  left: 258px;   // 👈 same as sidebar width
+  right: 0;
+
+  height: 64px;
+  z-index: 9999;
+
   display: flex;
-  align-items: stretch;
+  align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: 0.75rem 1.5rem;
+
   background: var(--surface);
   border-top: 1px solid var(--border);
-  flex-shrink: 0;
 }
 
 .nav-btn {
@@ -364,5 +376,11 @@
     strong {
       display: none;
     }
+  }
+}
+
+@media (max-width: 900px) {
+  .nav-footer {
+    left: 0;   // 👈 full width on mobile
   }
 }
