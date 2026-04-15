@@ -5,8 +5,8 @@ $footer-height: 64px;
 
 .app-shell {
   display: flex;
-  height: 100dvh;
-  overflow: visible;
+  height: 100vh;
+  overflow: hidden;
   position: relative;
 }
 
@@ -30,20 +30,16 @@ $footer-height: 64px;
   flex: 1;
   min-width: 0;
   height: 100%;
-  overflow: auto;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
-}
 
-/* ✅ correct */
-app-header {
-  flex: 0 0 auto;
-}
-
-/* ✅ correct */
-.main-content > *:not(app-header) {
-  flex: 1;
-  overflow: auto;
+  // router-outlet renders the component directly
+  > * {
+    display: none;
+    flex: 1 ;
+    min-height: 0;
+  }
 }
 
 // ── Mobile hamburger ──────────────────────────────────────────────────────────
