@@ -1,6 +1,6 @@
 # AppSec Curriculum — Angular App
 
-A full Angular 17 SPA wrapping all 20 AppSec lesson HTML files with a
+A full Angular 17 SPA wrapping all 20 [AppSec lesson](https://vinayreddyj.github.io/appsec-lessons) HTML files with a
 polished navigation shell, progress tracking, search, and prev/next routing.
 
 ---
